@@ -5,7 +5,7 @@ import ScrapPage from './pages/ScrapPage';
 import TemplatePage from './pages/TemplatePage';
 import DraftPage from './pages/DraftPage';
 import ArchivePage from './pages/ArchivePage';
-import './App.css';
+import styles from './App.module.css';
 
 type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive';
 
@@ -27,9 +27,9 @@ const App: React.FC = () => {
 
   // 메인 앱 (헤더 + 페이지)
   return (
-    <div className="app">
+    <div className={styles.app}>
       <Header activeMenu={currentPage} onMenuClick={handleMenuClick} />
-      <div className="app-content">
+      <div className={styles.appContent}>
         {currentPage === 'scrap' && <ScrapPage />}
         {currentPage === 'template' && <TemplatePage />}
         {currentPage === 'draft' && <DraftPage />}

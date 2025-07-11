@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoClipboard, IoDocument, IoSparkles, IoArchive } from 'react-icons/io5';
 import { IconType } from 'react-icons';
-import './Header.css';
+import styles from './Header.module.css';
 
 interface HeaderProps {
   activeMenu: string;
@@ -43,29 +43,29 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
   ];
 
   return (
-    <div className="header">
-      <div className="header-top">
-        <div className="brand">
-          <span className="brand-name">Tyquill</span>
+    <div className={styles.header}>
+      <div className={styles.headerTop}>
+        <div className={styles.brand}>
+          <span className={styles.brandName}>Tyquill</span>
         </div>
-        <div className="user-info">
-          <span className="user-email">{userEmail}</span>
+        <div className={styles.userInfo}>
+          <span className={styles.userEmail}>{userEmail}</span>
         </div>
       </div>
       
-      <div className="header-menu">
+      <div className={styles.headerMenu}>
         {menuItems.map((item) => {
           const IconComponent = item.icon;
           return (
             <button
               key={item.key}
-              className={`menu-item ${activeMenu === item.key ? 'active' : ''}`}
+              className={`${styles.menuItem} ${activeMenu === item.key ? styles.active : ''}`}
               onClick={() => onMenuClick(item.key)}
             >
-              <span className="menu-icon">
+              <span className={styles.menuIcon}>
                 <IconComponent size={20} />
               </span>
-              <span className="menu-label">{item.label}</span>
+              <span className={styles.menuLabel}>{item.label}</span>
             </button>
           );
         })}

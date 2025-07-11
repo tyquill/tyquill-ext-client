@@ -1,7 +1,7 @@
 import React from 'react';
 import { IoDocument, IoDocumentText, IoClipboard, IoDownload, IoShare, IoTrash } from 'react-icons/io5';
 import { IconType } from 'react-icons';
-import './PageStyles.css';
+import styles from './PageStyles.module.css';
 
 interface Archive {
   id: number;
@@ -49,51 +49,51 @@ const ArchivePage: React.FC = () => {
   };
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">보관함</h1>
-        <p className="page-subtitle">완성된 문서를 안전하게 보관하세요</p>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>보관함</h1>
+        <p className={styles.pageSubtitle}>완성된 문서를 안전하게 보관하세요</p>
       </div>
       
-      <div className="archive-stats">
-        <div className="stat-item">
-          <div className="stat-number">{archives.length}</div>
-          <div className="stat-label">보관된 문서</div>
+      <div className={styles.archiveStats}>
+        <div className={styles.statItem}>
+          <div className={styles.statNumber}>{archives.length}</div>
+          <div className={styles.statLabel}>보관된 문서</div>
         </div>
-        <div className="stat-item">
-          <div className="stat-number">7.4MB</div>
-          <div className="stat-label">전체 용량</div>
+        <div className={styles.statItem}>
+          <div className={styles.statNumber}>7.4MB</div>
+          <div className={styles.statLabel}>전체 용량</div>
         </div>
       </div>
       
-      <div className="archive-list">
+      <div className={styles.archiveList}>
         {archives.map((archive) => {
           const IconComponent = getTypeIcon(archive.type);
           return (
-            <div key={archive.id} className="archive-item">
-              <div className="archive-icon">
+            <div key={archive.id} className={styles.archiveItem}>
+              <div className={styles.archiveIcon}>
                 <IconComponent size={24} />
               </div>
               
-              <div className="archive-content">
-                <h3 className="archive-title">{archive.title}</h3>
-                <div className="archive-meta">
-                  <span className="category">{archive.category}</span>
-                  <span className="separator">•</span>
-                  <span className="date">{archive.completedAt}</span>
-                  <span className="separator">•</span>
-                  <span className="size">{archive.size}</span>
+              <div className={styles.archiveContent}>
+                <h3 className={styles.archiveTitle}>{archive.title}</h3>
+                <div className={styles.archiveMeta}>
+                  <span className={styles.category}>{archive.category}</span>
+                  <span className={styles.separator}>•</span>
+                  <span className={styles.date}>{archive.completedAt}</span>
+                  <span className={styles.separator}>•</span>
+                  <span className={styles.size}>{archive.size}</span>
                 </div>
               </div>
               
-              <div className="archive-actions">
-                <button className="action-button" title="다운로드">
+              <div className={styles.archiveActions}>
+                <button className={styles.actionButton} title="다운로드">
                   <IoDownload size={16} />
                 </button>
-                <button className="action-button" title="공유">
+                <button className={styles.actionButton} title="공유">
                   <IoShare size={16} />
                 </button>
-                <button className="action-button" title="삭제">
+                <button className={styles.actionButton} title="삭제">
                   <IoTrash size={16} />
                 </button>
               </div>

@@ -24,7 +24,7 @@ html, body {
   height: 100vh;
 }
 
-.app-content {
+.appContent {
   flex: 1;
   overflow-y: auto;
 } 

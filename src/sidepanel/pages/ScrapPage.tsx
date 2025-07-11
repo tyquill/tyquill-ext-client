@@ -1,6 +1,6 @@
 import React from 'react';
 import { IoAdd, IoCreate, IoTrash } from 'react-icons/io5';
-import './PageStyles.css';
+import styles from './PageStyles.module.css';
 
 const ScrapPage: React.FC = () => {
   const scraps = [
@@ -23,45 +23,45 @@ const ScrapPage: React.FC = () => {
   ];
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">스크랩</h1>
-        <p className="page-subtitle">저장된 콘텐츠를 관리하고 활용하세요</p>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>스크랩</h1>
+        <p className={styles.pageSubtitle}>저장된 콘텐츠를 관리하고 활용하세요</p>
       </div>
       
-      <div className="add-button-container">
-        <button className="add-button">
+      <div className={styles.addButtonContainer}>
+        <button className={styles.addButton}>
           <IoAdd size={16} />
           스크랩 추가
         </button>
       </div>
       
-      <div className="content-list">
+      <div className={styles.contentList}>
         {scraps.map((scrap) => (
-          <div key={scrap.id} className="content-item">
-            <div className="content-header">
-              <h3 className="content-title">{scrap.title}</h3>
-              <div className="content-actions">
-                <button className="action-button">
+          <div key={scrap.id} className={styles.contentItem}>
+            <div className={styles.contentHeader}>
+              <h3 className={styles.contentTitle}>{scrap.title}</h3>
+              <div className={styles.contentActions}>
+                <button className={styles.actionButton}>
                   <IoTrash size={16} />
                 </button>
-                <button className="action-button">
+                <button className={styles.actionButton}>
                   <IoCreate size={16} />
                 </button>
               </div>
             </div>
             
-            <p className="content-preview">{scrap.content}</p>
+            <p className={styles.contentPreview}>{scrap.content}</p>
             
-            <div className="content-meta">
-              <div className="tags">
+            <div className={styles.contentMeta}>
+              <div className={styles.tags}>
                 {scrap.tags.map((tag, index) => (
-                  <span key={index} className="tag">#{tag}</span>
+                  <span key={index} className={styles.tag}>#{tag}</span>
                 ))}
               </div>
-              <div className="meta-info">
-                <span className="source">{scrap.source}</span>
-                <span className="date">{scrap.createdAt}</span>
+              <div className={styles.metaInfo}>
+                <span className={styles.source}>{scrap.source}</span>
+                <span className={styles.date}>{scrap.createdAt}</span>
               </div>
             </div>
           </div>

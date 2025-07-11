@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { IoReload, IoSparkles, IoTrash, IoCreate } from 'react-icons/io5';
-import './PageStyles.css';
+import styles from './PageStyles.module.css';
 
 const DraftPage: React.FC = () => {
   const [prompt, setPrompt] = useState('');
@@ -32,33 +32,33 @@ const DraftPage: React.FC = () => {
   ];
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">초안생성</h1>
-        <p className="page-subtitle">AI가 도와주는 스마트한 글쓰기</p>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>초안생성</h1>
+        <p className={styles.pageSubtitle}>AI가 도와주는 스마트한 글쓰기</p>
       </div>
       
-      <div className="draft-generator">
-        <div className="generator-form">
-          <label htmlFor="prompt" className="form-label">
+      <div className={styles.draftGenerator}>
+        <div className={styles.generatorForm}>
+          <label htmlFor="prompt" className={styles.formLabel}>
             어떤 글을 작성하고 싶으신가요?
           </label>
           <textarea
             id="prompt"
-            className="prompt-textarea"
+            className={styles.promptTextarea}
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="예: 회사 소개서, 이메일 초안, 블로그 포스트 등 원하는 글의 주제와 요구사항을 입력해주세요..."
             rows={4}
           />
           <button
-            className="generate-button"
+            className={styles.generateButton}
             onClick={handleGenerate}
             disabled={!prompt.trim() || isGenerating}
           >
             {isGenerating ? (
               <>
-                <IoReload size={16} className="loading-spinner" />
+                <IoReload size={16} className={styles.loadingSpinner} />
                 AI 초안 생성 중...
               </>
             ) : (
@@ -71,31 +71,31 @@ const DraftPage: React.FC = () => {
         </div>
       </div>
       
-      <div className="recent-drafts">
-        <h2 className="section-title">최근 생성한 초안</h2>
-        <div className="content-list">
+      <div className={styles.recentDrafts}>
+        <h2 className={styles.sectionTitle}>최근 생성한 초안</h2>
+        <div className={styles.contentList}>
           {recentDrafts.map((draft) => (
-            <div key={draft.id} className="content-item">
-              <div className="content-header">
-                <h3 className="content-title">{draft.title}</h3>
-                <div className="content-actions">
-                  <button className="action-button">
+            <div key={draft.id} className={styles.contentItem}>
+              <div className={styles.contentHeader}>
+                <h3 className={styles.contentTitle}>{draft.title}</h3>
+                <div className={styles.contentActions}>
+                  <button className={styles.actionButton}>
                     <IoTrash size={16} />
                   </button>
-                  <button className="action-button">
+                  <button className={styles.actionButton}>
                     <IoCreate size={16} />
                   </button>
                 </div>
               </div>
               
-              <p className="content-preview">{draft.preview}</p>
+              <p className={styles.contentPreview}>{draft.preview}</p>
               
-              <div className="content-meta">
-                <div className="tags">
-                  <span className="tag">#{draft.type}</span>
+              <div className={styles.contentMeta}>
+                <div className={styles.tags}>
+                  <span className={styles.tag}>#{draft.type}</span>
                 </div>
-                <div className="meta-info">
-                  <span className="date">{draft.createdAt}</span>
+                <div className={styles.metaInfo}>
+                  <span className={styles.date}>{draft.createdAt}</span>
                 </div>
               </div>
             </div>

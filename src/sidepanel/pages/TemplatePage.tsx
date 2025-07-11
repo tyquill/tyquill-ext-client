@@ -1,7 +1,7 @@
 import React from 'react';
 import { IoAdd, IoMail, IoBarChart, IoCreate } from 'react-icons/io5';
 import { IconType } from 'react-icons';
-import './PageStyles.css';
+import styles from './PageStyles.module.css';
 
 interface Template {
   id: number;
@@ -41,34 +41,34 @@ const TemplatePage: React.FC = () => {
   ];
 
   return (
-    <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">템플릿</h1>
-        <p className="page-subtitle">다양한 글쓰기 템플릿을 활용해보세요</p>
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <h1 className={styles.pageTitle}>템플릿</h1>
+        <p className={styles.pageSubtitle}>다양한 글쓰기 템플릿을 활용해보세요</p>
       </div>
       
-      <div className="add-button-container">
-        <button className="add-button">
+      <div className={styles.addButtonContainer}>
+        <button className={styles.addButton}>
           <IoAdd size={16} />
           템플릿 추가
         </button>
       </div>
       
-      <div className="template-grid">
+      <div className={styles.templateGrid}>
         {templates.map((template) => {
           const IconComponent = template.icon;
           return (
-            <div key={template.id} className="template-card">
-              <div className="template-icon">
+            <div key={template.id} className={styles.templateCard}>
+              <div className={styles.templateIcon}>
                 <IconComponent size={32} />
               </div>
-              <h3 className="template-title">{template.title}</h3>
-              <p className="template-description">{template.description}</p>
-              <div className="template-meta">
-                <span className="category">{template.category}</span>
-                <span className="usage-count">{template.usageCount}회 사용</span>
+              <h3 className={styles.templateTitle}>{template.title}</h3>
+              <p className={styles.templateDescription}>{template.description}</p>
+              <div className={styles.templateMeta}>
+                <span className={styles.category}>{template.category}</span>
+                <span className={styles.usageCount}>{template.usageCount}회 사용</span>
               </div>
-              <button className="template-use-button">사용하기</button>
+              <button className={styles.templateUseButton}>사용하기</button>
             </div>
           );
         })}
