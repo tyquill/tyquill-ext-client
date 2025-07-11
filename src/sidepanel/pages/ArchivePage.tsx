@@ -1,8 +1,19 @@
 import React from 'react';
+import { IoDocument, IoDocumentText, IoClipboard, IoDownload, IoShare, IoTrash } from 'react-icons/io5';
+import { IconType } from 'react-icons';
 import './PageStyles.css';
 
+interface Archive {
+  id: number;
+  title: string;
+  category: string;
+  completedAt: string;
+  size: string;
+  type: string;
+}
+
 const ArchivePage: React.FC = () => {
-  const archives = [
+  const archives: Archive[] = [
     {
       id: 1,
       title: '2024년 1분기 프로젝트 완료 보고서',
@@ -29,11 +40,11 @@ const ArchivePage: React.FC = () => {
     }
   ];
 
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string): React.ComponentType<{ size?: number }> => {
     switch (type) {
-      case 'PDF': return '📄';
-      case 'DOCX': return '📝';
-      default: return '📋';
+      case 'PDF': return IoDocument;
+      case 'DOCX': return IoDocumentText;
+      default: return IoClipboard;
     }
   };
 
@@ -56,36 +67,39 @@ const ArchivePage: React.FC = () => {
       </div>
       
       <div className="archive-list">
-        {archives.map((archive) => (
-          <div key={archive.id} className="archive-item">
-            <div className="archive-icon">
-              {getTypeIcon(archive.type)}
-            </div>
-            
-            <div className="archive-content">
-              <h3 className="archive-title">{archive.title}</h3>
-              <div className="archive-meta">
-                <span className="category">{archive.category}</span>
-                <span className="separator">•</span>
-                <span className="date">{archive.completedAt}</span>
-                <span className="separator">•</span>
-                <span className="size">{archive.size}</span>
+        {archives.map((archive) => {
+          const IconComponent = getTypeIcon(archive.type);
+          return (
+            <div key={archive.id} className="archive-item">
+              <div className="archive-icon">
+                <IconComponent size={24} />
+              </div>
+              
+              <div className="archive-content">
+                <h3 className="archive-title">{archive.title}</h3>
+                <div className="archive-meta">
+                  <span className="category">{archive.category}</span>
+                  <span className="separator">•</span>
+                  <span className="date">{archive.completedAt}</span>
+                  <span className="separator">•</span>
+                  <span className="size">{archive.size}</span>
+                </div>
+              </div>
+              
+              <div className="archive-actions">
+                <button className="action-button" title="다운로드">
+                  <IoDownload size={16} />
+                </button>
+                <button className="action-button" title="공유">
+                  <IoShare size={16} />
+                </button>
+                <button className="action-button" title="삭제">
+                  <IoTrash size={16} />
+                </button>
               </div>
             </div>
-            
-            <div className="archive-actions">
-              <button className="action-button" title="다운로드">
-                ⬇️
-              </button>
-              <button className="action-button" title="공유">
-                🔗
-              </button>
-              <button className="action-button" title="삭제">
-                🗑️
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

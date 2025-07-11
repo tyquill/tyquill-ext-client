@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IoReload, IoSparkles, IoTrash, IoCreate } from 'react-icons/io5';
 import './PageStyles.css';
 
 const DraftPage: React.FC = () => {
@@ -57,12 +58,12 @@ const DraftPage: React.FC = () => {
           >
             {isGenerating ? (
               <>
-                <span className="loading-spinner">⏳</span>
+                <IoReload size={16} className="loading-spinner" />
                 AI 초안 생성 중...
               </>
             ) : (
               <>
-                <span className="generate-icon">✨</span>
+                <IoSparkles size={16} />
                 초안 생성하기
               </>
             )}
@@ -78,8 +79,12 @@ const DraftPage: React.FC = () => {
               <div className="content-header">
                 <h3 className="content-title">{draft.title}</h3>
                 <div className="content-actions">
-                  <button className="action-button">🗑️</button>
-                  <button className="action-button">✏️</button>
+                  <button className="action-button">
+                    <IoTrash size={16} />
+                  </button>
+                  <button className="action-button">
+                    <IoCreate size={16} />
+                  </button>
                 </div>
               </div>
               

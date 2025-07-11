@@ -1,4 +1,5 @@
 import React from 'react';
+import { IoAdd, IoCreate, IoTrash } from 'react-icons/io5';
 import './PageStyles.css';
 
 const ScrapPage: React.FC = () => {
@@ -30,7 +31,7 @@ const ScrapPage: React.FC = () => {
       
       <div className="add-button-container">
         <button className="add-button">
-          <span className="add-icon">+</span>
+          <IoAdd size={16} />
           스크랩 추가
         </button>
       </div>
@@ -41,8 +42,12 @@ const ScrapPage: React.FC = () => {
             <div className="content-header">
               <h3 className="content-title">{scrap.title}</h3>
               <div className="content-actions">
-                <button className="action-button">🗑️</button>
-                <button className="action-button">✏️</button>
+                <button className="action-button">
+                  <IoTrash size={16} />
+                </button>
+                <button className="action-button">
+                  <IoCreate size={16} />
+                </button>
               </div>
             </div>
             

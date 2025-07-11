@@ -7,10 +7,14 @@
     "dev": "webpack --config webpack/webpack.dev.js --watch",
     "build": "webpack --config webpack/webpack.prod.js"
   },
-  "keywords": ["chrome-extension", "react", "typescript"],
+  "keywords": [
+    "chrome-extension",
+    "react",
+    "typescript"
+  ],
   "author": "",
   "license": "ISC",
-    "devDependencies": {
+  "devDependencies": {
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@types/react-router-dom": "^5.3.3",
@@ -34,6 +38,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-icons": "^5.5.0",
     "react-router-dom": "^6.15.0"
   }
-} 
+}

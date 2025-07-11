@@ -1,9 +1,17 @@
 import React, { useState, useEffect } from 'react';
+import { IoClipboard, IoDocument, IoSparkles, IoArchive } from 'react-icons/io5';
+import { IconType } from 'react-icons';
 import './Header.css';
 
 interface HeaderProps {
   activeMenu: string;
   onMenuClick: (menu: string) => void;
+}
+
+interface MenuItem {
+  key: string;
+  label: string;
+  icon: IconType;
 }
 
 const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
@@ -27,11 +35,11 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
     getUserEmail();
   }, []);
 
-  const menuItems = [
-    { key: 'scrap', label: '스크랩', icon: '📋' },
-    { key: 'template', label: '템플릿', icon: '📄' },
-    { key: 'draft', label: '초안생성', icon: '✨' },
-    { key: 'archive', label: '보관함', icon: '📚' }
+  const menuItems: MenuItem[] = [
+    { key: 'scrap', label: '스크랩', icon: IoClipboard },
+    { key: 'template', label: '템플릿', icon: IoDocument },
+    { key: 'draft', label: '초안생성', icon: IoSparkles },
+    { key: 'archive', label: '보관함', icon: IoArchive }
   ];
 
   return (
@@ -46,16 +54,21 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
       </div>
       
       <div className="header-menu">
-        {menuItems.map((item) => (
-          <button
-            key={item.key}
-            className={`menu-item ${activeMenu === item.key ? 'active' : ''}`}
-            onClick={() => onMenuClick(item.key)}
-          >
-            <span className="menu-icon">{item.icon}</span>
-            <span className="menu-label">{item.label}</span>
-          </button>
-        ))}
+        {menuItems.map((item) => {
+          const IconComponent = item.icon;
+          return (
+            <button
+              key={item.key}
+              className={`menu-item ${activeMenu === item.key ? 'active' : ''}`}
+              onClick={() => onMenuClick(item.key)}
+            >
+              <span className="menu-icon">
+                <IconComponent size={20} />
+              </span>
+              <span className="menu-label">{item.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
