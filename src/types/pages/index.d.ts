@@ -1,0 +1,1 @@
+export type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive'; 
