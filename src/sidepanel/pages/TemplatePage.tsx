@@ -1,77 +1,141 @@
-import React from 'react';
-import { IoAdd, IoMail, IoBarChart, IoCreate } from 'react-icons/io5';
-import { IconType } from 'react-icons';
+import React, { useState } from 'react';
+import { IoCreate, IoTrash } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 
 interface Template {
   id: number;
   title: string;
   description: string;
-  category: string;
-  usageCount: number;
-  icon: IconType;
+  createdAt: string;
+  type: 'link' | 'description';
 }
 
 const TemplatePage: React.FC = () => {
+  const [activeMethod, setActiveMethod] = useState<'description' | 'link'>('link');
+  const [templateName, setTemplateName] = useState('');
+  const [templateLink, setTemplateLink] = useState('');
+  const [templateDescription, setTemplateDescription] = useState('');
+
   const templates: Template[] = [
     {
       id: 1,
-      title: '이메일 템플릿',
-      description: '비즈니스 이메일 작성을 위한 다양한 템플릿',
-      category: 'Business',
-      usageCount: 15,
-      icon: IoMail
+      title: '비즈니스 미팅 요청',
+      description: '정중한 비즈니스 미팅 요청 이메일 템플릿',
+      createdAt: '2024.01.15',
+      type: 'link'
     },
     {
       id: 2,
-      title: '보고서 템플릿',
-      description: '월간, 주간 보고서 작성 템플릿',
-      category: 'Report',
-      usageCount: 8,
-      icon: IoBarChart
-    },
-    {
-      id: 3,
-      title: '블로그 포스트 템플릿',
-      description: '매력적인 블로그 글 작성 템플릿',
-      category: 'Content',
-      usageCount: 23,
-      icon: IoCreate
+      title: '제품 소개 뉴스레터',
+      description: '새로운 제품이나 서비스를 소개하는 뉴스레터 템플릿',
+      createdAt: '2024.01.12',
+      type: 'link'
     }
   ];
+
+  const handleMethodChange = (method: 'description' | 'link') => {
+    setActiveMethod(method);
+    // 방식 변경시 입력 필드 초기화
+    setTemplateName('');
+    setTemplateLink('');
+    setTemplateDescription('');
+  };
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <h1 className={styles.pageTitle}>템플릿</h1>
-        <p className={styles.pageSubtitle}>다양한 글쓰기 템플릿을 활용해보세요</p>
       </div>
-      
-      <div className={styles.addButtonContainer}>
-        <button className={styles.addButton}>
-          <IoAdd size={16} />
-          템플릿 추가
+
+      <div className={styles.templateButtons}>
+        <button 
+          className={`${styles.templateMethodButton} ${activeMethod === 'description' ? '' : styles.inactive}`}
+          onClick={() => handleMethodChange('description')}
+        >
+          설명으로 만들기
+        </button>
+        <button 
+          className={`${styles.templateMethodButton} ${activeMethod === 'link' ? '' : styles.inactive}`}
+          onClick={() => handleMethodChange('link')}
+        >
+          링크로 구조 학습하기
         </button>
       </div>
-      
-      <div className={styles.templateGrid}>
-        {templates.map((template) => {
-          const IconComponent = template.icon;
-          return (
-            <div key={template.id} className={styles.templateCard}>
-              <div className={styles.templateIcon}>
-                <IconComponent size={32} />
+
+      <div className={styles.templateForm}>
+        <div className={styles.formGroup}>
+          <label htmlFor="templateName" className={styles.formLabel}>
+            템플릿 이름
+          </label>
+          <input
+            id="templateName"
+            type="text"
+            className={styles.formInput}
+            value={templateName}
+            onChange={(e) => setTemplateName(e.target.value)}
+            placeholder="템플릿 이름을 입력하세요"
+          />
+        </div>
+
+        {activeMethod === 'link' ? (
+          <div className={styles.formGroup}>
+            <label htmlFor="templateLink" className={styles.formLabel}>
+              참고링크
+            </label>
+            <input
+              id="templateLink"
+              type="text"
+              className={styles.formInput}
+              value={templateLink}
+              onChange={(e) => setTemplateLink(e.target.value)}
+              placeholder="https://example.com/newsletter1"
+            />
+            <p className={styles.formHelp}>
+              참고하고 싶은 글의 링크를 1개 이상 입력하세요. AI가 링크들의 공통적인 구조를 분석하여 템플릿을 생성합니다.
+            </p>
+          </div>
+        ) : (
+          <div className={styles.formGroup}>
+            <label htmlFor="templateDescription" className={styles.formLabel}>
+              템플릿 구조 설명
+            </label>
+            <textarea
+              id="templateDescription"
+              className={styles.formTextarea}
+              value={templateDescription}
+              onChange={(e) => setTemplateDescription(e.target.value)}
+              placeholder="AI가 이해할 수 있도록 원하는 이메일 템플릿 구조를 자세히 설명해주세요. (예: '제목, 인사말, 본문 내용, 감사 인사, 서명으로 구성된 비즈니스 이메일 템플릿')"
+              rows={4}
+            />
+          </div>
+        )}
+
+        <button className={styles.submitButton}>
+          템플릿 저장
+        </button>
+      </div>
+
+      <h2 className={styles.sectionTitle}>저장된 템플릿</h2>
+      <div className={styles.templateList}>
+        {templates.map((template) => (
+          <div key={template.id} className={styles.templateItem}>
+            <div className={styles.templateContent}>
+              <h3 className={styles.templateItemTitle}>{template.title}</h3>
+              <p className={styles.templateItemDescription}>{template.description}</p>
+              <div className={styles.templateItemMeta}>
+                {template.type === 'link' ? '링크 기반' : '설명 기반'} • {template.createdAt}
               </div>
-              <h3 className={styles.templateTitle}>{template.title}</h3>
-              <p className={styles.templateDescription}>{template.description}</p>
-              <div className={styles.templateMeta}>
-                <span className={styles.category}>{template.category}</span>
-                <span className={styles.usageCount}>{template.usageCount}회 사용</span>
-              </div>
-              <button className={styles.templateUseButton}>사용하기</button>
             </div>
-          );
-        })}
+            <div className={styles.templateActions}>
+              <button className={styles.actionButton} title="수정">
+                <IoCreate size={16} />
+              </button>
+              <button className={styles.actionButton} title="삭제">
+                <IoTrash size={16} />
+              </button>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

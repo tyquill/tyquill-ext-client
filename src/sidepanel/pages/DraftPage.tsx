@@ -1,106 +1,91 @@
 import React, { useState } from 'react';
-import { IoReload, IoSparkles, IoTrash, IoCreate } from 'react-icons/io5';
+import { IoAdd } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 
 const DraftPage: React.FC = () => {
-  const [prompt, setPrompt] = useState('');
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleGenerate = () => {
-    setIsGenerating(true);
-    // 시뮬레이션: 3초 후 완료
-    setTimeout(() => {
-      setIsGenerating(false);
-    }, 3000);
-  };
-
-  const recentDrafts = [
-    {
-      id: 1,
-      title: '마케팅 전략 제안서',
-      preview: '2024년 디지털 마케팅 트렌드를 기반으로 한 새로운 마케팅 전략...',
-      createdAt: '2024-01-15',
-      type: 'Business'
-    },
-    {
-      id: 2,
-      title: '프로젝트 진행 보고서',
-      preview: '1분기 프로젝트 진행 현황과 주요 성과를 정리한 보고서...',
-      createdAt: '2024-01-14',
-      type: 'Report'
-    }
-  ];
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [handle, setHandle] = useState('');
+  const [selectedTemplate, setSelectedTemplate] = useState('기본 뉴스레터 템플릿');
 
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>초안생성</h1>
-        <p className={styles.pageSubtitle}>AI가 도와주는 스마트한 글쓰기</p>
+        <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
       </div>
       
-      <div className={styles.draftGenerator}>
-        <div className={styles.generatorForm}>
-          <label htmlFor="prompt" className={styles.formLabel}>
-            어떤 글을 작성하고 싶으신가요?
+      <div className={styles.draftForm}>
+        <div className={styles.formGroup}>
+          <label htmlFor="subject" className={styles.formLabel}>
+            주제
+          </label>
+          <input
+            id="subject"
+            type="text"
+            className={styles.formInput}
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            placeholder="뉴스레터의 핵심 주제를 입력하세요"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="message" className={styles.formLabel}>
+            키메시지
           </label>
           <textarea
-            id="prompt"
-            className={styles.promptTextarea}
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            placeholder="예: 회사 소개서, 이메일 초안, 블로그 포스트 등 원하는 글의 주제와 요구사항을 입력해주세요..."
+            id="message"
+            className={styles.formTextarea}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성해주세요. (예: 생성형 AI를 활용한 디자인 자동화와 하이퍼-개인화가 핵심이 될 것이다.)"
             rows={4}
           />
-          <button
-            className={styles.generateButton}
-            onClick={handleGenerate}
-            disabled={!prompt.trim() || isGenerating}
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="handle" className={styles.formLabel}>
+            maily 핸들
+          </label>
+          <input
+            id="handle"
+            type="text"
+            className={styles.formInput}
+            value={handle}
+            onChange={(e) => setHandle(e.target.value)}
+            placeholder="예: josh"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label htmlFor="template" className={styles.formLabel}>
+            템플릿 선택
+          </label>
+          <select
+            id="template"
+            className={styles.formSelect}
+            value={selectedTemplate}
+            onChange={(e) => setSelectedTemplate(e.target.value)}
           >
-            {isGenerating ? (
-              <>
-                <IoReload size={16} className={styles.loadingSpinner} />
-                AI 초안 생성 중...
-              </>
-            ) : (
-              <>
-                <IoSparkles size={16} />
-                초안 생성하기
-              </>
-            )}
+            <option value="기본 뉴스레터 템플릿">기본 뉴스레터 템플릿</option>
+          </select>
+        </div>
+
+        <div className={styles.referenceSection}>
+          <h3 className={styles.sectionTitle}>참고 자료 선택</h3>
+          <button className={styles.addReferenceButton}>
+            <IoAdd size={16} />
+            스크랩에서 자료 추가
           </button>
+          <div className={styles.referenceItem}>
+            <span>AI와 디자인의 미래: 생산성 혁신</span>
+            <button className={styles.removeButton}>×</button>
+          </div>
         </div>
-      </div>
-      
-      <div className={styles.recentDrafts}>
-        <h2 className={styles.sectionTitle}>최근 생성한 초안</h2>
-        <div className={styles.contentList}>
-          {recentDrafts.map((draft) => (
-            <div key={draft.id} className={styles.contentItem}>
-              <div className={styles.contentHeader}>
-                <h3 className={styles.contentTitle}>{draft.title}</h3>
-                <div className={styles.contentActions}>
-                  <button className={styles.actionButton}>
-                    <IoTrash size={16} />
-                  </button>
-                  <button className={styles.actionButton}>
-                    <IoCreate size={16} />
-                  </button>
-                </div>
-              </div>
-              
-              <p className={styles.contentPreview}>{draft.preview}</p>
-              
-              <div className={styles.contentMeta}>
-                <div className={styles.tags}>
-                  <span className={styles.tag}>#{draft.type}</span>
-                </div>
-                <div className={styles.metaInfo}>
-                  <span className={styles.date}>{draft.createdAt}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+
+        <button className={styles.submitButton}>
+          초안 생성하기
+        </button>
       </div>
     </div>
   );

@@ -24,11 +24,154 @@
   line-height: 1.5;
 }
 
-.sectionTitle {
-  font-size: 20px;
+/* Draft Form */
+.draftForm {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.formLabel {
+  font-size: 14px;
   font-weight: 600;
   color: #000000;
-  margin: 40px 0 20px 0;
+}
+
+.formInput {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #000000;
+  background: #ffffff;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.formTextarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #000000;
+  background: #ffffff;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.formTextarea:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.formSelect {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #000000;
+  background: #ffffff;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+}
+
+.formSelect:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.referenceSection {
+  margin-top: 16px;
+}
+
+.sectionTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0 0 12px 0;
+}
+
+.addReferenceButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid #e5e5e5;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #000000;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.addReferenceButton:hover {
+  background: #f5f5f5;
+}
+
+.referenceItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.referenceItem span {
+  font-size: 14px;
+  color: #000000;
+}
+
+.removeButton {
+  background: none;
+  border: none;
+  color: #999999;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 16px;
+}
+
+.removeButton:hover {
+  color: #000000;
+}
+
+.submitButton {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  padding: 16px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.submitButton:hover {
+  background: #333333;
 }
 
 /* Add Button */
@@ -248,13 +391,6 @@
   gap: 16px;
 }
 
-.formLabel {
-  font-size: 16px;
-  font-weight: 500;
-  color: #000000;
-  margin-bottom: 8px;
-}
-
 .promptTextarea {
   width: 100%;
   padding: 12px;
@@ -347,28 +483,18 @@
 .archiveList {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
+  margin-top: 24px;
 }
 
 .archiveItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
   background: #ffffff;
   border-radius: 12px;
-  padding: 20px;
   border: 1px solid #e5e5e5;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  transition: all 0.2s ease;
-}
-
-.archiveItem:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.archiveIcon {
-  font-size: 32px;
-  flex-shrink: 0;
 }
 
 .archiveContent {
@@ -379,18 +505,140 @@
   font-size: 16px;
   font-weight: 600;
   color: #000000;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
 }
 
 .archiveMeta {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  color: #999999;
+  font-size: 14px;
+  color: #666666;
+}
+
+.category {
+  color: #666666;
+}
+
+.separator {
+  color: #e5e5e5;
+}
+
+.date, .size {
+  color: #666666;
 }
 
 .archiveActions {
   display: flex;
   gap: 8px;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #666666;
+  border-radius: 4px;
+}
+
+.actionButton:hover {
+  background: #f5f5f5;
+  color: #000000;
+}
+
+/* Template Page Styles */
+.templateButtons {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.templateMethodButton {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  background: #000000;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.templateMethodButton.inactive {
+  background: #ffffff;
+  color: #000000;
+  border: 1px solid #e5e5e5;
+}
+
+.formHelp {
+  font-size: 12px;
+  color: #666666;
+  margin-top: 4px;
+}
+
+.templateForm {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.templateList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.templateItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+}
+
+.templateContent {
+  flex: 1;
+}
+
+.templateItemTitle {
+  font-size: 16px;
+  font-weight: 600;
+  color: #000000;
+  margin: 0 0 4px 0;
+}
+
+.templateItemDescription {
+  font-size: 14px;
+  color: #666666;
+  margin: 0 0 8px 0;
+}
+
+.templateItemMeta {
+  font-size: 12px;
+  color: #999999;
+}
+
+.templateActions {
+  display: flex;
+  gap: 8px;
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  padding: 8px;
+  cursor: pointer;
+  color: #666666;
+  border-radius: 4px;
+}
+
+.actionButton:hover {
+  background: #f5f5f5;
+  color: #000000;
 } 
