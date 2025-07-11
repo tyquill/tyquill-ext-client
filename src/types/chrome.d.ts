@@ -68,4 +68,13 @@ declare namespace chrome {
 
     const open: (options: OpenOptions) => Promise<void>;
   }
+
+  namespace identity {
+    interface UserInfo {
+      email: string;
+      id: string;
+    }
+
+    const getProfileUserInfo: (options?: { accountStatus?: string }) => Promise<UserInfo>;
+  }
 } 
