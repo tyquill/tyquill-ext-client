@@ -1,7 +1,9 @@
-import React, { useReducer } from 'react';
-import { IoAdd, IoClose, IoChevronDown } from 'react-icons/io5';
+import React, { useReducer, useState } from 'react';
+import { IoAdd, IoClose } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { Scrap, mockScraps, mockTemplates } from '../../mock/data';
+import { TagSelector } from '../components/TagSelector';
+import { TagList } from '../components/TagList';
 
 interface SelectedScrap extends Scrap {
   opinion: string;
@@ -91,6 +93,26 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
 
 const DraftPage: React.FC = () => {
   const [state, dispatch] = useReducer(draftReducer, initialState);
+  const dropdownRef = React.useRef<HTMLButtonElement>(null);
+  const [showAllTags, setShowAllTags] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+
+      // 태그 목록 툴팁 처리
+      if (showAllTags !== null) {
+        const tagListTooltip = document.querySelector(`[data-taglist-id="${showAllTags}"]`);
+        if (tagListTooltip && !tagListTooltip.contains(target) &&
+            !(target instanceof HTMLButtonElement && target.classList.contains(styles.moreTag))) {
+          setShowAllTags(null);
+        }
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [showAllTags]);
 
   const allTags = Array.from(new Set(mockScraps.flatMap(scrap => scrap.tags))).sort();
 
@@ -106,12 +128,19 @@ const DraftPage: React.FC = () => {
     dispatch({ type: 'REMOVE_SCRAP', payload: id });
   };
 
-  const handleTagSelect = (tag: string) => {
+  const handleTagSelect = (tag: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     dispatch({ type: 'TOGGLE_TAG', payload: tag });
   };
 
-  const handleTagRemove = (tag: string) => {
+  const handleTagRemove = (tag: string, event: React.MouseEvent) => {
+    event.stopPropagation();
     dispatch({ type: 'REMOVE_TAG', payload: tag });
+  };
+
+  const toggleDropdown = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    dispatch({ type: 'TOGGLE_TAG_DROPDOWN' });
   };
 
   const filteredScraps = mockScraps.filter(scrap =>
@@ -236,42 +265,12 @@ const DraftPage: React.FC = () => {
               </button>
             </div>
 
-            <div className={styles.tagFilterContainer}>
-              <button
-                className={styles.tagFilterButton}
-                onClick={() => dispatch({ type: 'TOGGLE_TAG_DROPDOWN' })}
-              >
-                태그 선택
-                <IoChevronDown size={16} />
-              </button>
-              
-              {state.isTagDropdownOpen && (
-                <div className={styles.tagFilterDropdown}>
-                  {allTags.map(tag => (
-                    <div
-                      key={tag}
-                      className={`${styles.tagOption} ${state.selectedTags.includes(tag) ? styles.selected : ''}`}
-                      onClick={() => handleTagSelect(tag)}
-                    >
-                      {tag}
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              {state.selectedTags.length > 0 && (
-                <div className={styles.selectedTags}>
-                  {state.selectedTags.map(tag => (
-                    <span key={tag} className={styles.selectedTag}>
-                      #{tag}
-                      <button onClick={() => handleTagRemove(tag)}>
-                        <IoClose size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
+            <TagSelector
+              availableTags={allTags}
+              selectedTags={state.selectedTags}
+              onTagSelect={(tag) => dispatch({ type: 'TOGGLE_TAG', payload: tag })}
+              onTagRemove={(tag) => dispatch({ type: 'REMOVE_TAG', payload: tag })}
+            />
 
             <div className={styles.modalContent}>
               {filteredScraps.map(scrap => (
@@ -281,14 +280,13 @@ const DraftPage: React.FC = () => {
                     state.selectedScraps.find(s => s.id === scrap.id) ? styles.selected : ''
                   }`}
                   onClick={() => handleScrapSelect(scrap)}
+                  data-url={scrap.url}
                 >
                   <div className={styles.scrapTitle}>{scrap.title}</div>
                   <div className={styles.scrapContent}>{scrap.content}</div>
                   <div className={styles.scrapFooter}>
                     <div className={styles.scrapTags}>
-                      {scrap.tags.map((tag, index) => (
-                        <span key={index} className={styles.tag}>#{tag}</span>
-                      ))}
+                      <TagList tags={scrap.tags} />
                     </div>
                     <div className={styles.scrapDate}>{scrap.date}</div>
                   </div>
