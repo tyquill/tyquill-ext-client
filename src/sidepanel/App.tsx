@@ -5,35 +5,52 @@ import ScrapPage from './pages/ScrapPage';
 import TemplatePage from './pages/TemplatePage';
 import DraftPage from './pages/DraftPage';
 import ArchivePage from './pages/ArchivePage';
+import ArchiveDetailPage from './pages/ArchiveDetailPage';
 import styles from './App.module.css';
 
-type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive';
+type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail';
+
+interface PageState {
+  type: PageType;
+  draftId?: string;
+}
 
 const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<PageType>('landing');
+  const [currentPage, setCurrentPage] = useState<PageState>({ type: 'landing' });
 
   const navigateToMain = () => {
-    setCurrentPage('scrap'); // 기본적으로 스크랩 페이지로 이동
+    setCurrentPage({ type: 'scrap' }); // 기본적으로 스크랩 페이지로 이동
   };
 
   const handleMenuClick = (menu: string) => {
-    setCurrentPage(menu as PageType);
+    setCurrentPage({ type: menu as PageType });
+  };
+
+  const handleArchiveDetail = (draftId: string) => {
+    setCurrentPage({ type: 'archive-detail', draftId });
+  };
+
+  const handleArchiveBack = () => {
+    setCurrentPage({ type: 'archive' });
   };
 
   // 랜딩 페이지
-  if (currentPage === 'landing') {
+  if (currentPage.type === 'landing') {
     return <LandingPage onStart={navigateToMain} />;
   }
 
   // 메인 앱 (헤더 + 페이지)
   return (
     <div className={styles.app}>
-      <Header activeMenu={currentPage} onMenuClick={handleMenuClick} />
+      <Header activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
       <div className={styles.appContent}>
-        {currentPage === 'scrap' && <ScrapPage />}
-        {currentPage === 'template' && <TemplatePage />}
-        {currentPage === 'draft' && <DraftPage />}
-        {currentPage === 'archive' && <ArchivePage />}
+        {currentPage.type === 'scrap' && <ScrapPage />}
+        {currentPage.type === 'template' && <TemplatePage />}
+        {currentPage.type === 'draft' && <DraftPage />}
+        {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
+        {currentPage.type === 'archive-detail' && currentPage.draftId && (
+          <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
+        )}
       </div>
     </div>
   );
