@@ -1,12 +1,55 @@
 import React, { useState } from 'react';
-import { IoAdd } from 'react-icons/io5';
+import { IoAdd, IoClose, IoChevronDown } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
+import { Scrap, mockScraps, mockTemplates } from '../../mock/data';
+
+interface SelectedScrap extends Scrap {
+  opinion: string;
+}
 
 const DraftPage: React.FC = () => {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [handle, setHandle] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('기본 뉴스레터 템플릿');
+  const [isScrapModalOpen, setIsScrapModalOpen] = useState(false);
+  const [selectedScraps, setSelectedScraps] = useState<SelectedScrap[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+
+  const allTags = Array.from(new Set(mockScraps.flatMap(scrap => scrap.tags))).sort();
+
+  const handleScrapSelect = (scrap: Scrap) => {
+    if (!selectedScraps.find(s => s.id === scrap.id)) {
+      setSelectedScraps([...selectedScraps, { ...scrap, opinion: '' }]);
+    }
+  };
+
+  const handleOpinionChange = (id: string, opinion: string) => {
+    setSelectedScraps(selectedScraps.map(scrap => 
+      scrap.id === id ? { ...scrap, opinion } : scrap
+    ));
+  };
+
+  const handleRemoveScrap = (id: string) => {
+    setSelectedScraps(selectedScraps.filter(scrap => scrap.id !== id));
+  };
+
+  const handleTagSelect = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag)
+        : [...prev, tag]
+    );
+  };
+
+  const handleTagRemove = (tag: string) => {
+    setSelectedTags(prev => prev.filter(t => t !== tag));
+  };
+
+  const filteredScraps = mockScraps.filter(scrap =>
+    selectedTags.length === 0 || scrap.tags.some(tag => selectedTags.includes(tag))
+  );
 
   return (
     <div className={styles.page}>
@@ -67,19 +110,44 @@ const DraftPage: React.FC = () => {
             value={selectedTemplate}
             onChange={(e) => setSelectedTemplate(e.target.value)}
           >
-            <option value="기본 뉴스레터 템플릿">기본 뉴스레터 템플릿</option>
+            {mockTemplates.map(template => (
+              <option key={template.id} value={template.name}>
+                {template.name}
+              </option>
+            ))}
           </select>
         </div>
 
         <div className={styles.referenceSection}>
           <h3 className={styles.sectionTitle}>참고 자료 선택</h3>
-          <button className={styles.addReferenceButton}>
+          <button 
+            className={styles.addReferenceButton}
+            onClick={() => setIsScrapModalOpen(true)}
+          >
             <IoAdd size={16} />
             스크랩에서 자료 추가
           </button>
-          <div className={styles.referenceItem}>
-            <span>AI와 디자인의 미래: 생산성 혁신</span>
-            <button className={styles.removeButton}>×</button>
+          <div className={styles.referenceList}>
+            {selectedScraps.map(scrap => (
+              <div key={scrap.id} className={styles.referenceItem}>
+                <div>
+                  <div>{scrap.title}</div>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={scrap.opinion}
+                    onChange={(e) => handleOpinionChange(scrap.id, e.target.value)}
+                    placeholder="이 자료에 대한 의견을 입력하세요"
+                  />
+                </div>
+                <button 
+                  className={styles.removeButton}
+                  onClick={() => handleRemoveScrap(scrap.id)}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -87,6 +155,82 @@ const DraftPage: React.FC = () => {
           초안 생성하기
         </button>
       </div>
+
+      {isScrapModalOpen && (
+        <div className={styles.modalOverlay}>
+          <div className={styles.scrapModal}>
+            <div className={styles.modalHeader}>
+              <h2 className={styles.modalTitle}>스크랩 선택</h2>
+              <button 
+                className={styles.modalCloseButton}
+                onClick={() => setIsScrapModalOpen(false)}
+              >
+                <IoClose />
+              </button>
+            </div>
+
+            <div className={styles.tagFilterContainer}>
+              <button
+                className={styles.tagFilterButton}
+                onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+              >
+                태그 선택
+                <IoChevronDown size={16} />
+              </button>
+              
+              {isTagDropdownOpen && (
+                <div className={styles.tagFilterDropdown}>
+                  {allTags.map(tag => (
+                    <div
+                      key={tag}
+                      className={`${styles.tagOption} ${selectedTags.includes(tag) ? styles.selected : ''}`}
+                      onClick={() => handleTagSelect(tag)}
+                    >
+                      {tag}
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {selectedTags.length > 0 && (
+                <div className={styles.selectedTags}>
+                  {selectedTags.map(tag => (
+                    <span key={tag} className={styles.selectedTag}>
+                      #{tag}
+                      <button onClick={() => handleTagRemove(tag)}>
+                        <IoClose size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className={styles.modalContent}>
+              {filteredScraps.map(scrap => (
+                <div
+                  key={scrap.id}
+                  className={`${styles.scrapItem} ${
+                    selectedScraps.find(s => s.id === scrap.id) ? styles.selected : ''
+                  }`}
+                  onClick={() => handleScrapSelect(scrap)}
+                >
+                  <div className={styles.scrapTitle}>{scrap.title}</div>
+                  <div className={styles.scrapContent}>{scrap.content}</div>
+                  <div className={styles.scrapFooter}>
+                    <div className={styles.scrapTags}>
+                      {scrap.tags.map((tag, index) => (
+                        <span key={index} className={styles.tag}>#{tag}</span>
+                      ))}
+                    </div>
+                    <div className={styles.scrapDate}>{scrap.date}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

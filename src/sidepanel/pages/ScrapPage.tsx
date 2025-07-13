@@ -20,6 +20,7 @@ const ScrapPage: React.FC = () => {
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
   
   const allTags = [
     'AI', 'Technology', 'Trends', 'Automation', 'Productivity',
@@ -134,10 +135,14 @@ const ScrapPage: React.FC = () => {
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting && hasMore) {
-          // TODO: Implement actual data fetching
           setLoading(true);
-          setTimeout(() => {
-            // Simulated data loading
+          // 이전 타임아웃이 있다면 클리어
+          if (loadingTimeoutRef.current) {
+            clearTimeout(loadingTimeoutRef.current);
+          }
+          // 새로운 타임아웃 설정
+          loadingTimeoutRef.current = setTimeout(() => {
+            // TODO: Implement actual data fetching
             setLoading(false);
           }, 1000);
         }
@@ -155,6 +160,10 @@ const ScrapPage: React.FC = () => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
+      // 컴포넌트 언마운트 시 타임아웃 클리어
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
     };
   }, [loading, hasMore]);
 
@@ -165,6 +174,30 @@ const ScrapPage: React.FC = () => {
     } catch {
       return '';
     }
+  };
+
+  const ScrapItem: React.FC<{ scrap: Scrap; onDelete: () => void }> = ({ scrap, onDelete }) => {
+    return (
+      <div className={styles.contentItem} data-url={scrap.url}>
+        <div className={styles.contentHeader}>
+          <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitle}>
+            {scrap.title}
+          </a>
+          <button onClick={onDelete} className={styles.deleteButton}>
+            <IoTrash />
+          </button>
+        </div>
+        <div className={styles.contentDescription}>{scrap.content}</div>
+        <div className={styles.contentFooter}>
+          <div className={styles.tags}>
+            {scrap.tags.map((tag, index) => (
+              <span key={index} className={styles.tag}>#{tag}</span>
+            ))}
+          </div>
+          <div className={styles.contentDate}>{scrap.createdAt}</div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -216,51 +249,23 @@ const ScrapPage: React.FC = () => {
       </div>
 
       <div className={styles.scrollableContent}>
-        {scraps.map((scrap, index) => (
-          <div 
-            key={scrap.id} 
-            className={styles.contentItem}
-            ref={index === scraps.length - 1 ? lastScrapRef : null}
-            data-url={getDomainFromUrl(scrap.url)}
-          >
-            <div className={styles.contentHeader}>
-              <h3 className={styles.contentTitle}>
-                <a 
-                  href={scrap.url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className={styles.titleLink}
-                >
-                  {scrap.title}
-                </a>
-              </h3>
-              <div className={styles.contentActions}>
-                <button className={styles.actionButton} aria-label="삭제">
-                  <IoTrash size={20} />
-                </button>
-              </div>
-            </div>
-            
-            <p className={styles.contentPreview}>{scrap.content}</p>
-            
-            <div className={styles.contentMeta}>
-              <div className={styles.tags}>
-                {scrap.tags.map((tag, index) => (
-                  <span key={index} className={styles.tag}>#{tag}</span>
-                ))}
-              </div>
-              <div className={styles.metaInfo}>
-                <span className={styles.source}>
-                  {scrap.source}
-                </span>
-                <span className={styles.date}>{scrap.createdAt}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+        <div className={styles.scrapList}>
+          {scraps.map((scrap, index) => (
+            <ScrapItem
+              key={scrap.id} 
+              scrap={scrap} 
+              onDelete={() => {
+                // TODO: Implement actual deletion logic
+                console.log('Delete scrap:', scrap.id);
+              }}
+            />
+          ))}
+        </div>
         {loading && (
-          <div className={styles.loadingIndicator}>
-            Loading...
+          <div className={styles.loadingContainer}>
+            <div className={styles.loadingIndicator}>
+              Loading...
+            </div>
           </div>
         )}
       </div>
