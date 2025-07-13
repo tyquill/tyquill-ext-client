@@ -1,0 +1,89 @@
+.tagFilterContainer {
+  position: relative;
+  margin-bottom: 0;
+  display: inline-block;
+}
+
+.tagFilterButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+  outline: none;
+}
+
+.tagFilterButton:hover {
+  background-color: #eee;
+}
+
+.tagFilterDropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 200px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+}
+
+.tagFilterDropdown.visible {
+  display: block;
+}
+
+.tagOption {
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tagOption:hover {
+  background-color: #f5f5f5;
+}
+
+.tagOption.selected {
+  background-color: #f0f0f0;
+  font-weight: 500;
+}
+
+.selectedTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.selectedTag {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: #f0f0f0;
+  border-radius: 16px;
+  font-size: 12px;
+}
+
+.selectedTag button {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  color: #666;
+}
+
+.selectedTag button:hover {
+  color: #333;
+} 
