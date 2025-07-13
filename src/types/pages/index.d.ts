@@ -8,4 +8,4 @@
  * @property {'archive'} archive - Page displaying list of archived drafts
  * @property {'archive-detail'} archive-detail - Detailed view of an archived draft with version history
  */
-export type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail'; 
+export type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail';
