@@ -35,7 +35,7 @@ const initialState: DraftState = {
   subject: '',
   message: '',
   handle: '',
-  selectedTemplate: '기본 뉴스레터 템플릿',
+  selectedTemplate: '비즈니스 미팅 요청',
   isScrapModalOpen: false,
   selectedScraps: [],
   selectedTags: [],
@@ -178,8 +178,8 @@ const DraftPage: React.FC = () => {
             onChange={(e) => dispatch({ type: 'SET_TEMPLATE', payload: e.target.value })}
           >
             {mockTemplates.map(template => (
-              <option key={template.id} value={template.name}>
-                {template.name}
+              <option key={template.id} value={template.title}>
+                {template.title}
               </option>
             ))}
           </select>
