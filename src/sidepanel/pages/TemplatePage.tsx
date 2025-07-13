@@ -1,16 +1,9 @@
 import React, { useState } from 'react';
 import { IoCreate, IoTrash, IoAdd } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
+import { Template, mockTemplates } from '../../mock/data';
 
 type TemplateMode = 'load' | 'create';
-
-interface Template {
-  id: number;
-  title: string;
-  description: string;
-  createdAt: string;
-  type: 'link' | 'description';
-}
 
 const TemplatePage: React.FC = () => {
   const [templateMode, setTemplateMode] = useState<TemplateMode>('load');
@@ -19,23 +12,6 @@ const TemplatePage: React.FC = () => {
   const [templateLink, setTemplateLink] = useState('');
   const [templateDescription, setTemplateDescription] = useState('');
   const [importTemplateName, setImportTemplateName] = useState('');
-
-  const templates: Template[] = [
-    {
-      id: 1,
-      title: '비즈니스 미팅 요청',
-      description: '정중한 비즈니스 미팅 요청 이메일 템플릿',
-      createdAt: '2024.01.15',
-      type: 'link'
-    },
-    {
-      id: 2,
-      title: '제품 소개 뉴스레터',
-      description: '새로운 제품이나 서비스를 소개하는 뉴스레터 템플릿',
-      createdAt: '2024.01.12',
-      type: 'link'
-    }
-  ];
 
   const handleMethodChange = (method: 'description' | 'link') => {
     setActiveMethod(method);
@@ -76,7 +52,7 @@ const TemplatePage: React.FC = () => {
 
         <h2 className={styles.sectionTitle}>저장된 템플릿</h2>
         <div className={styles.templateList}>
-          {templates.map((template) => (
+          {mockTemplates.map((template) => (
             <div key={template.id} className={styles.templateItem}>
               <div className={styles.templateContent}>
                 <h3 className={styles.templateItemTitle}>{template.title}</h3>
@@ -173,7 +149,7 @@ const TemplatePage: React.FC = () => {
 
         <h2 className={styles.sectionTitle}>저장된 템플릿</h2>
         <div className={styles.templateList}>
-          {templates.map((template) => (
+          {mockTemplates.map((template) => (
             <div key={template.id} className={styles.templateItem}>
               <div className={styles.templateContent}>
                 <h3 className={styles.templateItemTitle}>{template.title}</h3>

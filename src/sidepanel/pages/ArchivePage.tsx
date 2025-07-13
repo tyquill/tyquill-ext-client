@@ -24,7 +24,13 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
 
       <div className={styles.archiveList}>
         {mockDrafts.map(draft => {
-          const lastVersion = draft.versions[draft.versions.length - 1];
+          // Find the latest version by comparing dates, not relying on array order
+          const lastVersion = draft.versions.reduce((latest, current) => {
+            const latestDate = new Date(latest.date);
+            const currentDate = new Date(current.date);
+            return currentDate > latestDate ? current : latest;
+          }, draft.versions[0]);
+
           return (
             <div key={draft.id} className={styles.archiveItem}>
               <div 

@@ -7,8 +7,7 @@ import DraftPage from './pages/DraftPage';
 import ArchivePage from './pages/ArchivePage';
 import ArchiveDetailPage from './pages/ArchiveDetailPage';
 import styles from './App.module.css';
-
-type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail';
+import { PageType } from '../types/pages';
 
 interface PageState {
   type: PageType;

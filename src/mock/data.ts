@@ -20,6 +20,14 @@ export interface Draft {
   lastModified: string;
 }
 
+export interface Template {
+  id: number;
+  title: string;
+  description: string;
+  createdAt: string;
+  type: 'link' | 'description';
+}
+
 export const mockScraps: Scrap[] = [
   {
     id: '1',
@@ -87,21 +95,20 @@ export const mockScraps: Scrap[] = [
   }
 ];
 
-export const mockTemplates = [
+export const mockTemplates: Template[] = [
   {
-    id: '1',
-    name: '기본 뉴스레터 템플릿',
-    description: '일반적인 뉴스레터 형식'
+    id: 1,
+    title: '비즈니스 미팅 요청',
+    description: '정중한 비즈니스 미팅 요청 이메일 템플릿',
+    createdAt: '2024.01.15',
+    type: 'link'
   },
   {
-    id: '2',
-    name: '주간 트렌드 리포트',
-    description: '주요 트렌드를 요약하는 형식'
-  },
-  {
-    id: '3',
-    name: '큐레이션 뉴스레터',
-    description: '다양한 소스의 콘텐츠를 큐레이션하는 형식'
+    id: 2,
+    title: '제품 소개 뉴스레터',
+    description: '새로운 제품이나 서비스를 소개하는 뉴스레터 템플릿',
+    createdAt: '2024.01.12',
+    type: 'link'
   }
 ];
 
