@@ -32,7 +32,7 @@ pnpm run build
 The extension automatically detects the environment:
 
 - **Development**: Uses `http://localhost:3000`
-- **Production**: Uses `https://api.tyquill.com`
+- **Production**: Uses `https://yvpd29knkq.ap-northeast-1.awsapprunner.com` 도메인 설정 아직안된거
 
 To change URLs, edit `src/config/environment.ts`.
 
