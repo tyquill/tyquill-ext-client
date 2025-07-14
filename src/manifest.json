@@ -3,7 +3,7 @@
   "name": "Tyquill Extension",
   "version": "1.0.0",
   "description": "Chrome Extension with React + TypeScript",
-  "permissions": ["storage", "sidePanel", "identity", "identity.email"],
+  "permissions": ["storage", "sidePanel", "tabs"],
   "background": {
     "service_worker": "background/index.js",
     "type": "module"

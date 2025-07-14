@@ -17,8 +17,24 @@ pnpm run dev
 ## Build
 
 ```bash
+# Development build
+pnpm run build:dev
+
+# Production build  
+pnpm run build:prod
+
+# Default (production)
 pnpm run build
 ```
+
+## Environment Configuration
+
+The extension automatically detects the environment:
+
+- **Development**: Uses `http://localhost:3000`
+- **Production**: Uses `https://api.tyquill.com`
+
+To change URLs, edit `src/config/environment.ts`.
 
 ## Load Extension
 
