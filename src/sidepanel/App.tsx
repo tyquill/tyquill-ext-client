@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import LandingPage from './pages/LandingPage';
 import Header from './components/Header';
 import ScrapPage from './pages/ScrapPage';
@@ -15,6 +16,7 @@ interface PageState {
 }
 
 const App: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageState>({ type: 'landing' });
 
   const navigateToMain = () => {
@@ -33,8 +35,17 @@ const App: React.FC = () => {
     setCurrentPage({ type: 'archive' });
   };
 
-  // 랜딩 페이지
-  if (currentPage.type === 'landing') {
+  // 인증 상태에 따른 페이지 렌더링
+  useEffect(() => {
+    if (isAuthenticated) {
+      setCurrentPage({ type: 'scrap' });
+    } else {
+      setCurrentPage({ type: 'landing' });
+    }
+  }, [isAuthenticated]);
+
+  // 로딩 중이거나 인증되지 않은 경우 랜딩 페이지
+  if (!isAuthenticated || currentPage.type === 'landing') {
     return <LandingPage onStart={navigateToMain} />;
   }
 
