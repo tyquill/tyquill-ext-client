@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { IoClipboard, IoDocument, IoSparkles, IoArchive } from 'react-icons/io5';
+import React, { useState } from 'react';
+import { IoClipboard, IoDocument, IoSparkles, IoArchive, IoLogOut } from 'react-icons/io5';
 import { IconType } from 'react-icons';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -15,25 +16,19 @@ interface MenuItem {
 }
 
 const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
-  const [userEmail, setUserEmail] = useState<string>('Loading...');
+  const { user, logout } = useAuth();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    const getUserEmail = async () => {
-      try {
-        const userInfo = await chrome.identity.getProfileUserInfo({ accountStatus: 'ANY' });
-        if (userInfo.email) {
-          setUserEmail(userInfo.email);
-        } else {
-          setUserEmail('Unknown User');
-        }
-      } catch (error) {
-        console.error('Failed to get user email:', error);
-        setUserEmail('Guest User');
-      }
-    };
-
-    getUserEmail();
-  }, []);
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
 
   const menuItems: MenuItem[] = [
     { key: 'scrap', label: '스크랩', icon: IoClipboard },
@@ -49,7 +44,15 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
           <span className={styles.brandName}>Tyquill</span>
         </div>
         <div className={styles.userInfo}>
-          <span className={styles.userEmail}>{userEmail}</span>
+          <span className={styles.userEmail}>{user?.email || 'Loading...'}</span>
+          <button 
+            className={styles.logoutButton}
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            title="로그아웃"
+          >
+            <IoLogOut size={16} />
+          </button>
         </div>
       </div>
       

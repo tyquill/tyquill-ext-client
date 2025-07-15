@@ -29,6 +29,7 @@
 .userInfo {
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .userEmail {
@@ -38,6 +39,30 @@
   padding: 6px 12px;
   border-radius: 16px;
   border: 1px solid #cccccc;
+}
+
+.logoutButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: #f5f5f5;
+  color: #666666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.logoutButton:hover {
+  background: #e5e5e5;
+  color: #333333;
+}
+
+.logoutButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .headerMenu {

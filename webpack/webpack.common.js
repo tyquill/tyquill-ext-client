@@ -53,6 +53,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: 'src/manifest.json', to: 'manifest.json' },
+        { from: 'src/auth/callback.html', to: 'auth/callback.html' },
       ],
     }),
   ],

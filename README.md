@@ -17,8 +17,24 @@ pnpm run dev
 ## Build
 
 ```bash
+# Development build
+pnpm run build:dev
+
+# Production build  
+pnpm run build:prod
+
+# Default (production)
 pnpm run build
 ```
+
+## Environment Configuration
+
+The extension automatically detects the environment:
+
+- **Development**: Uses `http://localhost:3000`
+- **Production**: Uses `https://yvpd29knkq.ap-northeast-1.awsapprunner.com` 도메인 설정 아직안된거
+
+To change URLs, edit `src/config/environment.ts`.
 
 ## Load Extension
 

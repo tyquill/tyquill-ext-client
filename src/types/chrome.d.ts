@@ -69,12 +69,65 @@ declare namespace chrome {
     const open: (options: OpenOptions) => Promise<void>;
   }
 
-  namespace identity {
-    interface UserInfo {
-      email: string;
-      id: string;
+  namespace tabs {
+    interface Tab {
+      id?: number;
+      index: number;
+      windowId: number;
+      openerTabId?: number;
+      selected: boolean;
+      highlighted: boolean;
+      active: boolean;
+      pinned: boolean;
+      audible?: boolean;
+      discarded: boolean;
+      autoDiscardable: boolean;
+      mutedInfo?: MutedInfo;
+      url?: string;
+      title?: string;
+      favIconUrl?: string;
+      status?: string;
+      incognito: boolean;
+      width?: number;
+      height?: number;
+      sessionId?: string;
     }
 
-    const getProfileUserInfo: (options?: { accountStatus?: string }) => Promise<UserInfo>;
+    interface MutedInfo {
+      muted: boolean;
+      reason?: string;
+      extensionId?: string;
+    }
+
+    interface TabChangeInfo {
+      status?: string;
+      url?: string;
+      title?: string;
+      favIconUrl?: string;
+      audible?: boolean;
+      discarded?: boolean;
+      autoDiscardable?: boolean;
+      mutedInfo?: MutedInfo;
+    }
+
+    interface CreateProperties {
+      windowId?: number;
+      index?: number;
+      url?: string;
+      active?: boolean;
+      pinned?: boolean;
+      openerTabId?: number;
+    }
+
+    const create: (createProperties: CreateProperties, callback?: (tab: Tab) => void) => void;
+    const remove: (tabIds: number | number[], callback?: () => void) => void;
+    const onUpdated: {
+      addListener: (callback: (tabId: number, changeInfo: TabChangeInfo, tab: Tab) => void) => void;
+      removeListener: (callback: (tabId: number, changeInfo: TabChangeInfo, tab: Tab) => void) => void;
+    };
+    const onRemoved: {
+      addListener: (callback: (tabId: number, removeInfo: any) => void) => void;
+      removeListener: (callback: (tabId: number, removeInfo: any) => void) => void;
+    };
   }
 } 

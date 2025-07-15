@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../hooks/useAuth';
 import styles from './LandingPage.module.css';
 
 interface LandingPageProps {
@@ -6,8 +7,16 @@ interface LandingPageProps {
 }
 
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
-  const handleStartClick = () => {
-    onStart();
+  const { login, isLoading, error, clearError } = useAuth();
+
+  const handleStartClick = async () => {
+    try {
+      clearError();
+      await login();
+      onStart(); // 인증 성공 후 메인 페이지로 이동
+    } catch (err) {
+      console.error('Login failed:', err);
+    }
   };
 
   return (
@@ -39,11 +48,17 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
         
         <div className={styles.ctaSection}>
+          {error && (
+            <div className={styles.errorMessage}>
+              ❌ {error}
+            </div>
+          )}
           <button 
             className={styles.startButton}
             onClick={handleStartClick}
+            disabled={isLoading}
           >
-            시작하기
+            {isLoading ? '로그인 중...' : 'Google로 시작하기'}
           </button>
           <p className={styles.startDescription}>
             Tyquill과 함께 더 나은 글쓰기를 시작해보세요
