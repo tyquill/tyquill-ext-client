@@ -20,8 +20,8 @@ const development: Environment = {
 
 const production: Environment = {
   production: true,
-  serverUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com ', // 배포용 서버 URL (도메인 설정 아직 안함)
-  apiUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com /api',
+  serverUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com', // 배포용 서버 URL (도메인 설정 아직 안함)
+  apiUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 
