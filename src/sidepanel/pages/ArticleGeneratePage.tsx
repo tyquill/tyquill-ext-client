@@ -1,11 +1,12 @@
-import React, { useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useState } from 'react';
 import { IoAdd, IoClose } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
-import { Scrap, mockScraps, mockTemplates } from '../../mock/data';
+import { Scrap, mockTemplates } from '../../mock/data';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
+import { ScrapResponse, scrapService } from '../../services/scrapService';
 
-interface SelectedScrap extends Scrap {
+interface SelectedScrap extends ScrapResponse {
   opinion: string;
 }
 
@@ -26,9 +27,9 @@ type DraftAction =
   | { type: 'SET_HANDLE'; payload: string }
   | { type: 'SET_TEMPLATE'; payload: string }
   | { type: 'TOGGLE_SCRAP_MODAL' }
-  | { type: 'ADD_SCRAP'; payload: Scrap }
-  | { type: 'UPDATE_SCRAP_OPINION'; payload: { id: string; opinion: string } }
-  | { type: 'REMOVE_SCRAP'; payload: string }
+  | { type: 'ADD_SCRAP'; payload: ScrapResponse }
+  | { type: 'UPDATE_SCRAP_OPINION'; payload: { id: number; opinion: string } }
+  | { type: 'REMOVE_SCRAP'; payload: number }
   | { type: 'TOGGLE_TAG'; payload: string }
   | { type: 'REMOVE_TAG'; payload: string }
   | { type: 'TOGGLE_TAG_DROPDOWN' };
@@ -57,20 +58,20 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
     case 'TOGGLE_SCRAP_MODAL':
       return { ...state, isScrapModalOpen: !state.isScrapModalOpen };
     case 'ADD_SCRAP':
-      return !state.selectedScraps.find(s => s.id === action.payload.id)
+      return !state.selectedScraps.find(s => s.scrapId === action.payload.scrapId)
         ? { ...state, selectedScraps: [...state.selectedScraps, { ...action.payload, opinion: '' }] }
         : state;
     case 'UPDATE_SCRAP_OPINION':
       return {
         ...state,
         selectedScraps: state.selectedScraps.map(scrap =>
-          scrap.id === action.payload.id ? { ...scrap, opinion: action.payload.opinion } : scrap
+          scrap.scrapId === action.payload.id ? { ...scrap, opinion: action.payload.opinion } : scrap
         ),
       };
     case 'REMOVE_SCRAP':
       return {
         ...state,
-        selectedScraps: state.selectedScraps.filter(scrap => scrap.id !== action.payload),
+        selectedScraps: state.selectedScraps.filter(scrap => scrap.scrapId !== action.payload),
       };
     case 'TOGGLE_TAG':
       return {
@@ -91,7 +92,7 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
   }
 }
 
-const DraftPage: React.FC = () => {
+const ArticleGeneratePage: React.FC = () => {
   const [state, dispatch] = useReducer(draftReducer, initialState);
   const dropdownRef = React.useRef<HTMLButtonElement>(null);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
@@ -114,17 +115,15 @@ const DraftPage: React.FC = () => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAllTags]);
 
-  const allTags = Array.from(new Set(mockScraps.flatMap(scrap => scrap.tags))).sort();
-
-  const handleScrapSelect = (scrap: Scrap) => {
+  const handleScrapSelect = (scrap: ScrapResponse) => {
     dispatch({ type: 'ADD_SCRAP', payload: scrap });
   };
 
-  const handleOpinionChange = (id: string, opinion: string) => {
+  const handleOpinionChange = (id: number, opinion: string) => {
     dispatch({ type: 'UPDATE_SCRAP_OPINION', payload: { id, opinion } });
   };
 
-  const handleRemoveScrap = (id: string) => {
+  const handleRemoveScrap = (id: number) => {
     dispatch({ type: 'REMOVE_SCRAP', payload: id });
   };
 
@@ -143,9 +142,17 @@ const DraftPage: React.FC = () => {
     dispatch({ type: 'TOGGLE_TAG_DROPDOWN' });
   };
 
-  const filteredScraps = mockScraps.filter(scrap =>
-    state.selectedTags.length === 0 || scrap.tags.some(tag => state.selectedTags.includes(tag))
-  );
+  const [filteredScraps, setFilteredScraps] = useState<ScrapResponse[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetchScraps = async () => {
+      const scraps: ScrapResponse[] = await scrapService.getScraps();
+      setFilteredScraps(scraps);
+      setAllTags(Array.from(new Set(scraps.flatMap(scrap => scrap.tags || []))).sort());
+    };
+    fetchScraps();
+  }, []);
 
   return (
     <div className={styles.page}>
@@ -225,20 +232,20 @@ const DraftPage: React.FC = () => {
           </button>
           <div className={styles.referenceList}>
             {state.selectedScraps.map(scrap => (
-              <div key={scrap.id} className={styles.referenceItem}>
+              <div key={scrap.scrapId} className={styles.referenceItem}>
                 <div>
                   <div>{scrap.title}</div>
                   <input
                     type="text"
                     className={styles.formInput}
                     value={scrap.opinion}
-                    onChange={(e) => handleOpinionChange(scrap.id, e.target.value)}
+                    onChange={(e) => handleOpinionChange(scrap.scrapId, e.target.value)}
                     placeholder="이 자료에 대한 의견을 입력하세요"
                   />
                 </div>
                 <button 
                   className={styles.removeButton}
-                  onClick={() => handleRemoveScrap(scrap.id)}
+                  onClick={() => handleRemoveScrap(scrap.scrapId)}
                 >
                   ×
                 </button>
@@ -273,22 +280,22 @@ const DraftPage: React.FC = () => {
             />
 
             <div className={styles.modalContent}>
-              {filteredScraps.map(scrap => (
+              {filteredScraps.map((scrap: ScrapResponse) => (
                 <div
-                  key={scrap.id}
+                  key={scrap.scrapId}
                   className={`${styles.scrapItem} ${
-                    state.selectedScraps.find(s => s.id === scrap.id) ? styles.selected : ''
+                    state.selectedScraps.find(s => s.scrapId === scrap.scrapId) ? styles.selected : ''
                   }`}
                   onClick={() => handleScrapSelect(scrap)}
                   data-url={scrap.url}
                 >
                   <div className={styles.scrapTitle}>{scrap.title}</div>
-                  <div className={styles.scrapContent}>{scrap.content}</div>
+                  <div className={styles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
                   <div className={styles.scrapFooter}>
                     <div className={styles.scrapTags}>
-                      <TagList tags={scrap.tags} />
+                      <TagList tags={scrap.tags || []} />
                     </div>
-                    <div className={styles.scrapDate}>{scrap.date}</div>
+                    <div className={styles.scrapDate}>{scrap.createdAt}</div>
                   </div>
                 </div>
               ))}
@@ -300,4 +307,4 @@ const DraftPage: React.FC = () => {
   );
 };
 
-export default DraftPage; 
+export default ArticleGeneratePage; 

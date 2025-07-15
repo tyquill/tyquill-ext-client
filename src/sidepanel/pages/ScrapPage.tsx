@@ -3,7 +3,7 @@ import { IoAdd, IoTrash, IoChevronDown, IoClose, IoClipboard, IoCheckmark } from
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
-import { mockScraps, Scrap } from '../../mock/data';
+import { Scrap } from '../../mock/data';
 import { scrapService } from '../../services/scrapService';
 
 const ScrapPage: React.FC = () => {
@@ -19,6 +19,9 @@ const ScrapPage: React.FC = () => {
   const [clipStatus, setClipStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [scraps, setScraps] = useState<Scrap[]>([]);
+  const [scrapsLoading, setScrapsLoading] = useState(false);
+  const [scrapsError, setScrapsError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLButtonElement>(null);
@@ -33,7 +36,6 @@ const ScrapPage: React.FC = () => {
     'JavaScript', 'TypeScript', 'Accessibility', 'Standards'
   ];
 
-  const scraps = mockScraps;
 
   // 핸들러를 useCallback으로 감싸서 안정화
   const handleTagSelect = useCallback((tag: string, event: React.MouseEvent) => {
@@ -151,6 +153,12 @@ const ScrapPage: React.FC = () => {
         console.log('✅ Scrap saved:', scrapResponse);
         setClipStatus('success');
         
+        // 스크랩 목록 새로고침 (약간의 지연 후)
+        setTimeout(async () => {
+          await loadScraps();
+          console.log('🔄 Scraps reloaded after save');
+        }, 1000);
+        
         // 성공 상태 2초 후 리셋
         setTimeout(() => setClipStatus('idle'), 2000);
       } else {
@@ -214,6 +222,10 @@ const ScrapPage: React.FC = () => {
         console.log('✅ Scrap saved:', scrapResponse);
         setClipStatus('success');
         
+        // 스크랩 목록 동기적으로 새로고침
+        await loadScraps();
+        console.log('🔄 Scraps reloaded after save');
+        
         // 성공 상태 2초 후 리셋
         setTimeout(() => setClipStatus('idle'), 2000);
       } else {
@@ -259,10 +271,71 @@ const ScrapPage: React.FC = () => {
     }
   }, []);
 
+  // 스크랩 목록 불러오기
+  const loadScraps = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      console.log('🔄 Loading scraps...');
+      setScrapsLoading(true);
+      setScrapsError(null);
+      
+      const scrapList = await scrapService.getScraps();
+      console.log('📋 Loaded scraps:', scrapList.length, 'items');
+      
+      // ScrapResponse를 Scrap 형태로 변환
+      const convertedScraps: Scrap[] = scrapList.map(scrap => ({
+        id: scrap.scrapId.toString(),
+        title: scrap.title,
+        content: scrap.content,
+        url: scrap.url,
+        date: new Date(scrap.createdAt).toLocaleDateString('ko-KR'),
+        tags: [], // 백엔드에서 태그 정보가 없는 경우 빈 배열
+      }));
+      
+      setScraps(convertedScraps);
+      console.log('✅ Scraps state updated with', convertedScraps.length, 'items');
+    } catch (error: any) {
+      console.error('❌ Failed to load scraps:', error);
+      setScrapsError(error.message || '스크랩을 불러오는데 실패했습니다.');
+      
+      if (error.message.includes('Authentication')) {
+        setIsAuthenticated(false);
+      }
+    } finally {
+      setScrapsLoading(false);
+    }
+  }, [isAuthenticated]);
+
   // 컴포넌트 마운트 시 인증 상태 확인
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+  
+  // 인증 상태가 변경되면 스크랩 목록 로드
+  useEffect(() => {
+    if (isAuthenticated && authChecked) {
+      loadScraps();
+    } else {
+      setScraps([]);
+    }
+  }, [isAuthenticated, authChecked, loadScraps]);
+
+  // 페이지 visibility 변경 시 스크랩 목록 새로고침
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && isAuthenticated && authChecked) {
+        console.log('📱 Side panel visible, refreshing scraps...');
+        loadScraps();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isAuthenticated, authChecked, loadScraps]);
 
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
@@ -351,7 +424,11 @@ const ScrapPage: React.FC = () => {
             <IoTrash />
           </button>
         </div>
-        <div className={styles.contentDescription}>{scrap.content}</div>
+        <div className={styles.contentDescription}>
+          {scrap.content.length > 100 
+            ? `${scrap.content.substring(0, 100)}...` 
+            : scrap.content}
+        </div>
         <div className={styles.contentFooter}>
           <div className={styles.tags}>
             <button 
@@ -472,16 +549,48 @@ const ScrapPage: React.FC = () => {
 
       <div className={styles.scrollableContent}>
         <div className={styles.scrapList}>
-          {scraps.map((scrap) => (
+          {scrapsLoading && scraps.length === 0 ? (
+            <div className={styles.loadingContainer}>
+              <div className={styles.loadingIndicator}>
+                스크랩 목록을 불러오는 중...
+              </div>
+            </div>
+          ) : scrapsError ? (
+            <div className={styles.errorContainer}>
+              <div className={styles.errorMessage}>
+                {scrapsError}
+              </div>
+              <button 
+                className={styles.retryButton}
+                onClick={loadScraps}
+              >
+                다시 시도
+              </button>
+            </div>
+          ) : scraps.length === 0 ? (
+            <div className={styles.emptyContainer}>
+              <div className={styles.emptyMessage}>
+                아직 스크랩한 내용이 없습니다.
+              </div>
+            </div>
+          ) : (
+            scraps.map((scrap) => (
             <ScrapItem
               key={scrap.id} 
               scrap={scrap} 
-              onDelete={() => {
-                // TODO: Implement actual deletion logic
-                console.log('Delete scrap:', scrap.id);
+              onDelete={async () => {
+                try {
+                  await scrapService.deleteScrap(parseInt(scrap.id));
+                  await loadScraps(); // 동기적으로 처리
+                  console.log('🔄 Scraps reloaded after delete');
+                } catch (error) {
+                  console.error('Failed to delete scrap:', error);
+                  alert('스크랩 삭제에 실패했습니다.');
+                }
               }}
             />
-          ))}
+          ))
+          )}
         </div>
         {loading && (
           <div className={styles.loadingContainer}>

@@ -4,7 +4,7 @@ import LandingPage from './pages/LandingPage';
 import Header from './components/Header';
 import ScrapPage from './pages/ScrapPage';
 import TemplatePage from './pages/TemplatePage';
-import DraftPage from './pages/DraftPage';
+import ArticleGeneratePage from './pages/ArticleGeneratePage';
 import ArchivePage from './pages/ArchivePage';
 import ArchiveDetailPage from './pages/ArchiveDetailPage';
 import styles from './App.module.css';
@@ -56,7 +56,7 @@ const App: React.FC = () => {
       <div className={styles.appContent}>
         {currentPage.type === 'scrap' && <ScrapPage />}
         {currentPage.type === 'template' && <TemplatePage />}
-        {currentPage.type === 'draft' && <DraftPage />}
+        {currentPage.type === 'draft' && <ArticleGeneratePage />}
         {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
         {currentPage.type === 'archive-detail' && currentPage.draftId && (
           <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
