@@ -44,6 +44,7 @@
     "webpack-merge": "^5.9.0"
   },
   "dependencies": {
+    "@types/chrome": "^0.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
