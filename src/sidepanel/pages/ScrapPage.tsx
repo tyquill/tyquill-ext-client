@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IoAdd, IoTrash, IoChevronDown, IoClose } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoChevronDown, IoClose, IoClipboard, IoCheckmark } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
 import { mockScraps, Scrap } from '../../mock/data';
+import { scrapService } from '../../services/scrapService';
 
 const ScrapPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -14,10 +15,14 @@ const ScrapPage: React.FC = () => {
   const [draftTag, setDraftTag] = useState('');
   const [isComposing, setIsComposing] = useState(false);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
+  const [isClipping, setIsClipping] = useState(false);
+  const [clipStatus, setClipStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLButtonElement>(null);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<number>();
   const inputRef = useRef<HTMLInputElement>(null);
   const tagTooltipRef = useRef<HTMLDivElement>(null);
   
@@ -80,6 +85,189 @@ const ScrapPage: React.FC = () => {
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setDraftTag(e.target.value);
+  }, []);
+
+  // 웹 클리핑 기능
+  const handleClipCurrentPage = useCallback(async () => {
+    if (isClipping) return;
+
+    try {
+      setIsClipping(true);
+      setClipStatus('idle');
+
+      // 현재 활성 탭 정보 가져오기
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab?.id) {
+        throw new Error('No active tab found');
+      }
+
+      console.log('📋 Attempting to clip page on tab:', {
+        tabId: tab.id,
+        url: tab.url,
+        title: tab.title
+      });
+
+      // URL 체크 - 제한된 페이지에서는 스크랩 불가
+      if (tab.url?.startsWith('chrome://') || 
+          tab.url?.startsWith('chrome-extension://') ||
+          tab.url?.startsWith('edge://') ||
+          tab.url?.startsWith('about:')) {
+        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+      }
+
+      // Content Script가 로드되었는지 확인
+      try {
+        await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+      } catch (pingError) {
+        console.warn('⚠️ Content script not ready, injecting...');
+        
+        // Content script 수동 주입 시도
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['contentScript/index.js']
+        });
+        
+        // 잠시 대기 후 재시도
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Content Script로 클리핑 요청
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        type: 'CLIP_PAGE',
+        options: { includeMetadata: true }
+      });
+
+      if (response.success) {
+        console.log('✅ Page clipped:', response.data);
+        
+        // 스크랩 서비스로 저장
+        const scrapResponse = await scrapService.quickScrap(
+          response.data,
+          '', // userComment
+          selectedTags // 선택된 태그들
+        );
+
+        console.log('✅ Scrap saved:', scrapResponse);
+        setClipStatus('success');
+        
+        // 성공 상태 2초 후 리셋
+        setTimeout(() => setClipStatus('idle'), 2000);
+      } else {
+        throw new Error(response.error || 'Clipping failed');
+      }
+    } catch (error: any) {
+      console.error('❌ Clipping error:', error);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication required')) {
+        setIsAuthenticated(false);
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      
+      setClipStatus('error');
+      
+      // 에러 상태 3초 후 리셋
+      setTimeout(() => setClipStatus('idle'), 3000);
+    } finally {
+      setIsClipping(false);
+    }
+  }, [isClipping, selectedTags]);
+
+  const handleClipSelection = useCallback(async () => {
+    if (isClipping) return;
+
+    try {
+      setIsClipping(true);
+      setClipStatus('idle');
+
+      // 현재 활성 탭 정보 가져오기
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      
+      if (!tab?.id) {
+        throw new Error('No active tab found');
+      }
+
+      // URL 체크 - 제한된 페이지에서는 스크랩 불가
+      if (tab.url?.startsWith('chrome://') || 
+          tab.url?.startsWith('chrome-extension://') ||
+          tab.url?.startsWith('edge://') ||
+          tab.url?.startsWith('about:')) {
+        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+      }
+
+      // Content Script로 선택 영역 클리핑 요청
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        type: 'CLIP_SELECTION'
+      });
+
+      if (response.success) {
+        console.log('✅ Selection clipped:', response.data);
+        
+        // 스크랩 서비스로 저장
+        const scrapResponse = await scrapService.quickScrap(
+          response.data,
+          '', // userComment
+          selectedTags // 선택된 태그들
+        );
+
+        console.log('✅ Scrap saved:', scrapResponse);
+        setClipStatus('success');
+        
+        // 성공 상태 2초 후 리셋
+        setTimeout(() => setClipStatus('idle'), 2000);
+      } else {
+        throw new Error(response.error || 'Selection clipping failed');
+      }
+    } catch (error: any) {
+      console.error('❌ Selection clipping error:', error);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication required')) {
+        setIsAuthenticated(false);
+        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+      }
+      
+      setClipStatus('error');
+      
+      // 에러 상태 3초 후 리셋
+      setTimeout(() => setClipStatus('idle'), 3000);
+    } finally {
+      setIsClipping(false);
+    }
+  }, [isClipping, selectedTags]);
+
+  // 인증 상태 확인
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const result = await chrome.storage.local.get(['authState']);
+      const authState = result.authState;
+      const hasToken = !!(authState?.accessToken && authState?.isAuthenticated);
+      setIsAuthenticated(hasToken);
+      setAuthChecked(true);
+      
+      console.log('🔐 Auth status:', { 
+        hasToken, 
+        isAuthenticated: authState?.isAuthenticated,
+        hasAccessToken: !!authState?.accessToken,
+        user: authState?.user?.email 
+      });
+    } catch (error) {
+      console.error('❌ Auth check error:', error);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+    }
+  }, []);
+
+  // 컴포넌트 마운트 시 인증 상태 확인
+  useEffect(() => {
+    checkAuthStatus();
+  }, [checkAuthStatus]);
+
+  // 로그인 페이지로 이동
+  const handleLogin = useCallback(() => {
+    // 여기서는 사용자에게 로그인이 필요하다는 메시지만 표시
+    alert('로그인이 필요합니다. Side Panel의 다른 탭에서 로그인을 완료해주세요.');
   }, []);
 
   // 외부 클릭 핸들러 수정
@@ -151,14 +339,6 @@ const ScrapPage: React.FC = () => {
     };
   }, [loading, hasMore]);
 
-  const getDomainFromUrl = (url: string) => {
-    try {
-      const domain = new URL(url).hostname;
-      return domain.replace('www.', '');
-    } catch {
-      return '';
-    }
-  };
 
   const ScrapItem = React.memo<{ scrap: Scrap; onDelete: () => void }>(({ scrap, onDelete }) => {
     return (
@@ -225,10 +405,59 @@ const ScrapPage: React.FC = () => {
     <div className={styles.pageContainer}>
       <div className={styles.fixedContent}>
         <div className={styles.addButtonContainer}>
-          <button className={styles.addButton}>
-            <IoAdd size={20} />
-            스크랩 추가
-          </button>
+          {!authChecked ? (
+            <div className={styles.loadingAuth}>인증 상태 확인 중...</div>
+          ) : !isAuthenticated ? (
+            <div className={styles.authRequired}>
+              <div className={styles.authMessage}>
+                🔐 로그인이 필요합니다
+              </div>
+              <button 
+                className={`${styles.addButton} ${styles.loginButton}`}
+                onClick={handleLogin}
+              >
+                로그인 안내
+              </button>
+            </div>
+          ) : (
+            <div className={styles.clipButtonGroup}>
+              <button 
+                className={`${styles.addButton} ${isClipping ? styles.loading : ''}`}
+                onClick={handleClipCurrentPage}
+                disabled={isClipping}
+              >
+                {clipStatus === 'success' ? (
+                  <>
+                    <IoCheckmark size={20} />
+                    저장됨
+                  </>
+                ) : clipStatus === 'error' ? (
+                  <>
+                    <IoClose size={20} />
+                    실패
+                  </>
+                ) : isClipping ? (
+                  <>
+                    <IoClipboard size={20} />
+                    클리핑 중...
+                  </>
+                ) : (
+                  <>
+                    <IoClipboard size={20} />
+                    페이지 스크랩
+                  </>
+                )}
+              </button>
+              
+              <button 
+                className={`${styles.addButton} ${styles.secondaryButton}`}
+                onClick={handleClipSelection}
+                disabled={isClipping}
+              >
+                선택 영역
+              </button>
+            </div>
+          )}
         </div>
 
         <TagSelector
@@ -243,7 +472,7 @@ const ScrapPage: React.FC = () => {
 
       <div className={styles.scrollableContent}>
         <div className={styles.scrapList}>
-          {scraps.map((scrap, index) => (
+          {scraps.map((scrap) => (
             <ScrapItem
               key={scrap.id} 
               scrap={scrap} 

@@ -202,9 +202,83 @@
   background-color: #333333;
 }
 
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.addButton.loading {
+  cursor: wait;
+}
+
 .addIcon {
   font-size: 16px;
   font-weight: bold;
+}
+
+/* Clip Button Group */
+.clipButtonGroup {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.secondaryButton {
+  background-color: #6c757d !important;
+  font-size: 14px !important;
+  padding: 8px 12px !important;
+  min-height: auto !important;
+}
+
+.secondaryButton:hover {
+  background-color: #5a6268 !important;
+}
+
+.secondaryButton:disabled {
+  background-color: #6c757d !important;
+  opacity: 0.6 !important;
+}
+
+/* Auth Required UI */
+.loadingAuth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  font-size: 14px;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.authRequired {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 20px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeaa7;
+  border-radius: 8px;
+}
+
+.authMessage {
+  font-size: 16px;
+  font-weight: 600;
+  color: #856404;
+  text-align: center;
+}
+
+.loginButton {
+  background-color: #007bff !important;
+  font-size: 14px !important;
+  padding: 12px 20px !important;
+  min-height: auto !important;
+}
+
+.loginButton:hover {
+  background-color: #0056b3 !important;
 }
 
 /* Content List */
