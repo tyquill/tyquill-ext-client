@@ -32,6 +32,7 @@ export interface ScrapResponse {
   userComment?: string;
   createdAt: string;
   updatedAt: string;
+  tags?: string[];
 }
 
 export class ScrapService {
