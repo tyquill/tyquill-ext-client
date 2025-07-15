@@ -20,13 +20,26 @@ const development: Environment = {
 
 const production: Environment = {
   production: true,
-  serverUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com', // 배포용 서버 URL (도메인 설정 아직 안함)
+  serverUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com',
   apiUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 
 // 빌드 환경 확인 (webpack에서 주입)
-const isDevelopment = process.env.NODE_ENV !== 'production';
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+  };
+};
+
+// webpack DefinePlugin으로 주입된 NODE_ENV 직접 확인
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+console.log('🔍 Environment detection:', {
+  nodeEnv: process.env.NODE_ENV,
+  isDevelopment,
+  selectedEnv: isDevelopment ? 'development' : 'production'
+});
 
 export const environment: Environment = isDevelopment ? development : production;
 
@@ -43,6 +56,11 @@ export const getServerUrl = (): string => {
 export const getApiUrl = (): string => {
   return environment.apiUrl;
 };
+
+/**
+ * API Base URL (scrapService에서 사용)
+ */
+export const API_BASE_URL = environment.apiUrl;
 
 /**
  * OAuth 콜백 URL 생성
