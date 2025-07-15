@@ -148,6 +148,46 @@ export class ScrapService {
   }
 
   /**
+   * 스크랩 목록 조회
+   */
+  async getScraps(): Promise<ScrapResponse[]> {
+    try {
+      console.log('📋 Fetching scraps list');
+
+      const response = await this.apiRequest<ScrapResponse[]>('/v1/scraps', {
+        method: 'GET',
+      });
+
+      console.log('✅ Scraps fetched successfully:', {
+        count: response.length,
+      });
+
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch scraps:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 스크랩 삭제
+   */
+  async deleteScrap(scrapId: number): Promise<void> {
+    try {
+      console.log('🗑️ Deleting scrap:', scrapId);
+
+      await this.apiRequest<void>(`/v1/scraps/${scrapId}`, {
+        method: 'DELETE',
+      });
+
+      console.log('✅ Scrap deleted successfully:', scrapId);
+    } catch (error) {
+      console.error('❌ Failed to delete scrap:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 빠른 스크랩 (웹 클리퍼에서 직접 사용)
    */
   async quickScrap(
