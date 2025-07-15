@@ -5,20 +5,23 @@ import { Scrap, mockTemplates } from '../../mock/data';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
+import { articleService, GenerateArticleDto, ScrapWithOptionalComment } from '../../services/articleService';
 
 interface SelectedScrap extends ScrapResponse {
   opinion: string;
 }
 
-interface DraftState {
-  subject: string;
-  message: string;
+interface ArticleGenerateState {
+  topic: string;
+  keyInsight: string;
   handle: string;
   selectedTemplate: string;
   isScrapModalOpen: boolean;
   selectedScraps: SelectedScrap[];
   selectedTags: string[];
   isTagDropdownOpen: boolean;
+  isGenerating: boolean;
+  generationError: string | null;
 }
 
 type DraftAction =
@@ -30,27 +33,32 @@ type DraftAction =
   | { type: 'ADD_SCRAP'; payload: ScrapResponse }
   | { type: 'UPDATE_SCRAP_OPINION'; payload: { id: number; opinion: string } }
   | { type: 'REMOVE_SCRAP'; payload: number }
+  | { type: 'CLEAR_SCRAPS' }
   | { type: 'TOGGLE_TAG'; payload: string }
   | { type: 'REMOVE_TAG'; payload: string }
-  | { type: 'TOGGLE_TAG_DROPDOWN' };
+  | { type: 'TOGGLE_TAG_DROPDOWN' }
+  | { type: 'SET_GENERATING'; payload: boolean }
+  | { type: 'SET_GENERATION_ERROR'; payload: string | null };
 
-const initialState: DraftState = {
-  subject: '',
-  message: '',
+const initialState: ArticleGenerateState = {
+  topic: '',
+  keyInsight: '',
   handle: '',
   selectedTemplate: '비즈니스 미팅 요청',
   isScrapModalOpen: false,
   selectedScraps: [],
   selectedTags: [],
   isTagDropdownOpen: false,
+  isGenerating: false,
+  generationError: null,
 };
 
-function draftReducer(state: DraftState, action: DraftAction): DraftState {
+function draftReducer(state: ArticleGenerateState, action: DraftAction): ArticleGenerateState {
   switch (action.type) {
     case 'SET_SUBJECT':
-      return { ...state, subject: action.payload };
+      return { ...state, topic: action.payload };
     case 'SET_MESSAGE':
-      return { ...state, message: action.payload };
+      return { ...state, keyInsight: action.payload };
     case 'SET_HANDLE':
       return { ...state, handle: action.payload };
     case 'SET_TEMPLATE':
@@ -73,6 +81,11 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
         ...state,
         selectedScraps: state.selectedScraps.filter(scrap => scrap.scrapId !== action.payload),
       };
+    case 'CLEAR_SCRAPS':
+      return {
+        ...state,
+        selectedScraps: [],
+      };
     case 'TOGGLE_TAG':
       return {
         ...state,
@@ -87,6 +100,10 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
       };
     case 'TOGGLE_TAG_DROPDOWN':
       return { ...state, isTagDropdownOpen: !state.isTagDropdownOpen };
+    case 'SET_GENERATING':
+      return { ...state, isGenerating: action.payload };
+    case 'SET_GENERATION_ERROR':
+      return { ...state, generationError: action.payload };
     default:
       return state;
   }
@@ -94,7 +111,6 @@ function draftReducer(state: DraftState, action: DraftAction): DraftState {
 
 const ArticleGeneratePage: React.FC = () => {
   const [state, dispatch] = useReducer(draftReducer, initialState);
-  const dropdownRef = React.useRef<HTMLButtonElement>(null);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
 
   React.useEffect(() => {
@@ -127,20 +143,50 @@ const ArticleGeneratePage: React.FC = () => {
     dispatch({ type: 'REMOVE_SCRAP', payload: id });
   };
 
-  const handleTagSelect = (tag: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    dispatch({ type: 'TOGGLE_TAG', payload: tag });
+  const handleGenerateArticle = async () => {
+    if (!state.topic || !state.keyInsight) {
+      dispatch({ type: 'SET_GENERATION_ERROR', payload: '주제와 키메시지를 입력해주세요.' });
+      return;
+    }
+
+    try {
+      dispatch({ type: 'SET_GENERATING', payload: true });
+      dispatch({ type: 'SET_GENERATION_ERROR', payload: null });
+
+      const generateData: GenerateArticleDto = {
+        topic: state.topic,
+        keyInsight: state.keyInsight,
+        scrapWithOptionalComment: state.selectedScraps.map(scrap => ({
+          scrapId: scrap.scrapId,
+          userComment: scrap.opinion || undefined,
+        })),
+        generationParams: state.handle || undefined,
+      };
+
+      console.log('🤖 Generating article with data:', generateData);
+
+      const result = await articleService.generateArticle(generateData);
+      console.log('✅ Article generated:', result);
+      
+      // 성공 시 알림 또는 페이지 이동
+      alert('아티클이 성공적으로 생성되었습니다!');
+      
+      // 초기 상태로 리셋
+      dispatch({ type: 'SET_SUBJECT', payload: '' });
+      dispatch({ type: 'SET_MESSAGE', payload: '' });
+      dispatch({ type: 'SET_HANDLE', payload: '' });
+      dispatch({ type: 'CLEAR_SCRAPS' });
+      
+    } catch (error: any) {
+      console.error('❌ Failed to generate article:', error);
+      dispatch({ type: 'SET_GENERATION_ERROR', payload: error.message || '아티클 생성에 실패했습니다.' });
+    } finally {
+      dispatch({ type: 'SET_GENERATING', payload: false });
+    }
   };
 
-  const handleTagRemove = (tag: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    dispatch({ type: 'REMOVE_TAG', payload: tag });
-  };
 
-  const toggleDropdown = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    dispatch({ type: 'TOGGLE_TAG_DROPDOWN' });
-  };
+
 
   const [filteredScraps, setFilteredScraps] = useState<ScrapResponse[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
@@ -169,7 +215,7 @@ const ArticleGeneratePage: React.FC = () => {
             id="subject"
             type="text"
             className={styles.formInput}
-            value={state.subject}
+            value={state.topic}
             onChange={(e) => dispatch({ type: 'SET_SUBJECT', payload: e.target.value })}
             placeholder="뉴스레터의 핵심 주제를 입력하세요"
           />
@@ -182,7 +228,7 @@ const ArticleGeneratePage: React.FC = () => {
           <textarea
             id="message"
             className={styles.formTextarea}
-            value={state.message}
+            value={state.keyInsight}
             onChange={(e) => dispatch({ type: 'SET_MESSAGE', payload: e.target.value })}
             placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성해주세요. (예: 생성형 AI를 활용한 디자인 자동화와 하이퍼-개인화가 핵심이 될 것이다.)"
             rows={4}
@@ -205,13 +251,15 @@ const ArticleGeneratePage: React.FC = () => {
 
         <div className={styles.formGroup}>
           <label htmlFor="template" className={styles.formLabel}>
-            템플릿 선택
+            템플릿 선택 <span style={{ color: '#999', fontSize: '0.9em' }}>(개발 중)</span>
           </label>
           <select
             id="template"
             className={styles.formSelect}
             value={state.selectedTemplate}
             onChange={(e) => dispatch({ type: 'SET_TEMPLATE', payload: e.target.value })}
+            disabled={true}
+            style={{ opacity: 0.6 }}
           >
             {mockTemplates.map(template => (
               <option key={template.id} value={template.title}>
@@ -254,8 +302,18 @@ const ArticleGeneratePage: React.FC = () => {
           </div>
         </div>
 
-        <button className={styles.submitButton}>
-          초안 생성하기
+        {state.generationError && (
+          <div className={styles.errorMessage}>
+            {state.generationError}
+          </div>
+        )}
+
+        <button 
+          className={`${styles.submitButton} ${state.isGenerating ? styles.loading : ''}`}
+          onClick={handleGenerateArticle}
+          disabled={state.isGenerating}
+        >
+          {state.isGenerating ? '생성 중...' : '초안 생성하기'}
         </button>
       </div>
 
