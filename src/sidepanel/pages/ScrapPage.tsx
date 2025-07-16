@@ -57,39 +57,6 @@ const ScrapPage: React.FC = () => {
     setIsDropdownOpen(prev => !prev);
   };
 
-  const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
-    if (!tag.trim()) {
-      setActiveInputId(null);
-      setDraftTag('');
-      return;
-    }
-
-    try {
-      console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
-      
-      // 서버 API 호출하여 태그 추가
-      await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
-      
-      console.log('✅ Tag added successfully');
-      
-      // 스크랩 목록 새로고침하여 새 태그 반영
-      await loadScraps();
-      
-    } catch (error: any) {
-      console.error('❌ Failed to add tag:', error);
-      
-      // 사용자에게 에러 알림
-      alert(`태그 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
-      
-      // 인증 에러인 경우 인증 상태 재확인
-      if (error.message.includes('Authentication')) {
-        setIsAuthenticated(false);
-      }
-    } finally {
-      setActiveInputId(null);
-      setDraftTag('');
-    }
-  }, [loadScraps]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
     if (e.key === 'Enter') {
@@ -361,6 +328,41 @@ const ScrapPage: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated, authChecked, loadScraps]);
+
+  // 스크랩에 태그 추가
+  const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
+    if (!tag.trim()) {
+      setActiveInputId(null);
+      setDraftTag('');
+      return;
+    }
+
+    try {
+      console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
+      
+      // 서버 API 호출하여 태그 추가
+      await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
+      
+      console.log('✅ Tag added successfully');
+      
+      // 스크랩 목록 새로고침하여 새 태그 반영
+      await loadScraps();
+      
+    } catch (error: any) {
+      console.error('❌ Failed to add tag:', error);
+      
+      // 사용자에게 에러 알림
+      alert(`태그 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication')) {
+        setIsAuthenticated(false);
+      }
+    } finally {
+      setActiveInputId(null);
+      setDraftTag('');
+    }
+  }, [loadScraps]);
 
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
