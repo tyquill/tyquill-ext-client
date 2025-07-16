@@ -54,6 +54,7 @@ module.exports = {
       patterns: [
         { from: 'src/manifest.json', to: 'manifest.json' },
         { from: 'src/auth/callback.html', to: 'auth/callback.html' },
+        { from: 'src/images', to: 'images' },
       ],
     }),
   ],
