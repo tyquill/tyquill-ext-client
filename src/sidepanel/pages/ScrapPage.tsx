@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
@@ -34,6 +34,20 @@ const ScrapPage: React.FC = () => {
     };
     fetchAllTags();
   }, [scraps]);
+
+  // 선택된 태그에 따라 필터링된 스크랩 목록
+  const filteredScraps = useMemo(() => {
+    if (selectedTags.length === 0) {
+      return scraps; // 선택된 태그가 없으면 모든 스크랩 표시
+    }
+    
+    return scraps.filter(scrap => {
+      // 선택된 태그 중 하나라도 스크랩에 포함되어 있으면 표시
+      return selectedTags.some(selectedTag => 
+        scrap.tags.includes(selectedTag)
+      );
+    });
+  }, [scraps, selectedTags]);
 
   // 웹 클리핑 기능
   const handleClipCurrentPage = useCallback(async () => {
@@ -616,6 +630,12 @@ const ScrapPage: React.FC = () => {
                 다시 시도
               </button>
             </div>
+          ) : filteredScraps.length === 0 && selectedTags.length > 0 ? (
+            <div className={styles.emptyContainer}>
+              <div className={styles.emptyMessage}>
+                선택한 태그와 일치하는 스크랩이 없습니다.
+              </div>
+            </div>
           ) : scraps.length === 0 ? (
             <div className={styles.emptyContainer}>
               <div className={styles.emptyMessage}>
@@ -623,7 +643,7 @@ const ScrapPage: React.FC = () => {
               </div>
             </div>
           ) : (
-            scraps.map((scrap) => (
+            filteredScraps.map((scrap) => (
             <ScrapItem
               key={scrap.id} 
               scrap={scrap} 

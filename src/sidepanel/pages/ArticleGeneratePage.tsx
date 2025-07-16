@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState } from 'react';
+import React, { useEffect, useReducer, useState, useMemo } from 'react';
 import { IoAdd, IoClose } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { Scrap, mockTemplates } from '../../mock/data';
@@ -202,17 +202,31 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
 
 
 
-  const [filteredScraps, setFilteredScraps] = useState<ScrapResponse[]>([]);
+  const [allScraps, setAllScraps] = useState<ScrapResponse[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
 
   useEffect(() => {
     const fetchScraps = async () => {
       const scraps: ScrapResponse[] = await scrapService.getScraps();
-      setFilteredScraps(scraps);
+      setAllScraps(scraps);
       setAllTags(Array.from(new Set(scraps.flatMap(scrap => scrap.tags?.map(tag => tag.name) || []))).sort());
     };
     fetchScraps();
   }, []);
+
+  // 선택된 태그에 따라 필터링된 스크랩 목록
+  const filteredScraps = useMemo(() => {
+    if (state.selectedTags.length === 0) {
+      return allScraps; // 선택된 태그가 없으면 모든 스크랩 표시
+    }
+    
+    return allScraps.filter(scrap => {
+      // 선택된 태그 중 하나라도 스크랩에 포함되어 있으면 표시
+      return state.selectedTags.some(selectedTag => 
+        scrap.tags?.some(tag => tag.name === selectedTag)
+      );
+    });
+  }, [allScraps, state.selectedTags]);
 
   return (
     <div className={styles.page}>
