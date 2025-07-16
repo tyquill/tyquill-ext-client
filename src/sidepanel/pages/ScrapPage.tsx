@@ -345,13 +345,17 @@ const ScrapPage: React.FC = () => {
   // 키보드 입력 처리
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
     if (e.key === 'Enter') {
+      // 한글 조합 중일 때는 처리하지 않음
+      if (isComposing) {
+        return;
+      }
       e.preventDefault();
       handleAddTag(scrapId, draftTag.trim());
     } else if (e.key === 'Escape') {
       setActiveInputId(null);
       setDraftTag('');
     }
-  }, [draftTag, handleAddTag]);
+  }, [draftTag, handleAddTag, isComposing]);
 
   const handleCompositionStart = useCallback(() => {
     setIsComposing(true);
@@ -363,8 +367,11 @@ const ScrapPage: React.FC = () => {
   }, []);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setDraftTag(e.target.value);
-  }, []);
+    // 조합 중이 아닐 때만 상태 업데이트
+    if (!isComposing) {
+      setDraftTag(e.target.value);
+    }
+  }, [isComposing]);
 
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
