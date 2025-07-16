@@ -7,6 +7,10 @@ import { TagList } from '../components/TagList';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment } from '../../services/articleService';
 
+interface ArticleGeneratePageProps {
+  onNavigateToDetail?: (articleId: number) => void;
+}
+
 interface SelectedScrap extends ScrapResponse {
   opinion: string;
 }
@@ -109,7 +113,7 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
   }
 }
 
-const ArticleGeneratePage: React.FC = () => {
+const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToDetail = () => {} }) => {
   const [state, dispatch] = useReducer(draftReducer, initialState);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
 
@@ -168,8 +172,12 @@ const ArticleGeneratePage: React.FC = () => {
       const result = await articleService.generateArticle(generateData);
       console.log('✅ Article generated:', result);
       
-      // 성공 시 알림 또는 페이지 이동
-      alert('아티클이 성공적으로 생성되었습니다!');
+      // 성공 시 상세 페이지로 이동
+      if (onNavigateToDetail && result.articleId) {
+        onNavigateToDetail(result.articleId);
+      } else {
+        alert('아티클이 성공적으로 생성되었습니다!');
+      }
       
       // 초기 상태로 리셋
       dispatch({ type: 'SET_SUBJECT', payload: '' });
