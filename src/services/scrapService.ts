@@ -33,7 +33,7 @@ export interface ScrapResponse {
   userComment?: string;
   createdAt: string;
   updatedAt: string;
-  tags?: string[];
+  tags?: TagResponse[];
 }
 
 /**

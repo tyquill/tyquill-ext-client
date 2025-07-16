@@ -260,7 +260,7 @@ const ScrapPage: React.FC = () => {
         content: scrap.content,
         url: scrap.url,
         date: new Date(scrap.createdAt).toLocaleDateString('ko-KR'),
-        tags: scrap.tags || [], // 백엔드에서 받은 태그 정보 사용
+        tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [], // 태그 객체에서 name만 추출
       }));
       
       setScraps(convertedScraps);
