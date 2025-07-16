@@ -57,14 +57,39 @@ const ScrapPage: React.FC = () => {
     setIsDropdownOpen(prev => !prev);
   };
 
-  const handleAddTag = useCallback((scrapId: string, tag: string) => {
-    if (tag.trim()) {
-      // 실제 구현에서는 API 호출 등을 통해 태그를 추가하고 상태를 업데이트해야 합니다.
-      console.log('Add tag:', tag, 'to scrap:', scrapId);
+  const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
+    if (!tag.trim()) {
+      setActiveInputId(null);
+      setDraftTag('');
+      return;
     }
-    setActiveInputId(null);
-    setDraftTag('');
-  }, []);
+
+    try {
+      console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
+      
+      // 서버 API 호출하여 태그 추가
+      await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
+      
+      console.log('✅ Tag added successfully');
+      
+      // 스크랩 목록 새로고침하여 새 태그 반영
+      await loadScraps();
+      
+    } catch (error: any) {
+      console.error('❌ Failed to add tag:', error);
+      
+      // 사용자에게 에러 알림
+      alert(`태그 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication')) {
+        setIsAuthenticated(false);
+      }
+    } finally {
+      setActiveInputId(null);
+      setDraftTag('');
+    }
+  }, [loadScraps]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
     if (e.key === 'Enter') {
@@ -290,7 +315,7 @@ const ScrapPage: React.FC = () => {
         content: scrap.content,
         url: scrap.url,
         date: new Date(scrap.createdAt).toLocaleDateString('ko-KR'),
-        tags: [], // 백엔드에서 태그 정보가 없는 경우 빈 배열
+        tags: scrap.tags || [], // 백엔드에서 받은 태그 정보 사용
       }));
       
       setScraps(convertedScraps);

@@ -36,6 +36,24 @@ export interface ScrapResponse {
   tags?: string[];
 }
 
+/**
+ * 태그 생성 DTO
+ */
+export interface CreateTagDto {
+  name: string;
+  scrapId?: number;
+}
+
+/**
+ * 태그 응답 DTO
+ */
+export interface TagResponse {
+  tagId: number;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export class ScrapService {
   private apiUrl: string;
 
@@ -187,6 +205,72 @@ export class ScrapService {
   ): Promise<ScrapResponse> {
     const scrapDto = this.scrapResultToDto(scrapResult, userComment, tags);
     return this.createScrap(scrapDto);
+  }
+
+  /**
+   * 스크랩에 태그 추가
+   */
+  async addTagToScrap(scrapId: number, tagName: string): Promise<TagResponse> {
+    try {
+      console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
+
+      const response = await this.apiRequest<TagResponse>(`/v1/scraps/${scrapId}/tags`, {
+        method: 'POST',
+        body: JSON.stringify({ name: tagName }),
+      });
+
+      console.log('✅ Tag added successfully:', {
+        tagId: response.tagId,
+        name: response.name,
+        scrapId,
+      });
+
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to add tag to scrap:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 스크랩의 태그 목록 조회
+   */
+  async getScrapTags(scrapId: number): Promise<TagResponse[]> {
+    try {
+      console.log('🏷️ Fetching scrap tags:', scrapId);
+
+      const response = await this.apiRequest<TagResponse[]>(`/v1/scraps/${scrapId}/tags`, {
+        method: 'GET',
+      });
+
+      console.log('✅ Scrap tags fetched successfully:', {
+        scrapId,
+        count: response.length,
+      });
+
+      return response;
+    } catch (error) {
+      console.error('❌ Failed to fetch scrap tags:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 스크랩에서 태그 제거
+   */
+  async removeTagFromScrap(scrapId: number, tagId: number): Promise<void> {
+    try {
+      console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
+
+      await this.apiRequest<void>(`/v1/scraps/${scrapId}/tags/${tagId}`, {
+        method: 'DELETE',
+      });
+
+      console.log('✅ Tag removed successfully from scrap:', { scrapId, tagId });
+    } catch (error) {
+      console.error('❌ Failed to remove tag from scrap:', error);
+      throw error;
+    }
   }
 }
 
