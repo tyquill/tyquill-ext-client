@@ -58,28 +58,6 @@ const ScrapPage: React.FC = () => {
   };
 
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag(scrapId, draftTag.trim());
-    } else if (e.key === 'Escape') {
-      setActiveInputId(null);
-      setDraftTag('');
-    }
-  }, [draftTag, handleAddTag]);
-
-  const handleCompositionStart = useCallback(() => {
-    setIsComposing(true);
-  }, []);
-
-  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
-    setIsComposing(false);
-    setDraftTag(e.currentTarget.value);
-  }, []);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setDraftTag(e.target.value);
-  }, []);
 
   // 웹 클리핑 기능
   const handleClipCurrentPage = useCallback(async () => {
@@ -363,6 +341,30 @@ const ScrapPage: React.FC = () => {
       setDraftTag('');
     }
   }, [loadScraps]);
+
+  // 키보드 입력 처리
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddTag(scrapId, draftTag.trim());
+    } else if (e.key === 'Escape') {
+      setActiveInputId(null);
+      setDraftTag('');
+    }
+  }, [draftTag, handleAddTag]);
+
+  const handleCompositionStart = useCallback(() => {
+    setIsComposing(true);
+  }, []);
+
+  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
+    setIsComposing(false);
+    setDraftTag(e.currentTarget.value);
+  }, []);
+
+  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setDraftTag(e.target.value);
+  }, []);
 
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
