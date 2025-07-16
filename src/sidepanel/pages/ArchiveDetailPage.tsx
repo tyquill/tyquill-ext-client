@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { IoArrowBack } from 'react-icons/io5';
+import { IoArrowBack, IoCreate } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
-import { mockDrafts } from '../../mock/data';
-import type { Draft, DraftVersion } from '../../mock/data';
+import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
+import YooptaEditorWrapper from '../../components/YooptaEditor';
+import MarkdownRenderer from '../../utils/markdownRenderer';
+import ErrorBoundary from '../../components/ErrorBoundary';
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -10,30 +12,114 @@ interface ArchiveDetailPageProps {
 }
 
 const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
-  const draft = mockDrafts.find(d => d.id === draftId);
-  const [selectedVersion, setSelectedVersion] = useState<DraftVersion | null>(null);
+  const [article, setArticle] = useState<ArticleResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
+  const [currentArchive, setCurrentArchive] = useState<ArchiveResponse | null>(null);
 
   useEffect(() => {
-    if (draft) {
-      setSelectedVersion(draft.versions[draft.versions.length - 1]);
-    }
-  }, [draft]);
+    const fetchArticle = async () => {
+      try {
+        setLoading(true);
+        const articleData = await articleService.getArticle(parseInt(draftId));
+        setArticle(articleData);
+        
+        // 기본적으로 최신 버전 선택
+        if (articleData.archives && articleData.archives.length > 0) {
+          const latestArchive = articleData.archives[0]; // 이미 정렬된 상태
+          setSelectedVersionNumber(latestArchive.versionNumber);
+          setCurrentArchive(latestArchive);
+          setEditTitle(latestArchive.title);
+          setEditContent(latestArchive.content);
+        } else {
+          // 아카이브가 없는 경우 기본값 사용
+          setEditTitle(articleData.title);
+          setEditContent(articleData.content);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load article');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (!draft) {
-    return <div>Draft not found</div>;
-  }
-
-  if (!selectedVersion) {
-    return null;
-  }
-
-  const handleVersionSelect = (version: DraftVersion) => {
-    setSelectedVersion(version);
-  };
+    fetchArticle();
+  }, [draftId]);
 
   const handleEdit = () => {
-    console.log('Edit draft:', draftId);
+    setIsEditing(true);
   };
+
+  const handleSave = async () => {
+    if (!article) return;
+    
+    try {
+      setSaving(true);
+      const updateData: UpdateArticleDto = {
+        title: editTitle,
+        content: editContent,
+      };
+      
+      const updatedArticle = await articleService.updateArticle(article.articleId, updateData);
+      setArticle(updatedArticle);
+      
+      // 새로운 버전이 생성되었는지 확인하고 최신 버전으로 전환
+      if (updatedArticle.archives && updatedArticle.archives.length > 0) {
+        const latestArchive = updatedArticle.archives[0]; // 이미 정렬된 상태
+        setSelectedVersionNumber(latestArchive.versionNumber);
+        setCurrentArchive(latestArchive);
+        setEditTitle(latestArchive.title);
+        setEditContent(latestArchive.content);
+      }
+      
+      setIsEditing(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to save article');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (currentArchive) {
+      setEditTitle(currentArchive.title);
+      setEditContent(currentArchive.content);
+    } else {
+      setEditTitle(article?.title || '');
+      setEditContent(article?.content || '');
+    }
+    setIsEditing(false);
+  };
+
+  const handleVersionSelect = (versionNumber: number) => {
+    if (!article || !article.archives) return;
+    
+    const selectedArchive = article.archives.find(archive => archive.versionNumber === versionNumber);
+    if (selectedArchive) {
+      setSelectedVersionNumber(versionNumber);
+      setCurrentArchive(selectedArchive);
+      setEditTitle(selectedArchive.title);
+      setEditContent(selectedArchive.content);
+      setIsEditing(false); // 버전 변경 시 편집 모드 종료
+    }
+  };
+
+  if (loading) {
+    return <div className={styles.loadingContainer}>로딩 중...</div>;
+  }
+
+  if (error) {
+    return <div className={styles.errorContainer}>오류: {error}</div>;
+  }
+
+  if (!article) {
+    return <div className={styles.errorContainer}>아티클을 찾을 수 없습니다.</div>;
+  }
 
   return (
     <div className={styles.page}>
@@ -41,42 +127,94 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         <button className={styles.backButton} onClick={onBack}>
           <IoArrowBack size={20} />
         </button>
-        <h1 className={styles.detailTitle}>{draft.title}</h1>
+        <h1 className={styles.detailTitle}>
+          {isEditing ? (
+            <input
+              type="text"
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              className={styles.editTitleInput}
+              placeholder="제목을 입력하세요"
+            />
+          ) : (
+            currentArchive?.title || article.title
+          )}
+        </h1>
       </div>
 
       <div className={styles.detailContent}>
         <div className={styles.previewContainer}>
           <div className={styles.previewHeader}>
-            <h2 className={styles.sectionTitle}>미리보기</h2>
-            <span className={styles.versionInfo}>
-              버전 {selectedVersion.version} • {selectedVersion.date}
-            </span>
-          </div>
-          <div className={styles.previewContent}>
-            {selectedVersion.content}
-          </div>
-          <button className={styles.editButton} onClick={handleEdit}>
-            초안 수정하기
-          </button>
-        </div>
-
-        <div className={styles.versionSelector}>
-          <h2 className={styles.sectionTitle}>버전 기록</h2>
-          <div className={styles.versionList}>
-            {draft.versions.slice().reverse().map((version) => (
-              <button
-                key={version.version}
-                className={`${styles.versionButton} ${
-                  selectedVersion.version === version.version ? styles.versionButtonActive : ''
-                }`}
-                onClick={() => handleVersionSelect(version)}
-              >
-                <div className={styles.versionInfo}>
-                  <span className={styles.versionNumber}>버전 {version.version}</span>
-                  <span className={styles.versionDate}>{version.date}</span>
+            <h2 className={styles.sectionTitle}>
+              {isEditing ? '편집' : '미리보기'}
+            </h2>
+            <div className={styles.versionControls}>
+              {article.archives && article.archives.length > 0 && (
+                <div className={styles.versionSelector}>
+                  <label htmlFor="version-select" className={styles.versionLabel}>
+                    버전:
+                  </label>
+                  <select
+                    id="version-select"
+                    value={selectedVersionNumber || ''}
+                    onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                    className={styles.versionSelect}
+                    disabled={isEditing}
+                  >
+                    {article.archives.map(archive => (
+                      <option key={archive.versionNumber} value={archive.versionNumber}>
+                        {archive.versionNumber}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              )}
+            </div>
+          </div>
+          
+          <div className={styles.previewContent}>
+            {isEditing ? (
+              <ErrorBoundary>
+                <YooptaEditorWrapper
+                  key={`editor-${article.articleId}-${isEditing}`}
+                  content={editContent}
+                  onChange={setEditContent}
+                  placeholder="내용을 입력하세요..."
+                  readOnly={false}
+                />
+              </ErrorBoundary>
+            ) : (
+              <MarkdownRenderer 
+                content={currentArchive?.content || article.content || ''}
+                className={styles.contentDisplay}
+              />
+            )}
+          </div>
+          
+          <div className={styles.actionButtons}>
+            {isEditing ? (
+              <>
+                <button 
+                  className={styles.saveButton}
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  {saving ? '저장 중...' : '저장'}
+                </button>
+                <button 
+                  className={styles.cancelButton}
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
+                  취소
+                </button>
+              </>
+            ) : (
+              <button className={styles.editButton} onClick={handleEdit}>
+                <IoCreate size={16} />
+                초안 수정하기
               </button>
-            ))}
+            )}
           </div>
         </div>
       </div>
