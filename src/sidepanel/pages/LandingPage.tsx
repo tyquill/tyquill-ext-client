@@ -21,50 +21,79 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   return (
     <div className={styles.landingPage}>
-      <div className={styles.landingContent}>
-        <div className={styles.logoSection}>
-          <h1 className={styles.logo}>Tyquill</h1>
-          <p className={styles.tagline}>AI-powered writing assistant</p>
-        </div>
-        
-        <div className={styles.features}>
-          <div className={styles.featureItem}>
-            <div className={styles.featureIcon}>✨</div>
-            <h3>Smart Writing</h3>
-            <p>AI가 도와주는 스마트한 글쓰기</p>
-          </div>
-          
-          <div className={styles.featureItem}>
-            <div className={styles.featureIcon}>🚀</div>
-            <h3>Fast & Easy</h3>
-            <p>빠르고 간편한 사용법</p>
-          </div>
-          
-          <div className={styles.featureItem}>
-            <div className={styles.featureIcon}>🎯</div>
-            <h3>Perfect Results</h3>
-            <p>완벽한 글쓰기 결과</p>
-          </div>
-        </div>
-        
+      {/* Header */}
+      <header className={styles.header}>
+        <h1 className={styles.logo}>Tyquill</h1>
+      </header>
+
+      {/* Core content */}
+      <main className={styles.mainContent}>
+        <h2 className={styles.title}>
+          가장 쉬운<br />
+          뉴스레터 생성 도구
+        </h2>
+        <p className={styles.description}>
+          웹사이트에서 리소스를 저장하고,<br />
+          전문 뉴스레터 AI와 1분만에 초안을 생성하세요.<br />
+          1초만에 에디터로 옮겨넣을 수 있습니다.
+        </p>
+
+        {/* CTA section */}
         <div className={styles.ctaSection}>
+          
+          {/* Supported platforms */}
+          <div className={styles.platforms}>
+            <span className={styles.platformsLabel}>지원하는 플랫폼</span>
+            <div className={styles.platformsList}>
+              <div className={styles.platform}>
+                <img 
+                  src="https://cdn.maily.so/images/green_logo.png"
+                  alt="Maily.so"
+                  className={styles.platformLogo}
+                />
+              </div>
+              <div className={styles.platformComingSoon}>
+                추가 예정
+              </div>
+            </div>
+          </div>
+
           {error && (
             <div className={styles.errorMessage}>
-              ❌ {error}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+              {error}
             </div>
           )}
-          <button 
-            className={styles.startButton}
+
+          {/* Google sign-in */}
+          <button
+            className={styles.googleButton}
             onClick={handleStartClick}
             disabled={isLoading}
           >
-            {isLoading ? '로그인 중...' : 'Google로 시작하기'}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
+            </svg>
+            <span>{isLoading ? '로그인 중...' : 'Google로 시작하기'}</span>
           </button>
-          <p className={styles.startDescription}>
-            Tyquill과 함께 더 나은 글쓰기를 시작해보세요
-          </p>
         </div>
-      </div>
+      </main>
+
+      {/* Footer */}
+      <footer className={styles.footer}>
+        <span>Tyquill은 개인정보 보호를 최우선으로 합니다.</span>
+        <div className={styles.footerLinks}>
+          <span>&copy; {new Date().getFullYear()} Tyquill</span>
+          <span className={styles.footerDivider}>|</span>
+          <a href="#terms">이용약관</a>
+          <span className={styles.footerDivider}>|</span>
+          <a href="#privacy">개인정보처리방침</a>
+        </div>
+      </footer>
     </div>
   );
 };
