@@ -28,11 +28,11 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
     fetchArticles();
   }, []);
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: number) => {
     if (window.confirm('이 아티클을 삭제하시겠습니까?')) {
       try {
-        await articleService.deleteArticle(parseInt(id));
-        setArticles(articles.filter(article => article.articleId !== parseInt(id)));
+        await articleService.deleteArticle(id);
+        setArticles(articles.filter(article => article.articleId !== id));
       } catch (err: any) {
         alert('삭제에 실패했습니다: ' + err.message);
       }
@@ -48,10 +48,12 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
       .replace(/\*\*(.*?)\*\*/g, '$1') // 볼드 제거
       .replace(/\*(.*?)\*/g, '$1') // 이탤릭 제거
       .replace(/^\*\s+/gm, '• ') // 불릿 포인트로 변환
+      .replace(/^\d+\.\s+/gm, '') // 번호 목록 제거 (미리보기에서만)
+      .replace(/\\(.)/g, '$1') // 역슬래시 이스케이프 제거
       .replace(/\n+/g, ' ') // 줄바꿈을 공백으로
       .trim();
     
-    return text.length > 100 ? text.substring(0, 100) + '...' : text;
+    return text.length > 200 ? text.substring(0, 200) + '...' : text;
   };
 
   if (loading) {
@@ -111,7 +113,7 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
                   className={styles.actionButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleDelete(article.articleId.toString());
+                    handleDelete(article.articleId);
                   }}
                   title="삭제"
                 >
