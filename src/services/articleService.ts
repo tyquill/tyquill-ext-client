@@ -46,16 +46,31 @@ export interface UpdateArticleDto {
 }
 
 /**
+ * 아카이브 응답 타입
+ */
+export interface ArchiveResponse {
+    archiveId: number;
+    title: string;
+    content: string;
+    versionNumber: number;
+    createdAt: string;
+}
+
+/**
  * 아티클 응답 타입
  */
 export interface ArticleResponse {
     articleId: number;
     title: string;
     content: string;
+    topic: string;
+    keyInsight: string;
+    generationParams?: string;
     summary?: string;
     tags?: string[];
     createdAt: string;
     updatedAt: string;
+    archives?: ArchiveResponse[];
 }
 
 export class ArticleService {
