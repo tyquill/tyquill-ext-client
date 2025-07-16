@@ -699,6 +699,38 @@
   color: #333;
 }
 
+/* Ordered List Styles */
+.previewContent ol, 
+.contentDisplay ol,
+:global(.ql-editor) ol {
+  padding-left: 20px !important;
+  list-style-type: decimal !important;
+  counter-reset: list-counter !important;
+}
+
+.previewContent ol li,
+.contentDisplay ol li,
+:global(.ql-editor) ol li {
+  display: list-item !important;
+  list-style-type: decimal !important;
+  margin-bottom: 4px !important;
+}
+
+.previewContent ul,
+.contentDisplay ul,
+:global(.ql-editor) ul {
+  padding-left: 20px !important;
+  list-style-type: disc !important;
+}
+
+.previewContent ul li,
+.contentDisplay ul li,
+:global(.ql-editor) ul li {
+  display: list-item !important;
+  list-style-type: disc !important;
+  margin-bottom: 4px !important;
+}
+
 /* Archive Detail Styles */
 .detailHeader {
   display: flex;
@@ -744,7 +776,7 @@
 .versionSelector {
   background: #f8f9fa;
   border-radius: 8px;
-  padding: 20px;
+  padding: 5px;
 }
 
 .versionList {
@@ -817,6 +849,9 @@
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
 }
 
 .previewHeader {
@@ -832,6 +867,9 @@
   color: #333;
   white-space: pre-wrap;
   margin-bottom: 20px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Yoopta Editor 스타일 */
@@ -839,6 +877,28 @@
   border: none !important;
   padding: 0 !important;
   background: transparent !important;
+}
+
+/* YooptaEditor 컨테이너 스타일 */
+.previewContent > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ReactQuill 컨테이너 높이 조정 */
+.previewContent :global(.ql-snow) {
+  height: auto !important;
+  display: block;
+}
+
+.previewContent :global(.ql-container) {
+  flex: 1 !important;
+  height: auto !important;
+}
+
+.previewContent :global(.ql-editor) {
+  padding-bottom: 40px !important;
 }
 
 .previewContent :global(.yoopta-block) {
@@ -1571,7 +1631,13 @@
 .actionButtons {
   display: flex;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #fff;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .saveButton {
@@ -1650,6 +1716,76 @@
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.headerActionButtons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.headerActionButtons .saveButton {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.headerActionButtons .saveButton:hover {
+  background-color: #218838;
+}
+
+.headerActionButtons .saveButton:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+.headerActionButtons .cancelButton {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.headerActionButtons .cancelButton:hover {
+  background-color: #5a6268;
+}
+
+.headerActionButtons .cancelButton:disabled {
+  background-color: #adb5bd;
+  cursor: not-allowed;
+}
+
+.headerActionButtons .editButton {
+  background-color: #007AFF;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.headerActionButtons .editButton:hover {
+  background-color: #0056b3;
 }
 
 .versionLabel {

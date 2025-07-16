@@ -169,6 +169,32 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   </select>
                 </div>
               )}
+              
+              <div className={styles.headerActionButtons}>
+                {isEditing ? (
+                  <>
+                    <button 
+                      className={styles.saveButton}
+                      onClick={handleSave}
+                      disabled={saving}
+                    >
+                      {saving ? '저장 중...' : '저장'}
+                    </button>
+                    <button 
+                      className={styles.cancelButton}
+                      onClick={handleCancel}
+                      disabled={saving}
+                    >
+                      취소
+                    </button>
+                  </>
+                ) : (
+                  <button className={styles.editButton} onClick={handleEdit}>
+                    <IoCreate size={16} />
+                    초안 수정하기
+                  </button>
+                )}
+              </div>
             </div>
           </div>
           
@@ -188,32 +214,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 content={currentArchive?.content || article.content || ''}
                 className={styles.contentDisplay}
               />
-            )}
-          </div>
-          
-          <div className={styles.actionButtons}>
-            {isEditing ? (
-              <>
-                <button 
-                  className={styles.saveButton}
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  {saving ? '저장 중...' : '저장'}
-                </button>
-                <button 
-                  className={styles.cancelButton}
-                  onClick={handleCancel}
-                  disabled={saving}
-                >
-                  취소
-                </button>
-              </>
-            ) : (
-              <button className={styles.editButton} onClick={handleEdit}>
-                <IoCreate size={16} />
-                초안 수정하기
-              </button>
             )}
           </div>
         </div>
