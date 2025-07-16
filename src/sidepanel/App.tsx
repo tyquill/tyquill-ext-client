@@ -35,6 +35,12 @@ const App: React.FC = () => {
     setCurrentPage({ type: 'archive' });
   };
 
+  const handleNavigateToDetail = (articleId: number) => {
+    console.log('📱 App: Navigating to detail page with articleId:', articleId);
+    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
+    console.log('📱 App: Current page state updated to:', { type: 'archive-detail', draftId: articleId.toString() });
+  };
+
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
     if (isAuthenticated) {
@@ -56,7 +62,7 @@ const App: React.FC = () => {
       <div className={styles.appContent}>
         {currentPage.type === 'scrap' && <ScrapPage />}
         {currentPage.type === 'template' && <TemplatePage />}
-        {currentPage.type === 'draft' && <ArticleGeneratePage />}
+        {currentPage.type === 'draft' && <ArticleGeneratePage onNavigateToDetail={handleNavigateToDetail} />}
         {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
         {currentPage.type === 'archive-detail' && currentPage.draftId && (
           <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />

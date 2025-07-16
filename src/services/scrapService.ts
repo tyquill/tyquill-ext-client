@@ -7,6 +7,7 @@
 
 import { ScrapResult } from '../utils/webClipper';
 import { API_BASE_URL } from '../config/environment';
+import { getAuthToken } from '../utils/auth/tokenUtil';
 
 /**
  * 스크랩 생성 요청 DTO (기존 서버 엔티티에 맞춤)
@@ -43,25 +44,13 @@ export class ScrapService {
   }
 
   /**
-   * 인증 토큰 가져오기
-   */
-  private async getAuthToken(): Promise<string | null> {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(['authState'], (result) => {
-        const authState = result.authState;
-        resolve(authState?.accessToken || null);
-      });
-    });
-  }
-
-  /**
    * API 요청 헬퍼
    */
   private async apiRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = await this.getAuthToken();
+    const token = await getAuthToken();
     
     if (!token) {
       throw new Error('Authentication required');
