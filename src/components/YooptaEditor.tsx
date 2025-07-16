@@ -43,7 +43,6 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
   // 마크다운을 HTML로 변환
   const markdownToHtml = useCallback((markdown: string) => {
     if (!markdown) return '<p><br></p>';
-    
     // 간단한 마크다운 파싱
     let html = markdown
       .replace(/&/g, '&amp;')

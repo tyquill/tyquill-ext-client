@@ -209,7 +209,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
     const fetchScraps = async () => {
       const scraps: ScrapResponse[] = await scrapService.getScraps();
       setFilteredScraps(scraps);
-      setAllTags(Array.from(new Set(scraps.flatMap(scrap => scrap.tags || []))).sort());
+      setAllTags(Array.from(new Set(scraps.flatMap(scrap => scrap.tags?.map(tag => tag.name) || []))).sort());
     };
     fetchScraps();
   }, []);
@@ -365,7 +365,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
                   <div className={styles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
                   <div className={styles.scrapFooter}>
                     <div className={styles.scrapTags}>
-                      <TagList tags={scrap.tags || []} />
+                      <TagList tags={scrap.tags?.map(tag => tag.name) || []} />
                     </div>
                     <div className={styles.scrapDate}>{scrap.createdAt}</div>
                   </div>
