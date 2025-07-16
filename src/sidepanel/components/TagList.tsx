@@ -1,16 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { IoClose } from 'react-icons/io5';
 import styles from '../pages/PageStyles.module.css';
 
 interface TagListProps {
   tags: string[];
   maxVisibleTags?: number;
   className?: string;
+  onTagRemove?: (tagName: string) => void;
+  showRemoveButton?: boolean;
 }
 
 export const TagList: React.FC<TagListProps> = ({ 
   tags, 
   maxVisibleTags = 2,
-  className = ''
+  className = '',
+  onTagRemove,
+  showRemoveButton = false
 }) => {
   const [showAllTags, setShowAllTags] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -35,10 +40,28 @@ export const TagList: React.FC<TagListProps> = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAllTags]);
 
+  const handleTagRemove = (tagName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTagRemove) {
+      onTagRemove(tagName);
+    }
+  };
+
   return (
     <div className={`${styles.tagContainer} ${className}`} ref={containerRef}>
       {visibleTags.map((tag, index) => (
-        <span key={index} className={styles.tag}>#{tag}</span>
+        <span key={index} className={styles.tag}>
+          #{tag}
+          {showRemoveButton && onTagRemove && (
+            <button
+              className={styles.tagRemoveButton}
+              onClick={(e) => handleTagRemove(tag, e)}
+              title={`${tag} 태그 삭제`}
+            >
+              <IoClose size={12} />
+            </button>
+          )}
+        </span>
       ))}
       {remainingTags > 0 && (
         <button
@@ -58,7 +81,18 @@ export const TagList: React.FC<TagListProps> = ({
         >
           <div className={styles.tagList}>
             {tags.map((tag, index) => (
-              <span key={index} className={styles.tag}>#{tag}</span>
+              <span key={index} className={styles.tag}>
+                #{tag}
+                {showRemoveButton && onTagRemove && (
+                  <button
+                    className={styles.tagRemoveButton}
+                    onClick={(e) => handleTagRemove(tag, e)}
+                    title={`${tag} 태그 삭제`}
+                  >
+                    <IoClose size={12} />
+                  </button>
+                )}
+              </span>
             ))}
           </div>
         </div>

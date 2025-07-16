@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { IoAdd, IoTrash, IoChevronDown, IoClose, IoClipboard, IoCheckmark } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
-import { Scrap } from '../../mock/data';
 import { scrapService } from '../../services/scrapService';
+import { Scrap } from '../../types/scrap.d'
 
 const ScrapPage: React.FC = () => {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -12,8 +12,7 @@ const ScrapPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
-  const [draftTag, setDraftTag] = useState('');
-  const [isComposing, setIsComposing] = useState(false);
+  const [isAddingTag, setIsAddingTag] = useState(false);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
   const [isClipping, setIsClipping] = useState(false);
   const [clipStatus, setClipStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -24,40 +23,17 @@ const ScrapPage: React.FC = () => {
   const [scrapsError, setScrapsError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
-  const dropdownRef = useRef<HTMLButtonElement>(null);
   const loadingTimeoutRef = useRef<number>();
   const inputRef = useRef<HTMLInputElement>(null);
-  const tagTooltipRef = useRef<HTMLDivElement>(null);
-  
-  const allTags = [
-    'AI', 'Technology', 'Trends', 'Automation', 'Productivity',
-    'Chrome', 'Development', 'Web', 'Design', 'UI/UX',
-    'System', 'Frontend', 'Architecture', 'React', 'Performance',
-    'JavaScript', 'TypeScript', 'Accessibility', 'Standards'
-  ];
+  const [allTags, setAllTags] = useState<string[]>([]);
 
-
-  // 핸들러를 useCallback으로 감싸서 안정화
-  const handleTagSelect = useCallback((tag: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
-  }, []);
-
-  const handleTagRemove = useCallback((tag: string, event: React.MouseEvent) => {
-    event.stopPropagation();
-    setSelectedTags(prev => prev.filter(t => t !== tag));
-  }, []);
-
-  const toggleDropdown = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsDropdownOpen(prev => !prev);
-  };
-
-
+  useEffect(() => {
+    const fetchAllTags = async () => {
+      const tags = Array.from(new Set(scraps.map(scrap => scrap.tags).flat()));
+      setAllTags(tags);
+    };
+    fetchAllTags();
+  }, [scraps]);
 
   // 웹 클리핑 기능
   const handleClipCurrentPage = useCallback(async () => {
@@ -309,13 +285,19 @@ const ScrapPage: React.FC = () => {
 
   // 스크랩에 태그 추가
   const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
-    if (!tag.trim()) {
-      setActiveInputId(null);
-      setDraftTag('');
+    if (!tag.trim() || isAddingTag) {
+      return;
+    }
+
+    // 중복 태그 확인
+    const currentScrap = scraps.find(scrap => scrap.id === scrapId);
+    if (currentScrap && currentScrap.tags.includes(tag.trim())) {
+      // alert(`"${tag.trim()}" 태그가 이미 존재합니다.`);
       return;
     }
 
     try {
+      setIsAddingTag(true);
       console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
       
       // 서버 API 호출하여 태그 추가
@@ -325,6 +307,8 @@ const ScrapPage: React.FC = () => {
       
       // 스크랩 목록 새로고침하여 새 태그 반영
       await loadScraps();
+      
+      setActiveInputId(null);
       
     } catch (error: any) {
       console.error('❌ Failed to add tag:', error);
@@ -337,41 +321,65 @@ const ScrapPage: React.FC = () => {
         setIsAuthenticated(false);
       }
     } finally {
-      setActiveInputId(null);
-      setDraftTag('');
+      setIsAddingTag(false);
     }
-  }, [loadScraps]);
+  }, [loadScraps, isAddingTag, scraps]);
+
+  // 스크랩에서 태그 삭제
+  const handleRemoveTag = useCallback(async (scrapId: string, tagName: string) => {
+    try {
+      console.log('🗑️ Removing tag:', tagName, 'from scrap:', scrapId);
+      
+      // 현재 스크랩에서 해당 태그의 tagId 찾기
+      const currentScrap = scraps.find(scrap => scrap.id === scrapId);
+      if (!currentScrap) {
+        throw new Error('스크랩을 찾을 수 없습니다.');
+      }
+
+      // 실제 태그 객체에서 tagId를 찾기 위해 서버에서 태그 정보 조회
+      const scrapTags = await scrapService.getScrapTags(parseInt(scrapId));
+      const tagToRemove = scrapTags.find(tag => tag.name === tagName);
+      
+      if (!tagToRemove) {
+        throw new Error('삭제할 태그를 찾을 수 없습니다.');
+      }
+      
+      // 서버 API 호출하여 태그 삭제
+      await scrapService.removeTagFromScrap(parseInt(scrapId), tagToRemove.tagId);
+      
+      console.log('✅ Tag removed successfully');
+      
+      // 스크랩 목록 새로고침하여 태그 삭제 반영
+      await loadScraps();
+      
+    } catch (error: any) {
+      console.error('❌ Failed to remove tag:', error);
+      
+      // 사용자에게 에러 알림
+      alert(`태그 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication')) {
+        setIsAuthenticated(false);
+      }
+    }
+  }, [scraps, loadScraps]);
 
   // 키보드 입력 처리
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
     if (e.key === 'Enter') {
-      // 한글 조합 중일 때는 처리하지 않음
-      if (isComposing) {
-        return;
-      }
       e.preventDefault();
-      handleAddTag(scrapId, draftTag.trim());
+      const tagValue = e.currentTarget.value.trim();
+      if (tagValue) {
+        handleAddTag(scrapId, tagValue);
+        e.currentTarget.value = ''; // 입력 필드 초기화
+      }
     } else if (e.key === 'Escape') {
       setActiveInputId(null);
-      setDraftTag('');
+      e.currentTarget.value = ''; // 입력 필드 초기화
     }
-  }, [draftTag, handleAddTag, isComposing]);
+  }, [handleAddTag]);
 
-  const handleCompositionStart = useCallback(() => {
-    setIsComposing(true);
-  }, []);
-
-  const handleCompositionEnd = useCallback((e: React.CompositionEvent<HTMLInputElement>) => {
-    setIsComposing(false);
-    setDraftTag(e.currentTarget.value);
-  }, []);
-
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    // 조합 중이 아닐 때만 상태 업데이트
-    if (!isComposing) {
-      setDraftTag(e.target.value);
-    }
-  }, [isComposing]);
 
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
@@ -390,7 +398,6 @@ const ScrapPage: React.FC = () => {
         if (tooltip && !tooltip.contains(target) && 
             !(target instanceof HTMLInputElement && target.classList.contains(styles.tagInput))) {
           setActiveInputId(null);
-          setDraftTag('');
         }
       }
 
@@ -472,13 +479,16 @@ const ScrapPage: React.FC = () => {
               onClick={(e) => {
                 e.stopPropagation();
                 setActiveInputId(activeInputId === scrap.id ? null : scrap.id);
-                setDraftTag('');
                 setShowAllTags(null);
               }}
             >
               <IoAdd size={14} />
             </button>
-            <TagList tags={scrap.tags} />
+            <TagList 
+              tags={scrap.tags} 
+              onTagRemove={(tagName) => handleRemoveTag(scrap.id, tagName)}
+              showRemoveButton={true}
+            />
             {activeInputId === scrap.id && (
               <div 
                 className={styles.tagInputTooltip} 
@@ -487,10 +497,6 @@ const ScrapPage: React.FC = () => {
                 <input
                   ref={inputRef}
                   type="text"
-                  value={draftTag}
-                  onChange={handleChange}
-                  onCompositionStart={handleCompositionStart}
-                  onCompositionEnd={handleCompositionEnd}
                   onKeyDown={(e) => handleKeyDown(e, scrap.id)}
                   placeholder="태그 입력 후 Enter"
                   className={styles.tagInput}
@@ -500,7 +506,14 @@ const ScrapPage: React.FC = () => {
                   className={styles.tagSubmitButton}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleAddTag(scrap.id, draftTag.trim());
+                    const inputElement = inputRef.current;
+                    if (inputElement) {
+                      const tagValue = inputElement.value.trim();
+                      if (tagValue) {
+                        handleAddTag(scrap.id, tagValue);
+                        inputElement.value = ''; // 입력 필드 초기화
+                      }
+                    }
                   }}
                 >
                   추가
