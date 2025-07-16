@@ -46,6 +46,17 @@ export interface UpdateArticleDto {
 }
 
 /**
+ * 아티클 생성 응답 타입 (generate API 전용)
+ */
+export interface GenerateArticleResponse {
+    id: number;
+    title: string;
+    content: string;
+    createdAt: string;
+    userId: number;
+}
+
+/**
  * 아카이브 응답 타입
  */
 export interface ArchiveResponse {
@@ -140,7 +151,7 @@ export class ArticleService {
      * AI로 아티클 생성
      * POST /api/v1/articles/generate
      */
-    async generateArticle(generateData: GenerateArticleDto): Promise<ArticleResponse> {
+    async generateArticle(generateData: GenerateArticleDto): Promise<GenerateArticleResponse> {
         return this.apiRequest('/v1/articles/generate', {
             method: 'POST',
             body: JSON.stringify(generateData),
