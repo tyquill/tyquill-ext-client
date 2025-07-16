@@ -1,0 +1,67 @@
+/* React Quill Ordered List Override */
+.yooptaWrapper :global(.ql-editor) ol {
+  padding-left: 1.5em !important;
+  margin-left: 0 !important;
+  list-style-type: decimal !important;
+  counter-reset: none !important;
+}
+
+.yooptaWrapper :global(.ql-editor) ol li {
+  display: list-item !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin-bottom: 4px !important;
+  padding-left: 0 !important;
+}
+
+.yooptaWrapper :global(.ql-editor) ul {
+  padding-left: 1.5em !important;
+  margin-left: 0 !important;
+  list-style-type: disc !important;
+}
+
+.yooptaWrapper :global(.ql-editor) ul li {
+  display: list-item !important;
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  margin-bottom: 4px !important;
+  padding-left: 0 !important;
+}
+
+/* Make sure list item numbers and bullets are visible */
+.yooptaWrapper :global(.ql-editor) ol li::marker {
+  color: #333 !important;
+  font-weight: normal !important;
+}
+
+.yooptaWrapper :global(.ql-editor) ul li::marker {
+  color: #333 !important;
+  font-weight: normal !important;
+}
+
+/* Fix ReactQuill default list styles */
+.yooptaWrapper :global(.ql-editor) ol li[data-list="ordered"] {
+  counter-increment: none !important;
+}
+
+.yooptaWrapper :global(.ql-editor) ol li[data-list="ordered"]:before {
+  content: none !important;
+}
+
+/* Auto-height Quill editor styles */
+.yooptaWrapper :global(.ql-container) {
+  height: auto !important;
+  border-bottom: none !important;
+}
+
+.yooptaWrapper :global(.ql-editor) {
+  height: auto !important;
+  min-height: 150px !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+  padding-bottom: 20px !important;
+}
+
+.yooptaWrapper :global(.ql-toolbar) {
+  border-bottom: 1px solid #ccc !important;
+}
