@@ -8,7 +8,7 @@ import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment } from '../../services/articleService';
 
 interface ArticleGeneratePageProps {
-  onNavigateToDetail?: (articleId: number) => void;
+  onNavigateToDetail: (articleId: number) => void;
 }
 
 interface SelectedScrap extends ScrapResponse {
@@ -113,7 +113,7 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
   }
 }
 
-const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToDetail = () => {} }) => {
+const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToDetail }) => {
   const [state, dispatch] = useReducer(draftReducer, initialState);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
 
@@ -171,19 +171,25 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
 
       const result = await articleService.generateArticle(generateData);
       console.log('✅ Article generated:', result);
+      console.log('✅ Article ID from result:', result.articleId);
+      console.log('✅ onNavigateToDetail function:', onNavigateToDetail);
       
-      // 성공 시 상세 페이지로 이동
-      if (onNavigateToDetail && result.articleId) {
-        onNavigateToDetail(result.articleId);
-      } else {
-        alert('아티클이 성공적으로 생성되었습니다!');
-      }
-      
-      // 초기 상태로 리셋
+      // 초기 상태로 리셋 (네비게이션 전에 실행)
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
       dispatch({ type: 'SET_HANDLE', payload: '' });
       dispatch({ type: 'CLEAR_SCRAPS' });
+      
+      // 성공 시 상세 페이지로 이동
+      if (onNavigateToDetail && result.articleId) {
+        console.log('🚀 Navigating to detail page with articleId:', result.articleId);
+        onNavigateToDetail(result.articleId);
+      } else {
+        console.log('❌ Navigation failed - missing onNavigateToDetail or articleId');
+        console.log('onNavigateToDetail:', onNavigateToDetail);
+        console.log('result.articleId:', result.articleId);
+        alert('아티클이 성공적으로 생성되었습니다!');
+      }
       
     } catch (error: any) {
       console.error('❌ Failed to generate article:', error);
