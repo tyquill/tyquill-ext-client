@@ -57,10 +57,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       .replace(/^#{1,6}\s+/gm, '') // 헤딩 제거
       .replace(/\*\*(.*?)\*\*/g, '$1') // 볼드 제거
       .replace(/\*(.*?)\*/g, '$1') // 이탤릭 제거
+      .replace(/~~(.*?)~~/g, '$1') // 취소선 제거
+      .replace(/__(.*?)__/g, '$1') // 밑줄 제거
+      .replace(/`([^`]+)`/g, '$1') // 인라인 코드 제거
+      .replace(/```[\s\S]*?```/g, '') // 코드 블록 제거
       .replace(/^\*\s+/gm, '• ') // 불릿 포인트로 변환
-      .replace(/^\d+\.\s+/gm, '') // 번호 목록 제거 (미리보기에서만)
+      .replace(/^\d+\.\s+/gm, '') // 번호 목록 제거
+      .replace(/^\>\s+/gm, '') // 인용구 제거
+      .replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1') // 링크 텍스트만 유지
+      .replace(/!\[([^\]]*)\]\([^\)]+\)/g, '') // 이미지 제거
       .replace(/\\(.)/g, '$1') // 역슬래시 이스케이프 제거
       .replace(/\n+/g, ' ') // 줄바꿈을 공백으로
+      .replace(/\s+/g, ' ') // 연속된 공백을 하나로
       .trim();
     
     return text.length > 200 ? text.substring(0, 200) + '...' : text;
