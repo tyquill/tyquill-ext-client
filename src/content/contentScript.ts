@@ -299,6 +299,17 @@ function markdownToHtml(markdown: string): string {
 }
 
 /**
+ * 콘텐츠 정리 함수 - 마크다운 포맷팅 최적화
+ */
+function cleanContentForMaily(content: string): string {
+  return content
+    // 연속된 개행 정리
+    .replace(/\n{3,}/g, '\n\n')
+    // 앞뒤 공백 제거
+    .trim();
+}
+
+/**
  * maily.so 페이지에 텍스트 붙여넣기 (실제 paste 이벤트 사용)
  */
 async function handlePasteToMaily(content: string): Promise<any> {
@@ -307,6 +318,9 @@ async function handlePasteToMaily(content: string): Promise<any> {
     if (!window.location.hostname.includes('maily.so')) {
       throw new Error('This function only works on maily.so');
     }
+
+    // 콘텐츠 정리
+    const cleanedContent = cleanContentForMaily(content);
 
     // 에디터 컨테이너 찾기
     const editorContainer = document.querySelector('.codex-editor__redactor');
@@ -336,8 +350,8 @@ async function handlePasteToMaily(content: string): Promise<any> {
 
     // 클립보드 사용하지 않고 직접 DataTransfer 객체 생성
     const dataTransfer = new DataTransfer();
-    dataTransfer.setData('text/plain', content);
-    dataTransfer.setData('text/html', markdownToHtml(content));
+    dataTransfer.setData('text/plain', cleanedContent);
+    dataTransfer.setData('text/html', markdownToHtml(cleanedContent));
 
     // paste 이벤트 생성 및 발생
     const pasteEvent = new ClipboardEvent('paste', {
@@ -357,7 +371,7 @@ async function handlePasteToMaily(content: string): Promise<any> {
         range.deleteContents();
         
         // HTML 내용 삽입
-        const htmlContent = markdownToHtml(content);
+        const htmlContent = markdownToHtml(cleanedContent);
         const fragment = range.createContextualFragment(htmlContent);
         range.insertNode(fragment);
       }
@@ -394,6 +408,7 @@ async function handlePasteToMaily(content: string): Promise<any> {
     throw error;
   }
 }
+
 
 
 // 초기화 완료 알림
