@@ -5,10 +5,12 @@ import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
 import { scrapService } from '../../services/scrapService';
 import { useToastHelpers } from '../../hooks/useToast';
+import { useAuth } from '../../hooks/useAuth';
 import { Scrap } from '../../types/scrap.d'
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
+  const { logout } = useAuth();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -338,11 +340,19 @@ const ScrapPage: React.FC = () => {
   }, [handleAddTag]);
 
 
-  // 로그인 페이지로 이동
-  const handleLogin = useCallback(() => {
-    // 여기서는 사용자에게 로그인이 필요하다는 메시지만 표시
-    showWarning('로그인 필요', 'Tyquill에 로그인하여 스크랩 기능을 사용하세요.');
-  }, [showWarning]);
+  // 로그인 페이지로 이동 (또는 로그아웃 처리)
+  const handleLogin = useCallback(async () => {
+    if (isAuthenticated) {
+      try {
+        await logout();
+        showSuccess('로그아웃', '성공적으로 로그아웃되었습니다.');
+      } catch (error) {
+        showError('로그아웃 실패', '로그아웃 처리 중 오류가 발생했습니다.');
+      }
+    } else {
+      showWarning('로그인 필요', 'Tyquill에 로그인하여 스크랩 기능을 사용하세요.');
+    }
+  }, [isAuthenticated, logout]);
 
   // 외부 클릭 핸들러 수정
   useEffect(() => {
@@ -412,6 +422,21 @@ const ScrapPage: React.FC = () => {
     };
   }, [loading, hasMore]);
 
+  const formatScrapDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleString('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5');
+    } catch (error) {
+      return dateString;
+    }
+  };
 
   const ScrapItem = React.memo<{ scrap: Scrap; onDelete: () => void }>(({ scrap, onDelete }) => {
     return (

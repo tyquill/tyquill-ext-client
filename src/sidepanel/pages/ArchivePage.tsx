@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { IoTrash } from 'react-icons/io5';
+import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { IoTrash, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
 
@@ -7,26 +7,36 @@ interface ArchivePageProps {
   onDraftClick: (draftId: string) => void;
 }
 
-const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
+export interface ArchivePageRef {
+  refreshList: () => void;
+}
+
+const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick }, ref) => {
   const [articles, setArticles] = useState<ArticleResponse[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchArticles = async () => {
-      try {
-        setLoading(true);
-        const articleList = await articleService.getArticles();
-        setArticles(articleList);
-      } catch (err: any) {
-        setError(err.message || 'Failed to load articles');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchArticles();
+  const loadArticles = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await articleService.getArticles();
+      setArticles(response);
+    } catch (error: any) {
+      setError(error.message || '아티클 목록을 불러오는데 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  // ref를 통해 refreshList 함수 노출
+  useImperativeHandle(ref, () => ({
+    refreshList: loadArticles
+  }));
+
+  useEffect(() => {
+    loadArticles();
+  }, [loadArticles]);
 
   const handleDelete = async (id: number) => {
     if (window.confirm('이 아티클을 삭제하시겠습니까?')) {
@@ -81,7 +91,16 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>보관함</h1>
+        <div className={styles.headerContent}>
+          <h1 className={styles.pageTitle}>보관함</h1>
+          <button 
+            className={styles.refreshButton}
+            onClick={loadArticles}
+            disabled={loading}
+          >
+            <IoRefresh size={18} />
+          </button>
+        </div>
       </div>
 
       <div className={styles.archiveList}>
@@ -101,11 +120,28 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
                   onClick={() => onDraftClick(article.articleId.toString())}
                   style={{ cursor: 'pointer' }}
                 >
-                  <div className={styles.archiveTitle}>{article.title}</div>
+                  <div className={styles.archiveTitle}>{article.title || '제목 없음'}</div>
                   <div className={styles.archiveInfo}>
-                    생성일: {new Date(article.createdAt).toLocaleDateString()}
+                    <span>{new Date(article.createdAt).toLocaleString('ko-KR', {
+                      year: 'numeric',
+                      month: '2-digit',
+                      day: '2-digit',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5')}</span>
                     {article.updatedAt !== article.createdAt && (
-                      <> • 수정일: {new Date(article.updatedAt).toLocaleDateString()}</>
+                      <>
+                        <span className={styles.dot} />
+                        <span>{new Date(article.updatedAt).toLocaleString('ko-KR', {
+                          year: 'numeric',
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5')}</span>
+                      </>
                     )}
                   </div>
                 </div>
@@ -135,6 +171,6 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
       </div>
     </div>
   );
-};
+});
 
 export default ArchivePage; 
