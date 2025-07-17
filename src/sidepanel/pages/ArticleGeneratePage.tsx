@@ -159,6 +159,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
+      // 모달 바깥 클릭 처리
+      if (state.isScrapModalOpen) {
+        const modalOverlay = document.querySelector(`.${styles.modalOverlay}`);
+        const scrapModal = document.querySelector(`.${styles.scrapModal}`);
+        
+        if (modalOverlay && target === modalOverlay && !scrapModal?.contains(target)) {
+          dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
+        }
+      }
+
       // 태그 목록 툴팁 처리
       if (showAllTags !== null) {
         const tagListTooltip = document.querySelector(`[data-taglist-id="${showAllTags}"]`);
@@ -171,10 +181,19 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [showAllTags]);
+  }, [showAllTags, state.isScrapModalOpen]);
 
   const handleScrapSelect = (scrap: ScrapResponse) => {
-    dispatch({ type: 'ADD_SCRAP', payload: scrap });
+    // 이미 선택된 스크랩인지 확인
+    const isSelected = state.selectedScraps.find(s => s.scrapId === scrap.scrapId);
+    
+    if (isSelected) {
+      // 이미 선택된 경우 선택 해제
+      dispatch({ type: 'REMOVE_SCRAP', payload: scrap.scrapId });
+    } else {
+      // 선택되지 않은 경우 추가
+      dispatch({ type: 'ADD_SCRAP', payload: scrap });
+    }
   };
 
   const handleOpinionChange = (id: number, opinion: string) => {
@@ -272,6 +291,22 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
       );
     });
   }, [allScraps, state.selectedTags]);
+
+  // 날짜 포맷팅 함수
+  const formatScrapDate = (dateString: string) => {
+    try {
+      const date = new Date(dateString);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      
+      return `${year}. ${month}. ${day}. ${hours}:${minutes}`;
+    } catch (error) {
+      return dateString; // 파싱 실패시 원본 반환
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -391,7 +426,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
       </div>
 
       {state.isScrapModalOpen && (
-        <div className={styles.modalOverlay}>
+        <div 
+          className={styles.modalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
+            }
+          }}
+        >
           <div className={styles.scrapModal}>
             <div className={styles.modalHeader}>
               <h2 className={styles.modalTitle}>스크랩 선택</h2>
@@ -426,7 +468,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
                     <div className={styles.scrapTags}>
                       <TagList tags={scrap.tags?.map(tag => tag.name) || []} />
                     </div>
-                    <div className={styles.scrapDate}>{scrap.createdAt}</div>
+                    <div className={styles.scrapDate}>{formatScrapDate(scrap.createdAt)}</div>
                   </div>
                 </div>
               ))}
