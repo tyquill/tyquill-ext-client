@@ -30,9 +30,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         setLoading(true);
         const articleData = await articleService.getArticle(parseInt(draftId));
         
-        // 연속된 개행 정리
+        // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
         const normalizeContent = (content: string) => {
-          return content.replace(/\n{2,}/g, '\n');
+          return content.replace(/\n{2,}/g, '\n').trim();
         };
 
         // 아티클 데이터 정리
@@ -78,17 +78,32 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     
     try {
       setSaving(true);
+      
+      // 저장 전에 콘텐츠 정리
+      const normalizedContent = editContent.replace(/\n{2,}/g, '\n').trim();
+      
       const updateData: UpdateArticleDto = {
         title: editTitle,
-        content: editContent,
+        content: normalizedContent,
       };
       
       const updatedArticle = await articleService.updateArticle(article.articleId, updateData);
-      setArticle(updatedArticle);
+      
+      // 응답 데이터 정리
+      const normalizedResponse = {
+        ...updatedArticle,
+        content: updatedArticle.content.replace(/\n{2,}/g, '\n').trim(),
+        archives: updatedArticle.archives?.map(archive => ({
+          ...archive,
+          content: archive.content.replace(/\n{2,}/g, '\n').trim()
+        }))
+      };
+      
+      setArticle(normalizedResponse);
       
       // 새로운 버전이 생성되었는지 확인하고 최신 버전으로 전환
-      if (updatedArticle.archives && updatedArticle.archives.length > 0) {
-        const latestArchive = updatedArticle.archives[0]; // 이미 정렬된 상태
+      if (normalizedResponse.archives && normalizedResponse.archives.length > 0) {
+        const latestArchive = normalizedResponse.archives[0]; // 이미 정렬된 상태
         setSelectedVersionNumber(latestArchive.versionNumber);
         setCurrentArchive(latestArchive);
         setEditTitle(latestArchive.title);
@@ -183,23 +198,141 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     currentTab.url.includes('maily.so') && 
                     (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
                   
-                  // maily.so 편집 페이지가 활성화되어 있으면 content script로 붙여넣기
-                  const response = await chrome.tabs.sendMessage(currentTab.id!, {
-                    type: 'PASTE_TO_MAILY',
-                    content: content
+                  // 직접 DOM 조작으로 붙여넣기 실행
+                  await chrome.scripting.executeScript({
+                    target: { tabId: currentTab.id! },
+                    func: (contentToInsert: string) => {
+                      // 콘텐츠 정리
+                      const cleanedContent = contentToInsert
+                        .replace(/\n{3,}/g, '\n\n')
+                        .trim();
+
+                      // 에디터 컨테이너 찾기
+                      const editorContainer = document.querySelector('.codex-editor__redactor');
+                      if (!editorContainer) {
+                        throw new Error('maily.so 에디터를 찾을 수 없습니다.');
+                      }
+
+                      // 첫 번째 편집 가능한 요소 찾기
+                      let targetElement = editorContainer.querySelector('[contenteditable="true"]');
+                      
+                      if (!targetElement) {
+                        targetElement = editorContainer as HTMLElement;
+                      }
+
+                      // 마지막 블록 찾기 (가장 아래에 추가하기 위해)
+                      const existingBlocks = editorContainer.querySelectorAll('.ce-block');
+                      let insertionPoint: HTMLElement;
+                      
+                      if (existingBlocks.length > 0) {
+                        // 마지막 블록의 편집 가능한 요소 찾기
+                        const lastBlock = existingBlocks[existingBlocks.length - 1];
+                        const lastEditableElement = lastBlock.querySelector('[contenteditable="true"]');
+                        insertionPoint = lastEditableElement as HTMLElement || targetElement as HTMLElement;
+                      } else {
+                        insertionPoint = targetElement as HTMLElement;
+                      }
+
+                      // 삽입 지점에 포커스
+                      insertionPoint.focus();
+
+                      // 커서를 마지막 블록의 끝으로 이동
+                      const selection = window.getSelection();
+                      if (selection) {
+                        selection.removeAllRanges();
+                        const range = document.createRange();
+                        range.selectNodeContents(insertionPoint);
+                        range.collapse(false); // 끝으로 이동
+                        selection.addRange(range);
+                      }
+
+                      // 마크다운을 HTML로 변환하는 간단한 함수
+                      const markdownToHtml = (markdown: string): string => {
+                        return markdown
+                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                          .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+                          .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+                          .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+                          .replace(/^- (.+)$/gm, '<li>$1</li>')
+                          .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+                          .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+                          .replace(/(<li>.*<\/li>)/gs, '<ol>$1</ol>')
+                          .split('\n')
+                          .map(line => line.trim() ? `<p>${line}</p>` : '<br>')
+                          .join('\n');
+                      };
+
+                      // Enter 키를 두 번 눌러서 새 블록 생성
+                      const enterEvent1 = new KeyboardEvent('keydown', {
+                        key: 'Enter',
+                        code: 'Enter',
+                        bubbles: true,
+                        cancelable: true
+                      });
+                      insertionPoint.dispatchEvent(enterEvent1);
+
+                      // 약간의 지연 후 두 번째 Enter
+                      setTimeout(() => {
+                        const enterEvent2 = new KeyboardEvent('keydown', {
+                          key: 'Enter',
+                          code: 'Enter',
+                          bubbles: true,
+                          cancelable: true
+                        });
+                        insertionPoint.dispatchEvent(enterEvent2);
+
+                        // 새로 생성된 블록 찾기
+                        setTimeout(() => {
+                          const newBlocks = editorContainer.querySelectorAll('.ce-block');
+                          const newLastBlock = newBlocks[newBlocks.length - 1];
+                          const newTargetElement = newLastBlock?.querySelector('[contenteditable="true"]') as HTMLElement;
+                          
+                          if (newTargetElement) {
+                            newTargetElement.focus();
+
+                            // DataTransfer 객체 생성
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.setData('text/plain', cleanedContent);
+                            dataTransfer.setData('text/html', markdownToHtml(cleanedContent));
+
+                            // paste 이벤트 생성 및 발생
+                            const pasteEvent = new ClipboardEvent('paste', {
+                              bubbles: true,
+                              cancelable: true,
+                              clipboardData: dataTransfer
+                            });
+
+                            newTargetElement.dispatchEvent(pasteEvent);
+
+                            // fallback: 직접 내용 삽입
+                            if (!pasteEvent.defaultPrevented) {
+                              const newSelection = window.getSelection();
+                              if (newSelection && newSelection.rangeCount > 0) {
+                                const range = newSelection.getRangeAt(0);
+                                range.deleteContents();
+                                
+                                const htmlContent = markdownToHtml(cleanedContent);
+                                const fragment = range.createContextualFragment(htmlContent);
+                                range.insertNode(fragment);
+                              }
+                            }
+                          }
+                        }, 100);
+                      }, 100);
+
+                      return { success: true };
+                    },
+                    args: [content]
                   });
 
-                  if (response.success) {
-                    showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
-                  } else {
-                    showError('내보내기 실패', response.error || '붙여넣기에 실패했습니다.');
-                  }
+                  showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
                 } else {
-                  // maily.so 편집 페이지가 아니면 안내 메시지
                   showError('내보내기 실패', 'maily.so 뉴스레터 편집 또는 생성 페이지에서만 사용할 수 있습니다.');
                 }
               } catch (error) {
-                showError('내보내기 실패', '탭 정보를 확인할 수 없거나 content script와 통신에 실패했습니다.');
+                console.error('Export error:', error);
+                showError('내보내기 실패', 'maily.so 페이지에서 내보내기 중 오류가 발생했습니다.');
               }
             }}
           >
