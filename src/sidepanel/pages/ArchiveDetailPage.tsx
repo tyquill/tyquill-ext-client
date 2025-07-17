@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IoArrowBack, IoCreate } from 'react-icons/io5';
+import { IoArrowBack, IoArrowUpCircle, IoCreate } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import YooptaEditorWrapper from '../../components/YooptaEditor';
@@ -29,19 +29,35 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       try {
         setLoading(true);
         const articleData = await articleService.getArticle(parseInt(draftId));
-        setArticle(articleData);
+        
+        // 연속된 개행 정리
+        const normalizeContent = (content: string) => {
+          return content.replace(/\n{2,}/g, '\n');
+        };
+
+        // 아티클 데이터 정리
+        const normalizedArticle = {
+          ...articleData,
+          content: normalizeContent(articleData.content),
+          archives: articleData.archives?.map(archive => ({
+            ...archive,
+            content: normalizeContent(archive.content)
+          }))
+        };
+        
+        setArticle(normalizedArticle);
         
         // 기본적으로 최신 버전 선택
-        if (articleData.archives && articleData.archives.length > 0) {
-          const latestArchive = articleData.archives[0]; // 이미 정렬된 상태
+        if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
+          const latestArchive = normalizedArticle.archives[0]; // 이미 정렬된 상태
           setSelectedVersionNumber(latestArchive.versionNumber);
           setCurrentArchive(latestArchive);
           setEditTitle(latestArchive.title);
           setEditContent(latestArchive.content);
         } else {
           // 아카이브가 없는 경우 기본값 사용
-          setEditTitle(articleData.title);
-          setEditContent(articleData.content);
+          setEditTitle(normalizedArticle.title);
+          setEditContent(normalizedArticle.content);
         }
       } catch (err: any) {
         setError(err.message || 'Failed to load article');
@@ -145,6 +161,78 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         </h1>
       </div>
 
+      <div className={styles.actionButtons}>
+        {!isEditing && (
+          <button 
+            className={styles.exportButton}
+            onClick={async () => {
+              const content = currentArchive?.content || article?.content || '';
+              const title = currentArchive?.title || article?.title || '';
+              
+              if (!title.trim() || !content.trim()) {
+                showError('내보내기 실패', '제목과 내용이 모두 있어야 내보낼 수 있습니다.');
+                return;
+              }
+
+              // 현재 활성 탭이 maily.so 편집 페이지인지 확인
+              try {
+                const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                const currentTab = tabs[0];
+                
+                if (currentTab?.url && 
+                    currentTab.url.includes('maily.so') && 
+                    (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
+                  
+                  // maily.so 편집 페이지가 활성화되어 있으면 content script로 붙여넣기
+                  const response = await chrome.tabs.sendMessage(currentTab.id!, {
+                    type: 'PASTE_TO_MAILY',
+                    content: content
+                  });
+
+                  if (response.success) {
+                    showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
+                  } else {
+                    showError('내보내기 실패', response.error || '붙여넣기에 실패했습니다.');
+                  }
+                } else {
+                  // maily.so 편집 페이지가 아니면 안내 메시지
+                  showError('내보내기 실패', 'maily.so 뉴스레터 편집 또는 생성 페이지에서만 사용할 수 있습니다.');
+                }
+              } catch (error) {
+                showError('내보내기 실패', '탭 정보를 확인할 수 없거나 content script와 통신에 실패했습니다.');
+              }
+            }}
+          >
+            <IoArrowUpCircle size={20} />
+            maily.so로 내보내기
+          </button>
+        )}
+        {!isEditing && (
+          <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
+            <IoCreate size={20} />
+            수정
+          </button>
+        )}
+        {isEditing && (
+          <>
+            <button 
+              className={styles.saveButton}
+              onClick={handleSave}
+              disabled={saving}
+            >
+              {saving ? '저장 중...' : '저장'}
+            </button>
+            <button 
+              className={styles.cancelButton}
+              onClick={handleCancel}
+              disabled={saving}
+            >
+              취소
+            </button>
+          </>
+        )}
+      </div>
+
       <div className={styles.detailContent}>
         <div className={styles.previewContainer}>
           <div className={styles.previewHeader}>
@@ -172,76 +260,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   </select>
                 </div>
               )}
-              
-              {!isEditing && (
-                <button 
-                  className={styles.exportButton}
-                  onClick={async () => {
-                    const content = currentArchive?.content || article?.content || '';
-                    const title = currentArchive?.title || article?.title || '';
-                    
-                    if (!title.trim() || !content.trim()) {
-                      showError('내보내기 실패', '제목과 내용이 모두 있어야 내보낼 수 있습니다.');
-                      return;
-                    }
-
-                    // 현재 활성 탭이 maily.so 편집 페이지인지 확인
-                    try {
-                      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-                      const currentTab = tabs[0];
-                      
-                      if (currentTab?.url && 
-                          currentTab.url.includes('maily.so') && 
-                          (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
-                        
-                        // maily.so 편집 페이지가 활성화되어 있으면 content script로 붙여넣기
-                        const response = await chrome.tabs.sendMessage(currentTab.id!, {
-                          type: 'PASTE_TO_MAILY',
-                          content: content
-                        });
-
-                        if (response.success) {
-                          showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
-                        } else {
-                          showError('내보내기 실패', response.error || '붙여넣기에 실패했습니다.');
-                        }
-                      } else {
-                        // maily.so 편집 페이지가 아니면 안내 메시지
-                        showError('내보내기 실패', 'maily.so 뉴스레터 편집 또는 생성 페이지에서만 사용할 수 있습니다.');
-                      }
-                    } catch (error) {
-                      showError('내보내기 실패', '탭 정보를 확인할 수 없거나 content script와 통신에 실패했습니다.');
-                    }
-                  }}
-                >
-                  maily.so로 내보내기
-                </button>
-              )}
-              
-              <div className={styles.headerActionButtons}>
-                {isEditing ? (
-                  <>
-                    <button 
-                      className={styles.saveButton}
-                      onClick={handleSave}
-                      disabled={saving}
-                    >
-                      {saving ? '저장 중...' : '저장'}
-                    </button>
-                    <button 
-                      className={styles.cancelButton}
-                      onClick={handleCancel}
-                      disabled={saving}
-                    >
-                      취소
-                    </button>
-                  </>
-                ) : (
-                  <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
-                    <IoCreate size={16} />
-                  </button>
-                )}
-              </div>
             </div>
           </div>
           
