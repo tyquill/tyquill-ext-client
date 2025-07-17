@@ -241,7 +241,7 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
           .replace(/\\([*_\[\]()~`>#+\-=|{}!.\w])/g, '$1')
           .replace(/\\(\d+\.)/g, '$1') // 숫자. 형태의 이스케이프 제거
           .replace(/\\\s/g, ' ') // 공백 앞의 역슬래시 제거
-          .replace(/\n{3,}/g, '\n\n')
+          .replace(/\n{2,}/g, '\n') // 연속된 개행을 단일 개행으로 변경
           .trim();
         onChange(markdownValue);
       }
