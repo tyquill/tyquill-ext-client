@@ -86,39 +86,48 @@ const ArchivePage: React.FC<ArchivePageProps> = ({ onDraftClick }) => {
 
       <div className={styles.archiveList}>
         {articles.length === 0 ? (
-          <div className={styles.emptyState}>
-            생성된 아티클이 없습니다.
+          <div className={styles.emptyContainer}>
+            <div className={styles.emptyMessage}>보관함이 비어 있습니다</div>
+            <div className={styles.emptySubMessage}>
+              초안 생성 페이지에서 첫 번째 초안을 만들어 보세요!
+            </div>
           </div>
         ) : (
           articles.map(article => (
             <div key={article.articleId} className={styles.archiveItem}>
+              <div className={styles.archiveGrid}>
+                <div 
+                  className={styles.archiveContent}
+                  onClick={() => onDraftClick(article.articleId.toString())}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <div className={styles.archiveTitle}>{article.title}</div>
+                  <div className={styles.archiveInfo}>
+                    생성일: {new Date(article.createdAt).toLocaleDateString()}
+                    {article.updatedAt !== article.createdAt && (
+                      <> • 수정일: {new Date(article.updatedAt).toLocaleDateString()}</>
+                    )}
+                  </div>
+                </div>
+                <div className={styles.archiveActions}>
+                  <button
+                    className={styles.actionButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(article.articleId);
+                    }}
+                    title="삭제"
+                  >
+                    <IoTrash size={18} />
+                  </button>
+                </div>
+              </div>
               <div 
-                className={styles.archiveContent}
+                className={styles.archivePreview}
                 onClick={() => onDraftClick(article.articleId.toString())}
                 style={{ cursor: 'pointer' }}
               >
-                <div className={styles.archiveTitle}>{article.title}</div>
-                <div className={styles.archiveInfo}>
-                  생성일: {new Date(article.createdAt).toLocaleDateString()}
-                  {article.updatedAt !== article.createdAt && (
-                    <> • 수정일: {new Date(article.updatedAt).toLocaleDateString()}</>
-                  )}
-                </div>
-                <div className={styles.archivePreview}>
-                  {getPreviewContent(article.content)}
-                </div>
-              </div>
-              <div className={styles.archiveActions}>
-                <button
-                  className={styles.actionButton}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDelete(article.articleId);
-                  }}
-                  title="삭제"
-                >
-                  <IoTrash size={18} />
-                </button>
+                {getPreviewContent(article.content)}
               </div>
             </div>
           ))

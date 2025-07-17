@@ -640,12 +640,19 @@
   border-radius: 8px;
   padding: 16px;
   transition: all 0.2s ease;
-  cursor: pointer;
 }
 
 .archiveItem:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-color: #007AFF;
+}
+
+.archiveGrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: start;
+  margin-bottom: 12px;
 }
 
 .archiveContent {
@@ -654,7 +661,7 @@
 }
 
 .archiveTitle {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #333;
   margin-bottom: 8px;
@@ -684,7 +691,7 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
-  margin-top: 12px;
+  align-items: center;
 }
 
 .actionButton {
