@@ -114,11 +114,11 @@ const ScrapPage: React.FC = () => {
 
         // console.log('✅ Scrap saved:', scrapResponse);
         setClipStatus('success');
+        showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
         
         // 스크랩 목록 새로고침 (약간의 지연 후)
         setTimeout(async () => {
           await loadScraps();
-          // console.log('🔄 Scraps reloaded after save');
         }, 1000);
         
         // 성공 상태 2초 후 리셋
@@ -132,7 +132,9 @@ const ScrapPage: React.FC = () => {
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication required')) {
         setIsAuthenticated(false);
-        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
+        showError('인증 만료', '로그인이 만료되었습니다. 다시 로그인해주세요.');
+      } else {
+        showError('스크랩 실패', error.message || '페이지 스크랩 중 오류가 발생했습니다.');
       }
       
       setClipStatus('error');
@@ -184,7 +186,13 @@ const ScrapPage: React.FC = () => {
         title: scrap.title,
         content: scrap.content,
         url: scrap.url,
-        date: new Date(scrap.createdAt).toLocaleDateString('ko-KR'),
+        date: new Date(scrap.createdAt).toLocaleString('ko-KR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [], // 태그 객체에서 name만 추출
       }));
       
@@ -263,7 +271,7 @@ const ScrapPage: React.FC = () => {
       // console.error('❌ Failed to add tag:', error);
       
       // 사용자에게 에러 알림
-      alert(`태그 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      showError('태그 추가 실패', `${error.message || '알 수 없는 오류'}`);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication')) {
@@ -305,7 +313,7 @@ const ScrapPage: React.FC = () => {
       // console.error('❌ Failed to remove tag:', error);
       
       // 사용자에게 에러 알림
-      alert(`태그 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      showError('태그 삭제 실패', `${error.message || '알 수 없는 오류'}`);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication')) {
@@ -333,8 +341,8 @@ const ScrapPage: React.FC = () => {
   // 로그인 페이지로 이동
   const handleLogin = useCallback(() => {
     // 여기서는 사용자에게 로그인이 필요하다는 메시지만 표시
-    alert('로그인이 필요합니다. Side Panel의 다른 탭에서 로그인을 완료해주세요.');
-  }, []);
+    showWarning('로그인 필요', 'Tyquill에 로그인하여 스크랩 기능을 사용하세요.');
+  }, [showWarning]);
 
   // 외부 클릭 핸들러 수정
   useEffect(() => {
@@ -568,6 +576,9 @@ const ScrapPage: React.FC = () => {
               <div className={styles.emptyMessage}>
                 아직 스크랩한 내용이 없습니다.
               </div>
+              <div className={styles.emptySubMessage}>
+                💡 위의 "페이지 스크랩" 버튼을 눌러 1초만에 스크랩하세요!
+              </div>
             </div>
           ) : (
             filteredScraps.map((scrap) => (
@@ -578,10 +589,9 @@ const ScrapPage: React.FC = () => {
                 try {
                   await scrapService.deleteScrap(parseInt(scrap.id));
                   await loadScraps(); // 동기적으로 처리
-                  // console.log('🔄 Scraps reloaded after delete');
-                } catch (error) {
-                  // console.error('Failed to delete scrap:', error);
-                  alert('스크랩 삭제에 실패했습니다.');
+                  showSuccess('스크랩 삭제', '스크랩이 성공적으로 삭제되었습니다.');
+                } catch (error: any) {
+                  showError('삭제 실패', error?.message || '스크랩 삭제에 실패했습니다.');
                 }
               }}
             />

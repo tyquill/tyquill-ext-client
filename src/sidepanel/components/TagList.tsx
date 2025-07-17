@@ -20,6 +20,11 @@ export const TagList: React.FC<TagListProps> = ({
   const [showAllTags, setShowAllTags] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   
+  // 태그 길이 제한 및 ellipsis 처리
+  const truncateTag = (tag: string, maxLength: number = 12) => {
+    return tag.length > maxLength ? `${tag.substring(0, maxLength)}...` : tag;
+  };
+  
   const visibleTags = tags.slice(0, maxVisibleTags);
   const remainingTags = tags.length - maxVisibleTags;
 
@@ -50,8 +55,8 @@ export const TagList: React.FC<TagListProps> = ({
   return (
     <div className={`${styles.tagContainer} ${className}`} ref={containerRef}>
       {visibleTags.map((tag, index) => (
-        <span key={index} className={styles.tag}>
-          #{tag}
+        <span key={index} className={styles.tag} title={tag}>
+          #{truncateTag(tag)}
           {showRemoveButton && onTagRemove && (
             <button
               className={styles.tagRemoveButton}
@@ -81,8 +86,8 @@ export const TagList: React.FC<TagListProps> = ({
         >
           <div className={styles.tagList}>
             {tags.map((tag, index) => (
-              <span key={index} className={styles.tag}>
-                #{tag}
+              <span key={index} className={styles.tag} title={tag}>
+                #{truncateTag(tag, 20)}
                 {showRemoveButton && onTagRemove && (
                   <button
                     className={styles.tagRemoveButton}
