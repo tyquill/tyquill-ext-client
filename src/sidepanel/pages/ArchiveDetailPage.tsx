@@ -255,10 +255,10 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                         // 텍스트 포맷팅 처리 헬퍼 함수
                         const processTextFormatting = (text: string) => {
                           return text
-                            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>')
-                            .replace(/~~(.*?)~~/g, '<del class="cdx-strikethrough">$1</del>')
-                            .replace(/__([^_]+)__/g, '<u class="cdx-underline">$1</u>')
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                            .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                            .replace(/__([^_]+)__/g, '<u>$1</u>')
                             .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
                         };
 
