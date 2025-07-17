@@ -83,7 +83,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
       </main>
 
-      {/* Footer */}
+      {/* Footer
       <footer className={styles.footer}>
         <span>Tyquill은 개인정보 보호를 최우선으로 합니다.</span>
         <div className={styles.footerLinks}>
@@ -93,7 +93,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <span className={styles.footerDivider}>|</span>
           <a href="#privacy">개인정보처리방침</a>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 };
