@@ -40,6 +40,14 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
       }
     });
     
+    // 밑줄 변환 규칙 추가
+    service.addRule('underline', {
+      filter: ['u'] as any,
+      replacement: function (content) {
+        return '__' + content + '__';
+      }
+    });
+    
     turndownServiceRef.current = service;
   }, []);
 
@@ -75,7 +83,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         // 헤더 내 볼드/이탤릭 처리
         const processedHeader = headerContent
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+          .replace(/__([^_]+)__/g, '<u>$1</u>');
         processedLines.push(`<h3>${processedHeader}</h3>`);
       }
       else if (trimmedLine.match(/^## /)) {
@@ -90,7 +99,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         const headerContent = trimmedLine.substring(3);
         const processedHeader = headerContent
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+          .replace(/__([^_]+)__/g, '<u>$1</u>');
         processedLines.push(`<h2>${processedHeader}</h2>`);
       }
       else if (trimmedLine.match(/^# /)) {
@@ -105,7 +115,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         const headerContent = trimmedLine.substring(2);
         const processedHeader = headerContent
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+          .replace(/__([^_]+)__/g, '<u>$1</u>');
         processedLines.push(`<h1>${processedHeader}</h1>`);
       }
       // 번호 목록 처리 (1. 2. 3. 등)
@@ -122,7 +133,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         // 볼드/이탤릭 처리 후 HTML 이스케이프
         const processedContent = content
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+          .replace(/__([^_]+)__/g, '<u>$1</u>');
         processedLines.push(`<li>${processedContent}</li>`);
       }
       // 불릿 포인트 처리 (* 또는 -)
@@ -139,7 +151,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         // 볼드/이탤릭 처리
         const processedContent = content
           .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+          .replace(/__([^_]+)__/g, '<u>$1</u>');
         processedLines.push(`<li>${processedContent}</li>`);
       }
       // 일반 텍스트
@@ -156,7 +169,8 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
           // 볼드와 이탤릭 처리
           const processedContent = line
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+            .replace(/__([^_]+)__/g, '<u>$1</u>');
           processedLines.push(`<p>${processedContent}</p>`);
         } else {
           processedLines.push('<p><br></p>');

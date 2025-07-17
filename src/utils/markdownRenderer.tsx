@@ -14,6 +14,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
       .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      .replace(/__([^_]+)__/g, '<u>$1</u>')
       .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
   };
 
