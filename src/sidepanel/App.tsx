@@ -67,7 +67,7 @@ const App: React.FC = () => {
         <Header activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
         <div className={styles.appContent}>
           {currentPage.type === 'scrap' && <ScrapPage />}
-          {currentPage.type === 'template' && <TemplatePage />}
+          {/* {currentPage.type === 'template' && <TemplatePage />} */}
           {currentPage.type === 'draft' && <ArticleGeneratePage onNavigateToDetail={handleNavigateToDetail} />}
           {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
           {currentPage.type === 'archive-detail' && currentPage.draftId && (

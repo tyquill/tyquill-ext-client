@@ -263,7 +263,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
           />
         </div>
 
-        <div className={styles.formGroup}>
+        {/* <div className={styles.formGroup}>
           <label htmlFor="handle" className={styles.formLabel}>
             maily 핸들
           </label>
@@ -275,9 +275,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
             onChange={(e) => dispatch({ type: 'SET_HANDLE', payload: e.target.value })}
             placeholder="예: josh"
           />
-        </div>
+        </div> */}
 
-        <div className={styles.formGroup}>
+        {/* <div className={styles.formGroup}>
           <label htmlFor="template" className={styles.formLabel}>
             템플릿 선택 <span style={{ color: '#999', fontSize: '0.9em' }}>(개발 중)</span>
           </label>
@@ -295,7 +295,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
               </option>
             ))}
           </select>
-        </div>
+        </div> */}
 
         <div className={styles.referenceSection}>
           <h3 className={styles.sectionTitle}>참고 자료 선택</h3>

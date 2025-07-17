@@ -144,73 +144,6 @@ const ScrapPage: React.FC = () => {
     }
   }, [isClipping, selectedTags]);
 
-  const handleClipSelection = useCallback(async () => {
-    if (isClipping) return;
-
-    try {
-      setIsClipping(true);
-      setClipStatus('idle');
-
-      // 현재 활성 탭 정보 가져오기
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      if (!tab?.id) {
-        throw new Error('No active tab found');
-      }
-
-      // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('chrome://') || 
-          tab.url?.startsWith('chrome-extension://') ||
-          tab.url?.startsWith('edge://') ||
-          tab.url?.startsWith('about:')) {
-        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
-      }
-
-      // Content Script로 선택 영역 클리핑 요청
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        type: 'CLIP_SELECTION'
-      });
-
-      if (response.success) {
-        // console.log('✅ Selection clipped:', response.data);
-        
-        // 스크랩 서비스로 저장
-        const scrapResponse = await scrapService.quickScrap(
-          response.data,
-          '', // userComment
-          selectedTags // 선택된 태그들
-        );
-
-        // console.log('✅ Scrap saved:', scrapResponse);
-        setClipStatus('success');
-        
-        // 스크랩 목록 동기적으로 새로고침
-        await loadScraps();
-        // console.log('🔄 Scraps reloaded after save');
-        
-        // 성공 상태 2초 후 리셋
-        setTimeout(() => setClipStatus('idle'), 2000);
-      } else {
-        throw new Error(response.error || 'Selection clipping failed');
-      }
-    } catch (error: any) {
-      // console.error('❌ Selection clipping error:', error);
-      
-      // 인증 에러인 경우 인증 상태 재확인
-      if (error.message.includes('Authentication required')) {
-        setIsAuthenticated(false);
-        alert('로그인이 만료되었습니다. 다시 로그인해주세요.');
-      }
-      
-      setClipStatus('error');
-      
-      // 에러 상태 3초 후 리셋
-      setTimeout(() => setClipStatus('idle'), 3000);
-    } finally {
-      setIsClipping(false);
-    }
-  }, [isClipping, selectedTags]);
-
   // 인증 상태 확인
   const checkAuthStatus = useCallback(async () => {
     try {
@@ -589,14 +522,6 @@ const ScrapPage: React.FC = () => {
                     페이지 스크랩
                   </>
                 )}
-              </button>
-              
-              <button 
-                className={`${styles.addButton} ${styles.secondaryButton}`}
-                onClick={handleClipSelection}
-                disabled={isClipping}
-              >
-                선택 영역
               </button>
             </div>
           )}

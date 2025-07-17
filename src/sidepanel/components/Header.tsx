@@ -32,7 +32,7 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
 
   const menuItems: MenuItem[] = [
     { key: 'scrap', label: '스크랩', icon: IoClipboard },
-    { key: 'template', label: '템플릿', icon: IoDocument },
+    // { key: 'template', label: '템플릿', icon: IoDocument },
     { key: 'draft', label: '초안생성', icon: IoSparkles },
     { key: 'archive', label: '보관함', icon: IoArchive }
   ];
