@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Tyquill Extension",
   "version": "1.0.0",
-  "description": "Chrome Extension with React + TypeScript",
+  "description": "Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다.",
   "permissions": ["storage", "sidePanel", "tabs", "scripting"],
   "host_permissions": ["<all_urls>"],
   "icons": {
