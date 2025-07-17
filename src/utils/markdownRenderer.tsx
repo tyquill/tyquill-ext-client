@@ -8,11 +8,13 @@ interface MarkdownRendererProps {
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
   if (!content) return <div className={className}></div>;
 
-  // 볼드/이탤릭 텍스트 처리 헬퍼 함수
+  // 볼드/이탤릭/취소선 텍스트 처리 헬퍼 함수
   const processTextFormatting = (text: string) => {
     return text
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+      .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+      .replace(/~~(.*?)~~/g, '<del>$1</del>')
+      .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
   };
 
   const renderMarkdown = (markdown: string) => {
@@ -45,12 +47,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
           <h3 key={key++} style={{ fontSize: '18px', fontWeight: 'bold', margin: '12px 0 4px 0' }}
               dangerouslySetInnerHTML={{ __html: processedHeader }} />
         );
-      } else if (trimmedLine.startsWith('- ')) {
-        // 연속된 불릿 리스트 항목들을 하나의 ul로 그룹화
+      } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+        // 연속된 불릿 리스트 항목들을 하나의 ul로 그룹화 (- 와 * 모두 지원)
         const listItems: React.ReactElement[] = [];
         let listKey = 0;
         
-        while (i < lines.length && lines[i].trim().startsWith('- ')) {
+        while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
           const item = lines[i].trim().substring(2);
           const processedItem = processTextFormatting(item);
           listItems.push(

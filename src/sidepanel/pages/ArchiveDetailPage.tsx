@@ -246,21 +246,82 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                         selection.addRange(range);
                       }
 
-                      // 마크다운을 HTML로 변환하는 간단한 함수
+                      // 완전한 마크다운을 HTML로 변환하는 함수
                       const markdownToHtml = (markdown: string): string => {
-                        return markdown
-                          .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                          .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
-                          .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-                          .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-                          .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-                          .replace(/^- (.+)$/gm, '<li>$1</li>')
-                          .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-                          .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-                          .replace(/(<li>.*<\/li>)/gs, '<ol>$1</ol>')
-                          .split('\n')
-                          .map(line => line.trim() ? `<p>${line}</p>` : '<br>')
-                          .join('\n');
+                        const lines = markdown.split('\n');
+                        const htmlElements: string[] = [];
+                        let i = 0;
+
+                        // 텍스트 포맷팅 처리 헬퍼 함수
+                        const processTextFormatting = (text: string) => {
+                          return text
+                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                            .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                            .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
+                        };
+
+                        while (i < lines.length) {
+                          const trimmedLine = lines[i].trim();
+                          
+                          if (trimmedLine.startsWith('# ')) {
+                            const headerContent = trimmedLine.substring(2);
+                            const processedHeader = processTextFormatting(headerContent);
+                            htmlElements.push(`<h1>${processedHeader}</h1>`);
+                          } else if (trimmedLine.startsWith('## ')) {
+                            const headerContent = trimmedLine.substring(3);
+                            const processedHeader = processTextFormatting(headerContent);
+                            htmlElements.push(`<h2>${processedHeader}</h2>`);
+                          } else if (trimmedLine.startsWith('### ')) {
+                            const headerContent = trimmedLine.substring(4);
+                            const processedHeader = processTextFormatting(headerContent);
+                            htmlElements.push(`<h3>${processedHeader}</h3>`);
+                          } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                            // 연속된 불릿 리스트 항목들을 하나의 ul로 그룹화
+                            const listItems: string[] = [];
+                            
+                            while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+                              const item = lines[i].trim().substring(2);
+                              const processedItem = processTextFormatting(item);
+                              listItems.push(`<li>${processedItem}</li>`);
+                              i++;
+                            }
+                            
+                            htmlElements.push(`<ul>${listItems.join('')}</ul>`);
+                            i--; // while 루프에서 i++가 되므로 1 감소
+                          } else if (trimmedLine.match(/^\d+\.\s/)) {
+                            // 연속된 번호 리스트 항목들을 하나의 ol로 그룹화
+                            const listItems: string[] = [];
+                            
+                            while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                              const item = lines[i].trim().replace(/^\d+\.\s/, '');
+                              const processedItem = processTextFormatting(item);
+                              listItems.push(`<li>${processedItem}</li>`);
+                              i++;
+                            }
+                            
+                            htmlElements.push(`<ol>${listItems.join('')}</ol>`);
+                            i--; // while 루프에서 i++가 되므로 1 감소
+                          } else if (trimmedLine.startsWith('> ')) {
+                            const quoteContent = trimmedLine.substring(2);
+                            const processedQuote = processTextFormatting(quoteContent);
+                            htmlElements.push(`<blockquote>${processedQuote}</blockquote>`);
+                          } else if (trimmedLine.startsWith('```')) {
+                            const codeContent = trimmedLine.substring(3);
+                            htmlElements.push(`<pre><code>${codeContent}</code></pre>`);
+                          } else if (trimmedLine === '---') {
+                            htmlElements.push('<hr>');
+                          } else if (trimmedLine) {
+                            const processedText = processTextFormatting(trimmedLine);
+                            htmlElements.push(`<p>${processedText}</p>`);
+                          } else {
+                            htmlElements.push('<br>');
+                          }
+                          
+                          i++;
+                        }
+
+                        return htmlElements.join('\n');
                       };
 
                       // Enter 키를 두 번 눌러서 새 블록 생성
@@ -291,10 +352,13 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                           if (newTargetElement) {
                             newTargetElement.focus();
 
-                            // DataTransfer 객체 생성
+                            // HTML 변환
+                            const convertedHtml = markdownToHtml(cleanedContent);
+
+                            // DataTransfer 객체 생성 - HTML과 플레인 텍스트 모두 설정
                             const dataTransfer = new DataTransfer();
+                            dataTransfer.setData('text/html', convertedHtml);
                             dataTransfer.setData('text/plain', cleanedContent);
-                            dataTransfer.setData('text/html', markdownToHtml(cleanedContent));
 
                             // paste 이벤트 생성 및 발생
                             const pasteEvent = new ClipboardEvent('paste', {
@@ -305,15 +369,22 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
                             newTargetElement.dispatchEvent(pasteEvent);
 
-                            // fallback: 직접 내용 삽입
+                            // fallback: 직접 HTML 내용 삽입
                             if (!pasteEvent.defaultPrevented) {
                               const newSelection = window.getSelection();
                               if (newSelection && newSelection.rangeCount > 0) {
                                 const range = newSelection.getRangeAt(0);
                                 range.deleteContents();
                                 
-                                const htmlContent = markdownToHtml(cleanedContent);
-                                const fragment = range.createContextualFragment(htmlContent);
+                                // HTML을 DOM 요소로 변환해서 삽입
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = convertedHtml;
+                                
+                                // HTML 요소들을 하나씩 삽입
+                                const fragment = document.createDocumentFragment();
+                                while (tempDiv.firstChild) {
+                                  fragment.appendChild(tempDiv.firstChild);
+                                }
                                 range.insertNode(fragment);
                               }
                             }
