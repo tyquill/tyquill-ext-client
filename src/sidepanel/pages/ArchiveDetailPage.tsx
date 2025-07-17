@@ -5,6 +5,7 @@ import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } fr
 import YooptaEditorWrapper from '../../components/YooptaEditor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import ErrorBoundary from '../../components/ErrorBoundary';
+import { useToastHelpers } from '../../hooks/useToast';
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -21,6 +22,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [saving, setSaving] = useState(false);
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [currentArchive, setCurrentArchive] = useState<ArchiveResponse | null>(null);
+  const { showSuccess, showError } = useToastHelpers();
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -109,6 +111,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   };
 
+
   if (loading) {
     return <div className={styles.loadingContainer}>로딩 중...</div>;
   }
@@ -170,6 +173,51 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 </div>
               )}
               
+              {!isEditing && (
+                <button 
+                  className={styles.exportButton}
+                  onClick={async () => {
+                    const content = currentArchive?.content || article?.content || '';
+                    const title = currentArchive?.title || article?.title || '';
+                    
+                    if (!title.trim() || !content.trim()) {
+                      showError('내보내기 실패', '제목과 내용이 모두 있어야 내보낼 수 있습니다.');
+                      return;
+                    }
+
+                    // 현재 활성 탭이 maily.so 편집 페이지인지 확인
+                    try {
+                      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                      const currentTab = tabs[0];
+                      
+                      if (currentTab?.url && 
+                          currentTab.url.includes('maily.so') && 
+                          (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
+                        
+                        // maily.so 편집 페이지가 활성화되어 있으면 content script로 붙여넣기
+                        const response = await chrome.tabs.sendMessage(currentTab.id!, {
+                          type: 'PASTE_TO_MAILY',
+                          content: content
+                        });
+
+                        if (response.success) {
+                          showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
+                        } else {
+                          showError('내보내기 실패', response.error || '붙여넣기에 실패했습니다.');
+                        }
+                      } else {
+                        // maily.so 편집 페이지가 아니면 안내 메시지
+                        showError('내보내기 실패', 'maily.so 뉴스레터 편집 또는 생성 페이지에서만 사용할 수 있습니다.');
+                      }
+                    } catch (error) {
+                      showError('내보내기 실패', '탭 정보를 확인할 수 없거나 content script와 통신에 실패했습니다.');
+                    }
+                  }}
+                >
+                  maily.so로 내보내기
+                </button>
+              )}
+              
               <div className={styles.headerActionButtons}>
                 {isEditing ? (
                   <>
@@ -189,9 +237,8 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     </button>
                   </>
                 ) : (
-                  <button className={styles.editButton} onClick={handleEdit}>
+                  <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
                     <IoCreate size={16} />
-                    초안 수정하기
                   </button>
                 )}
               </div>
