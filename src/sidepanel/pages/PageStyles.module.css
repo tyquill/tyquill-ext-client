@@ -539,10 +539,11 @@
 
 .tags {
   display: flex;
-  gap: 8px;
   flex-wrap: wrap;
+  gap: 4px;
   align-items: center;
   position: relative;
+  z-index: 1000;
 }
 
 .tag {
@@ -588,7 +589,7 @@
   border: 1px solid #ddd;
   border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 1001;
   padding: 8px;
   display: flex;
   gap: 8px;
@@ -706,7 +707,7 @@
   border-radius: 4px;
   font-size: 12px;
   white-space: nowrap;
-  z-index: 1000;
+  z-index: 100;
 }
 
 .source:hover::before {
@@ -1461,15 +1462,12 @@
 
 /* Fixed Content Area */
 .fixedContent {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  background: white;
+  position: sticky;
+  top: 0;
+  background-color: white;
+  padding: 16px;
+  border-bottom: 1px solid #eee;
   z-index: 10;
-  padding: 12px 20px;
-  flex-shrink: 0;
-  border-bottom: 1px solid transparent;
 }
 
 .tagFilterContainer {
@@ -1503,19 +1501,18 @@
 }
 
 .tagFilterDropdown {
-  display: none;
   position: absolute;
   top: 100%;
   left: 0;
-  min-width: 200px;
-  max-height: 300px;
-  overflow-y: auto;
+  width: 100%;
   background-color: white;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-top: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 50;
+  max-height: 200px;
+  overflow-y: auto;
+  display: none;
 }
 
 .tagFilterDropdown.visible {
@@ -1732,18 +1729,16 @@
 
 .tagListTooltip {
   position: absolute;
-  z-index: 1000;
-  top: 100%;
+  bottom: calc(100% + 8px);
   left: 0;
-  margin-top: 8px;
   background-color: white;
   border: 1px solid #ddd;
   border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
   padding: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  min-width: 160px;
+  max-height: 200px;
   overflow-y: auto;
-  max-height: fit-content;
 }
 
 .tagList {
