@@ -44,17 +44,37 @@ type DraftAction =
   | { type: 'SET_GENERATING'; payload: boolean }
   | { type: 'SET_GENERATION_ERROR'; payload: string | null };
 
-const initialState: ArticleGenerateState = {
-  topic: '',
-  keyInsight: '',
-  handle: '',
-  selectedTemplate: '비즈니스 미팅 요청',
-  isScrapModalOpen: false,
-  selectedScraps: [],
-  selectedTags: [],
-  isTagDropdownOpen: false,
-  isGenerating: false,
-  generationError: null,
+const STORAGE_KEY = 'tyquill-article-generate-draft';
+
+const getInitialState = (): ArticleGenerateState => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsedState = JSON.parse(saved);
+      return {
+        ...parsedState,
+        isScrapModalOpen: false,
+        isTagDropdownOpen: false,
+        isGenerating: false,
+        generationError: null,
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load saved draft state:', error);
+  }
+  
+  return {
+    topic: '',
+    keyInsight: '',
+    handle: '',
+    selectedTemplate: '비즈니스 미팅 요청',
+    isScrapModalOpen: false,
+    selectedScraps: [],
+    selectedTags: [],
+    isTagDropdownOpen: false,
+    isGenerating: false,
+    generationError: null,
+  };
 };
 
 function draftReducer(state: ArticleGenerateState, action: DraftAction): ArticleGenerateState {
@@ -114,8 +134,26 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
 }
 
 const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToDetail }) => {
-  const [state, dispatch] = useReducer(draftReducer, initialState);
+  const [state, dispatch] = useReducer(draftReducer, getInitialState());
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
+
+  // Save state to localStorage whenever relevant state changes
+  useEffect(() => {
+    const stateToSave = {
+      topic: state.topic,
+      keyInsight: state.keyInsight,
+      handle: state.handle,
+      selectedTemplate: state.selectedTemplate,
+      selectedScraps: state.selectedScraps,
+      selectedTags: state.selectedTags,
+    };
+    
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch (error) {
+      console.warn('Failed to save draft state:', error);
+    }
+  }, [state.topic, state.keyInsight, state.handle, state.selectedTemplate, state.selectedScraps, state.selectedTags]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -174,11 +212,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
       // console.log('✅ Article ID from result:', result.id);
       // console.log('✅ onNavigateToDetail function:', onNavigateToDetail);
       
-      // 초기 상태로 리셋 (네비게이션 전에 실행)
+      // 초기 상태로 리셋 및 localStorage 클리어 (네비게이션 전에 실행)
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
       dispatch({ type: 'SET_HANDLE', payload: '' });
       dispatch({ type: 'CLEAR_SCRAPS' });
+      
+      // Clear saved draft after successful generation
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+      } catch (error) {
+        console.warn('Failed to clear saved draft state:', error);
+      }
       
       // 성공 시 상세 페이지로 이동
       if (onNavigateToDetail && result.id) {
