@@ -255,8 +255,8 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                         // 텍스트 포맷팅 처리 헬퍼 함수
                         const processTextFormatting = (text: string) => {
                           return text
-                            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                            .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                            .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>')
                             .replace(/~~(.*?)~~/g, '<del>$1</del>')
                             .replace(/__([^_]+)__/g, '<u>$1</u>')
                             .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
@@ -283,7 +283,13 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                             
                             while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
                               const item = lines[i].trim().substring(2);
-                              const processedItem = processTextFormatting(item);
+                              // 리스트 아이템 내부의 텍스트 포맷팅에 semantic 태그 사용
+                              const processedItem = item
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                                .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                                .replace(/__([^_]+)__/g, '<u>$1</u>')
+                                .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
                               listItems.push(`<li>${processedItem}</li>`);
                               i++;
                             }
@@ -296,7 +302,13 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                             
                             while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
                               const item = lines[i].trim().replace(/^\d+\.\s/, '');
-                              const processedItem = processTextFormatting(item);
+                              // 리스트 아이템 내부의 텍스트 포맷팅에 semantic 태그 사용
+                              const processedItem = item
+                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                                .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+                                .replace(/~~(.*?)~~/g, '<del>$1</del>')
+                                .replace(/__([^_]+)__/g, '<u>$1</u>')
+                                .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
                               listItems.push(`<li>${processedItem}</li>`);
                               i++;
                             }
