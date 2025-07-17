@@ -36,9 +36,9 @@ const App: React.FC = () => {
   };
 
   const handleNavigateToDetail = (articleId: number) => {
-    console.log('📱 App: Navigating to detail page with articleId:', articleId);
+    // console.log('📱 App: Navigating to detail page with articleId:', articleId);
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
-    console.log('📱 App: Current page state updated to:', { type: 'archive-detail', draftId: articleId.toString() });
+    // console.log('📱 App: Current page state updated to:', { type: 'archive-detail', draftId: articleId.toString() });
   };
 
   // 인증 상태에 따른 페이지 렌더링

@@ -35,11 +35,11 @@ declare const process: {
 // webpack DefinePlugin으로 주입된 NODE_ENV 직접 확인
 const isDevelopment = process.env.NODE_ENV === 'development';
 
-console.log('🔍 Environment detection:', {
-  nodeEnv: process.env.NODE_ENV,
-  isDevelopment,
-  selectedEnv: isDevelopment ? 'development' : 'production'
-});
+// console.log('🔍 Environment detection:', {
+//   nodeEnv: process.env.NODE_ENV,
+//   isDevelopment,
+//   selectedEnv: isDevelopment ? 'development' : 'production'
+// });
 
 export const environment: Environment = isDevelopment ? development : production;
 
@@ -73,9 +73,9 @@ export const getOAuthCallbackUrl = (): string => {
  * 현재 환경 정보 로그
  */
 export const logEnvironmentInfo = (): void => {
-  console.log('🌍 Environment Configuration:', {
-    production: environment.production,
-    serverUrl: environment.serverUrl,
-    apiUrl: environment.apiUrl,
-  });
+  // console.log('🌍 Environment Configuration:', {
+  //   production: environment.production,
+  //   serverUrl: environment.serverUrl,
+  //   apiUrl: environment.apiUrl,
+  // });
 };

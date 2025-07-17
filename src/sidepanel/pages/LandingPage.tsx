@@ -15,7 +15,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       await login();
       onStart(); // 인증 성공 후 메인 페이지로 이동
     } catch (err) {
-      console.error('Login failed:', err);
+      // console.error('Login failed:', err);
     }
   };
 

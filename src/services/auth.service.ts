@@ -190,11 +190,11 @@ class AuthService {
       this.notifyStateChange();
 
       // 1. 일반 OAuth 플로우로 인증 코드 획득
-      console.log('🔐 Starting OAuth flow...');
+      // console.log('🔐 Starting OAuth flow...');
       const authCode = await this.performOAuthFlow();
       
       // 2. 서버에서 JWT 토큰 발급
-      console.log('🔐 Authenticating with server...');
+      // console.log('🔐 Authenticating with server...');
       const authResponse = await this.authenticateWithServer(authCode);
       
       // 3. 인증 상태 업데이트
@@ -210,12 +210,12 @@ class AuthService {
       await this.saveAuthState();
       this.notifyStateChange();
 
-      console.log('✅ Authentication successful:', authResponse.user.email);
+      // console.log('✅ Authentication successful:', authResponse.user.email);
       return authResponse;
     } catch (error) {
       this.authState.isLoading = false;
       this.notifyStateChange();
-      console.error('❌ Authentication failed:', error);
+      // console.error('❌ Authentication failed:', error);
       throw error;
     }
   }
@@ -236,7 +236,7 @@ class AuthService {
       }
 
       // 2. 로컬 토큰 정리 (일반 OAuth는 별도 토큰 제거 불필요)
-      console.log('🔐 Clearing local tokens...');
+      // console.log('🔐 Clearing local tokens...');
 
       // 3. 로컬 상태 초기화
       this.authState = {
@@ -251,9 +251,9 @@ class AuthService {
       await this.clearAuthState();
       this.notifyStateChange();
 
-      console.log('✅ Logout successful');
+      // console.log('✅ Logout successful');
     } catch (error) {
-      console.error('❌ Logout error:', error);
+      // console.error('❌ Logout error:', error);
       throw error;
     }
   }
@@ -293,7 +293,7 @@ class AuthService {
 
       return authResponse;
     } catch (error) {
-      console.error('❌ Token refresh failed:', error);
+      // console.error('❌ Token refresh failed:', error);
       // 갱신 실패시 로그아웃 처리
       await this.logout();
       throw error;
@@ -333,7 +333,7 @@ class AuthService {
         
         // 토큰 만료 검사
         if (this.isTokenExpired()) {
-          console.log('🔐 Token expired, attempting refresh...');
+          // console.log('🔐 Token expired, attempting refresh...');
           await this.refreshToken();
         }
         
@@ -341,7 +341,7 @@ class AuthService {
       }
       return false;
     } catch (error) {
-      console.error('❌ Failed to restore auth state:', error);
+      // console.error('❌ Failed to restore auth state:', error);
       return false;
     }
   }

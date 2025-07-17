@@ -167,12 +167,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
         generationParams: state.handle || undefined,
       };
 
-      console.log('🤖 Generating article with data:', generateData);
+      // console.log('🤖 Generating article with data:', generateData);
 
       const result = await articleService.generateArticle(generateData);
-      console.log('✅ Article generated:', result);
-      console.log('✅ Article ID from result:', result.id);
-      console.log('✅ onNavigateToDetail function:', onNavigateToDetail);
+      // console.log('✅ Article generated:', result);
+      // console.log('✅ Article ID from result:', result.id);
+      // console.log('✅ onNavigateToDetail function:', onNavigateToDetail);
       
       // 초기 상태로 리셋 (네비게이션 전에 실행)
       dispatch({ type: 'SET_SUBJECT', payload: '' });
@@ -182,17 +182,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ onNavigateToD
       
       // 성공 시 상세 페이지로 이동
       if (onNavigateToDetail && result.id) {
-        console.log('🚀 Navigating to detail page with articleId:', result.id);
+        // console.log('🚀 Navigating to detail page with articleId:', result.id);
         onNavigateToDetail(result.id);
       } else {
-        console.log('❌ Navigation failed - missing onNavigateToDetail or articleId');
-        console.log('onNavigateToDetail:', onNavigateToDetail);
-        console.log('result.id:', result.id);
+        // console.log('❌ Navigation failed - missing onNavigateToDetail or articleId');
+        // console.log('onNavigateToDetail:', onNavigateToDetail);
+        // console.log('result.id:', result.id);
         alert('아티클이 성공적으로 생성되었습니다!');
       }
       
     } catch (error: any) {
-      console.error('❌ Failed to generate article:', error);
+      // console.error('❌ Failed to generate article:', error);
       dispatch({ type: 'SET_GENERATION_ERROR', payload: error.message || '아티클 생성에 실패했습니다.' });
     } finally {
       dispatch({ type: 'SET_GENERATING', payload: false });

@@ -64,11 +64,11 @@ const ScrapPage: React.FC = () => {
         throw new Error('No active tab found');
       }
 
-      console.log('📋 Attempting to clip page on tab:', {
-        tabId: tab.id,
-        url: tab.url,
-        title: tab.title
-      });
+      // console.log('📋 Attempting to clip page on tab:', {
+      //   tabId: tab.id,
+      //   url: tab.url,
+      //   title: tab.title
+      // });
 
       // URL 체크 - 제한된 페이지에서는 스크랩 불가
       if (tab.url?.startsWith('chrome://') || 
@@ -82,7 +82,7 @@ const ScrapPage: React.FC = () => {
       try {
         await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
       } catch (pingError) {
-        console.warn('⚠️ Content script not ready, injecting...');
+        // console.warn('⚠️ Content script not ready, injecting...');
         
         // Content script 수동 주입 시도
         await chrome.scripting.executeScript({
@@ -101,7 +101,7 @@ const ScrapPage: React.FC = () => {
       });
 
       if (response.success) {
-        console.log('✅ Page clipped:', response.data);
+        // console.log('✅ Page clipped:', response.data);
         
         // 스크랩 서비스로 저장
         const scrapResponse = await scrapService.quickScrap(
@@ -110,13 +110,13 @@ const ScrapPage: React.FC = () => {
           selectedTags // 선택된 태그들
         );
 
-        console.log('✅ Scrap saved:', scrapResponse);
+        // console.log('✅ Scrap saved:', scrapResponse);
         setClipStatus('success');
         
         // 스크랩 목록 새로고침 (약간의 지연 후)
         setTimeout(async () => {
           await loadScraps();
-          console.log('🔄 Scraps reloaded after save');
+          // console.log('🔄 Scraps reloaded after save');
         }, 1000);
         
         // 성공 상태 2초 후 리셋
@@ -125,7 +125,7 @@ const ScrapPage: React.FC = () => {
         throw new Error(response.error || 'Clipping failed');
       }
     } catch (error: any) {
-      console.error('❌ Clipping error:', error);
+      // console.error('❌ Clipping error:', error);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication required')) {
@@ -170,7 +170,7 @@ const ScrapPage: React.FC = () => {
       });
 
       if (response.success) {
-        console.log('✅ Selection clipped:', response.data);
+        // console.log('✅ Selection clipped:', response.data);
         
         // 스크랩 서비스로 저장
         const scrapResponse = await scrapService.quickScrap(
@@ -179,12 +179,12 @@ const ScrapPage: React.FC = () => {
           selectedTags // 선택된 태그들
         );
 
-        console.log('✅ Scrap saved:', scrapResponse);
+        // console.log('✅ Scrap saved:', scrapResponse);
         setClipStatus('success');
         
         // 스크랩 목록 동기적으로 새로고침
         await loadScraps();
-        console.log('🔄 Scraps reloaded after save');
+        // console.log('🔄 Scraps reloaded after save');
         
         // 성공 상태 2초 후 리셋
         setTimeout(() => setClipStatus('idle'), 2000);
@@ -192,7 +192,7 @@ const ScrapPage: React.FC = () => {
         throw new Error(response.error || 'Selection clipping failed');
       }
     } catch (error: any) {
-      console.error('❌ Selection clipping error:', error);
+      // console.error('❌ Selection clipping error:', error);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication required')) {
@@ -218,14 +218,14 @@ const ScrapPage: React.FC = () => {
       setIsAuthenticated(hasToken);
       setAuthChecked(true);
       
-      console.log('🔐 Auth status:', { 
-        hasToken, 
-        isAuthenticated: authState?.isAuthenticated,
-        hasAccessToken: !!authState?.accessToken,
-        user: authState?.user?.email 
-      });
+      // console.log('🔐 Auth status:', { 
+      //   hasToken, 
+      //   isAuthenticated: authState?.isAuthenticated,
+      //   hasAccessToken: !!authState?.accessToken,
+      //   user: authState?.user?.email 
+      // });
     } catch (error) {
-      console.error('❌ Auth check error:', error);
+      // console.error('❌ Auth check error:', error);
       setIsAuthenticated(false);
       setAuthChecked(true);
     }
@@ -236,12 +236,12 @@ const ScrapPage: React.FC = () => {
     if (!isAuthenticated) return;
     
     try {
-      console.log('🔄 Loading scraps...');
+      // console.log('🔄 Loading scraps...');
       setScrapsLoading(true);
       setScrapsError(null);
       
       const scrapList = await scrapService.getScraps();
-      console.log('📋 Loaded scraps:', scrapList.length, 'items');
+      // console.log('📋 Loaded scraps:', scrapList.length, 'items');
       
       // ScrapResponse를 Scrap 형태로 변환
       const convertedScraps: Scrap[] = scrapList.map(scrap => ({
@@ -254,9 +254,9 @@ const ScrapPage: React.FC = () => {
       }));
       
       setScraps(convertedScraps);
-      console.log('✅ Scraps state updated with', convertedScraps.length, 'items');
+      // console.log('✅ Scraps state updated with', convertedScraps.length, 'items');
     } catch (error: any) {
-      console.error('❌ Failed to load scraps:', error);
+      // console.error('❌ Failed to load scraps:', error);
       setScrapsError(error.message || '스크랩을 불러오는데 실패했습니다.');
       
       if (error.message.includes('Authentication')) {
@@ -285,7 +285,7 @@ const ScrapPage: React.FC = () => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated && authChecked) {
-        console.log('📱 Side panel visible, refreshing scraps...');
+        // console.log('📱 Side panel visible, refreshing scraps...');
         loadScraps();
       }
     };
@@ -312,12 +312,12 @@ const ScrapPage: React.FC = () => {
 
     try {
       setIsAddingTag(true);
-      console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
+      // console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
       
       // 서버 API 호출하여 태그 추가
       await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
       
-      console.log('✅ Tag added successfully');
+      // console.log('✅ Tag added successfully');
       
       // 스크랩 목록 새로고침하여 새 태그 반영
       await loadScraps();
@@ -325,7 +325,7 @@ const ScrapPage: React.FC = () => {
       setActiveInputId(null);
       
     } catch (error: any) {
-      console.error('❌ Failed to add tag:', error);
+      // console.error('❌ Failed to add tag:', error);
       
       // 사용자에게 에러 알림
       alert(`태그 추가에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -342,7 +342,7 @@ const ScrapPage: React.FC = () => {
   // 스크랩에서 태그 삭제
   const handleRemoveTag = useCallback(async (scrapId: string, tagName: string) => {
     try {
-      console.log('🗑️ Removing tag:', tagName, 'from scrap:', scrapId);
+      // console.log('🗑️ Removing tag:', tagName, 'from scrap:', scrapId);
       
       // 현재 스크랩에서 해당 태그의 tagId 찾기
       const currentScrap = scraps.find(scrap => scrap.id === scrapId);
@@ -361,13 +361,13 @@ const ScrapPage: React.FC = () => {
       // 서버 API 호출하여 태그 삭제
       await scrapService.removeTagFromScrap(parseInt(scrapId), tagToRemove.tagId);
       
-      console.log('✅ Tag removed successfully');
+      // console.log('✅ Tag removed successfully');
       
       // 스크랩 목록 새로고침하여 태그 삭제 반영
       await loadScraps();
       
     } catch (error: any) {
-      console.error('❌ Failed to remove tag:', error);
+      // console.error('❌ Failed to remove tag:', error);
       
       // 사용자에게 에러 알림
       alert(`태그 삭제에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
@@ -651,9 +651,9 @@ const ScrapPage: React.FC = () => {
                 try {
                   await scrapService.deleteScrap(parseInt(scrap.id));
                   await loadScraps(); // 동기적으로 처리
-                  console.log('🔄 Scraps reloaded after delete');
+                  // console.log('🔄 Scraps reloaded after delete');
                 } catch (error) {
-                  console.error('Failed to delete scrap:', error);
+                  // console.error('Failed to delete scrap:', error);
                   alert('스크랩 삭제에 실패했습니다.');
                 }
               }}

@@ -7,18 +7,18 @@
 
 import { webClipper, clipSelection } from '../utils/webClipper';
 
-console.log('🔗 Tyquill content script loaded');
+// console.log('🔗 Tyquill content script loaded');
 
 // 메시지 리스너 등록
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  console.log('📩 Content script received message:', message);
+  // console.log('📩 Content script received message:', message);
 
   switch (message.type) {
     case 'CLIP_PAGE':
       handleClipPage(message.options)
         .then(sendResponse)
         .catch((error: any) => {
-          console.error('❌ Clip page error:', error);
+          // console.error('❌ Clip page error:', error);
           sendResponse({ success: false, error: error.message });
         });
       return true; // 비동기 응답을 위해 true 반환
@@ -27,7 +27,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleClipSelection()
         .then(sendResponse)
         .catch((error: any) => {
-          console.error('❌ Clip selection error:', error);
+          // console.error('❌ Clip selection error:', error);
           sendResponse({ success: false, error: error.message });
         });
       return true;
@@ -36,7 +36,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleGetPageInfo()
         .then(sendResponse)
         .catch((error: any) => {
-          console.error('❌ Get page info error:', error);
+          // console.error('❌ Get page info error:', error);
           sendResponse({ success: false, error: error.message });
         });
       return true;
@@ -46,12 +46,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
 
     case 'PING':
-      console.log('🏓 Content script ping received');
+      // console.log('🏓 Content script ping received');
       sendResponse({ success: true, message: 'Content script ready' });
       return true;
 
     default:
-      console.warn('⚠️ Unknown message type:', message.type);
+      // console.warn('⚠️ Unknown message type:', message.type);
       sendResponse({ success: false, error: 'Unknown message type' });
   }
 });
@@ -61,21 +61,21 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleClipPage(options: any = {}): Promise<any> {
   try {
-    console.log('📄 Clipping full page...');
+    // console.log('📄 Clipping full page...');
     const result = await webClipper.clipPage(options);
     
-    console.log('✅ Page clipped successfully:', {
-      contentLength: result.content.length,
-      title: result.metadata.title,
-      selectionOnly: result.selectionOnly
-    });
+    // console.log('✅ Page clipped successfully:', {
+    //   contentLength: result.content.length,
+    //   title: result.metadata.title,
+    //   selectionOnly: result.selectionOnly
+    // });
 
     return {
       success: true,
       data: result
     };
   } catch (error: any) {
-    console.error('❌ Page clipping failed:', error);
+    // console.error('❌ Page clipping failed:', error);
     throw error;
   }
 }
@@ -91,20 +91,20 @@ async function handleClipSelection(): Promise<any> {
       throw new Error('No text selected');
     }
 
-    console.log('📝 Clipping selected text...');
+    // console.log('📝 Clipping selected text...');
     const result = await clipSelection();
     
-    console.log('✅ Selection clipped successfully:', {
-      contentLength: result.content.length,
-      selectionOnly: result.selectionOnly
-    });
+    // console.log('✅ Selection clipped successfully:', {
+    //   contentLength: result.content.length,
+    //   selectionOnly: result.selectionOnly
+    // });
 
     return {
       success: true,
       data: result
     };
   } catch (error: any) {
-    console.error('❌ Selection clipping failed:', error);
+    // console.error('❌ Selection clipping failed:', error);
     throw error;
   }
 }
@@ -114,7 +114,7 @@ async function handleClipSelection(): Promise<any> {
  */
 async function handleGetPageInfo(): Promise<any> {
   try {
-    console.log('ℹ️ Getting page info...');
+    // console.log('ℹ️ Getting page info...');
     
     const metadata = {
       title: document.title,
@@ -129,14 +129,14 @@ async function handleGetPageInfo(): Promise<any> {
       wordCount: document.body.textContent?.split(/\s+/).length || 0,
     };
 
-    console.log('✅ Page info retrieved:', metadata);
+    // console.log('✅ Page info retrieved:', metadata);
 
     return {
       success: true,
       data: metadata
     };
   } catch (error: any) {
-    console.error('❌ Get page info failed:', error);
+    // console.error('❌ Get page info failed:', error);
     throw error;
   }
 }
@@ -150,10 +150,10 @@ function handleCheckSelection(sendResponse: (response: any) => void): void {
     const hasSelection = selection && !selection.isCollapsed;
     const selectedText = hasSelection ? selection.toString().trim() : '';
 
-    console.log('🔍 Checking selection:', {
-      hasSelection,
-      selectedLength: selectedText.length
-    });
+    // console.log('🔍 Checking selection:', {
+    //   hasSelection,
+    //   selectedLength: selectedText.length
+    // });
 
     sendResponse({
       success: true,
@@ -164,7 +164,7 @@ function handleCheckSelection(sendResponse: (response: any) => void): void {
       }
     });
   } catch (error: any) {
-    console.error('❌ Check selection failed:', error);
+    // console.error('❌ Check selection failed:', error);
     sendResponse({ success: false, error: error.message });
   }
 }
@@ -178,10 +178,10 @@ document.addEventListener('keydown', (event) => {
     const hasSelection = !window.getSelection()?.isCollapsed;
     
     if (hasSelection) {
-      console.log('⌨️ Keyboard shortcut: Clipping selection');
+      // console.log('⌨️ Keyboard shortcut: Clipping selection');
       handleClipSelection()
         .then(result => {
-          console.log('✅ Keyboard clip selection success:', result);
+          // console.log('✅ Keyboard clip selection success:', result);
           // Side Panel에 결과 전송
           chrome.runtime.sendMessage({
             type: 'CLIP_RESULT',
@@ -189,13 +189,13 @@ document.addEventListener('keydown', (event) => {
           });
         })
         .catch((error: any) => {
-          console.error('❌ Keyboard clip selection error:', error);
+          // console.error('❌ Keyboard clip selection error:', error);
         });
     } else {
-      console.log('⌨️ Keyboard shortcut: Clipping full page');
+      // console.log('⌨️ Keyboard shortcut: Clipping full page');
       handleClipPage()
         .then(result => {
-          console.log('✅ Keyboard clip page success:', result);
+          // console.log('✅ Keyboard clip page success:', result);
           // Side Panel에 결과 전송
           chrome.runtime.sendMessage({
             type: 'CLIP_RESULT',
@@ -203,13 +203,13 @@ document.addEventListener('keydown', (event) => {
           });
         })
         .catch((error: any) => {
-          console.error('❌ Keyboard clip page error:', error);
+          // console.error('❌ Keyboard clip page error:', error);
         });
     }
   }
 });
 
 // 초기화 완료 알림
-console.log('🚀 Tyquill content script ready');
+// console.log('🚀 Tyquill content script ready');
 
 export {}; 

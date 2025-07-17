@@ -24,7 +24,7 @@ const Header: React.FC<HeaderProps> = ({ activeMenu, onMenuClick }) => {
       setIsLoggingOut(true);
       await logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      // console.error('Logout failed:', error);
     } finally {
       setIsLoggingOut(false);
     }

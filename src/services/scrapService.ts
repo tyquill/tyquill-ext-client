@@ -84,17 +84,17 @@ export class ScrapService {
       ...options,
     };
 
-    console.log('🌐 API Request:', { url, method: config.method || 'GET' });
+    // console.log('🌐 API Request:', { url, method: config.method || 'GET' });
 
     const response = await fetch(url, config);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('❌ API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorText,
-      });
+      // console.error('❌ API Error:', {
+      //   status: response.status,
+      //   statusText: response.statusText,
+      //   error: errorText,
+      // });
       
       if (response.status === 401) {
         throw new Error('Authentication failed');
@@ -104,7 +104,7 @@ export class ScrapService {
     }
 
     const data = await response.json();
-    console.log('✅ API Response:', data);
+    // console.log('✅ API Response:', data);
     
     return data;
   }
@@ -114,25 +114,25 @@ export class ScrapService {
    */
   async createScrap(scrapData: CreateScrapDto): Promise<ScrapResponse> {
     try {
-      console.log('📝 Creating scrap:', {
-        url: scrapData.url,
-        title: scrapData.title,
-        contentLength: scrapData.content.length,
-      });
+      // console.log('📝 Creating scrap:', {
+      //   url: scrapData.url,
+      //   title: scrapData.title,
+      //   contentLength: scrapData.content.length,
+      // });
 
       const response = await this.apiRequest<ScrapResponse>('/v1/scraps', {
         method: 'POST',
         body: JSON.stringify(scrapData),
       });
 
-      console.log('✅ Scrap created successfully:', {
-        scrapId: response.scrapId,
-        title: response.title,
-      });
+      // console.log('✅ Scrap created successfully:', {
+      //   scrapId: response.scrapId,
+      //   title: response.title,
+      // });
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to create scrap:', error);
+      // console.error('❌ Failed to create scrap:', error);
       throw error;
     }
   }
@@ -160,19 +160,19 @@ export class ScrapService {
    */
   async getScraps(): Promise<ScrapResponse[]> {
     try {
-      console.log('📋 Fetching scraps list');
+      // console.log('📋 Fetching scraps list');
 
       const response = await this.apiRequest<ScrapResponse[]>('/v1/scraps', {
         method: 'GET',
       });
 
-      console.log('✅ Scraps fetched successfully:', {
-        count: response.length,
-      });
+      // console.log('✅ Scraps fetched successfully:', {
+      //   count: response.length,
+      // });
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch scraps:', error);
+      // console.error('❌ Failed to fetch scraps:', error);
       throw error;
     }
   }
@@ -182,15 +182,15 @@ export class ScrapService {
    */
   async deleteScrap(scrapId: number): Promise<void> {
     try {
-      console.log('🗑️ Deleting scrap:', scrapId);
+      // console.log('🗑️ Deleting scrap:', scrapId);
 
       await this.apiRequest<void>(`/v1/scraps/${scrapId}`, {
         method: 'DELETE',
       });
 
-      console.log('✅ Scrap deleted successfully:', scrapId);
+      // console.log('✅ Scrap deleted successfully:', scrapId);
     } catch (error) {
-      console.error('❌ Failed to delete scrap:', error);
+      // console.error('❌ Failed to delete scrap:', error);
       throw error;
     }
   }
@@ -212,22 +212,22 @@ export class ScrapService {
    */
   async addTagToScrap(scrapId: number, tagName: string): Promise<TagResponse> {
     try {
-      console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
+      // console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
 
       const response = await this.apiRequest<TagResponse>(`/v1/scraps/${scrapId}/tags`, {
         method: 'POST',
         body: JSON.stringify({ name: tagName }),
       });
 
-      console.log('✅ Tag added successfully:', {
-        tagId: response.tagId,
-        name: response.name,
-        scrapId,
-      });
+      // console.log('✅ Tag added successfully:', {
+      //   tagId: response.tagId,
+      //   name: response.name,
+      //   scrapId,
+      // });
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to add tag to scrap:', error);
+      // console.error('❌ Failed to add tag to scrap:', error);
       throw error;
     }
   }
@@ -237,20 +237,20 @@ export class ScrapService {
    */
   async getScrapTags(scrapId: number): Promise<TagResponse[]> {
     try {
-      console.log('🏷️ Fetching scrap tags:', scrapId);
+      // console.log('🏷️ Fetching scrap tags:', scrapId);
 
       const response = await this.apiRequest<TagResponse[]>(`/v1/scraps/${scrapId}/tags`, {
         method: 'GET',
       });
 
-      console.log('✅ Scrap tags fetched successfully:', {
-        scrapId,
-        count: response.length,
-      });
+      // console.log('✅ Scrap tags fetched successfully:', {
+      //   scrapId,
+      //   count: response.length,
+      // });
 
       return response;
     } catch (error) {
-      console.error('❌ Failed to fetch scrap tags:', error);
+      // console.error('❌ Failed to fetch scrap tags:', error);
       throw error;
     }
   }
@@ -260,15 +260,15 @@ export class ScrapService {
    */
   async removeTagFromScrap(scrapId: number, tagId: number): Promise<void> {
     try {
-      console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
+      // console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
 
       await this.apiRequest<void>(`/v1/scraps/${scrapId}/tags/${tagId}`, {
         method: 'DELETE',
       });
 
-      console.log('✅ Tag removed successfully from scrap:', { scrapId, tagId });
+      // console.log('✅ Tag removed successfully from scrap:', { scrapId, tagId });
     } catch (error) {
-      console.error('❌ Failed to remove tag from scrap:', error);
+      // console.error('❌ Failed to remove tag from scrap:', error);
       throw error;
     }
   }

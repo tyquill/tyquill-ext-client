@@ -34,7 +34,7 @@ export const useAuth = (): UseAuthReturn => {
 
     // 컴포넌트 마운트시 저장된 인증 상태 복원
     authService.restoreAuthState().catch((err) => {
-      console.error('Failed to restore auth state:', err);
+      // console.error('Failed to restore auth state:', err);
     });
 
     return unsubscribe;

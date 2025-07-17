@@ -251,7 +251,7 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
         adjustEditorHeight();
       }, 50);
     } catch (error) {
-      console.error('Error converting HTML to markdown:', error);
+      // console.error('Error converting HTML to markdown:', error);
       const textContent = htmlValue.replace(/<[^>]*>/g, '').trim();
       onChange(textContent);
     } finally {

@@ -67,17 +67,17 @@ export class ArticleArchiveService implements ApiService {
             ...options,
         };
 
-        console.log('🌐 API Request:', { url, method: config.method || 'GET' });
+        // console.log('🌐 API Request:', { url, method: config.method || 'GET' });
 
         const response = await fetch(url, config);
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error('❌ API Error:', {
-                status: response.status,
-                statusText: response.statusText,
-                error: errorText,
-            });
+            // console.error('❌ API Error:', {
+            //     status: response.status,
+            //     statusText: response.statusText,
+            //     error: errorText,
+            // });
 
             if (response.status === 401) {
                 throw new Error('Authentication failed');
@@ -87,7 +87,7 @@ export class ArticleArchiveService implements ApiService {
         }
 
         const data = await response.json();
-        console.log('✅ API Response:', data);
+        // console.log('✅ API Response:', data);
 
         return data;
     }
