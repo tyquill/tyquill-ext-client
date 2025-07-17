@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { ToastProvider } from '../hooks/useToast';
 import LandingPage from './pages/LandingPage';
 import Header from './components/Header';
 import ScrapPage from './pages/ScrapPage';
@@ -52,23 +53,29 @@ const App: React.FC = () => {
 
   // 로딩 중이거나 인증되지 않은 경우 랜딩 페이지
   if (!isAuthenticated || currentPage.type === 'landing') {
-    return <LandingPage onStart={navigateToMain} />;
+    return (
+      <ToastProvider>
+        <LandingPage onStart={navigateToMain} />
+      </ToastProvider>
+    );
   }
 
   // 메인 앱 (헤더 + 페이지)
   return (
-    <div className={styles.app}>
-      <Header activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
-      <div className={styles.appContent}>
-        {currentPage.type === 'scrap' && <ScrapPage />}
-        {currentPage.type === 'template' && <TemplatePage />}
-        {currentPage.type === 'draft' && <ArticleGeneratePage onNavigateToDetail={handleNavigateToDetail} />}
-        {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
-        {currentPage.type === 'archive-detail' && currentPage.draftId && (
-          <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
-        )}
+    <ToastProvider>
+      <div className={styles.app}>
+        <Header activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
+        <div className={styles.appContent}>
+          {currentPage.type === 'scrap' && <ScrapPage />}
+          {currentPage.type === 'template' && <TemplatePage />}
+          {currentPage.type === 'draft' && <ArticleGeneratePage onNavigateToDetail={handleNavigateToDetail} />}
+          {currentPage.type === 'archive' && <ArchivePage onDraftClick={handleArchiveDetail} />}
+          {currentPage.type === 'archive-detail' && currentPage.draftId && (
+            <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
+          )}
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   );
 };
 

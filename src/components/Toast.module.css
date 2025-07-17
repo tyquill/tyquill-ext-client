@@ -1,0 +1,142 @@
+/* Toast Container */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border-left: 4px solid;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 300px;
+  max-width: 400px;
+  position: relative;
+  transform: translateX(100%);
+  opacity: 0;
+  transition: all 0.3s ease-in-out;
+}
+
+.toast.visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.toast.leaving {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
+/* Toast Types */
+.toast.success {
+  border-left-color: #10b981;
+  background: #f0fdf4;
+}
+
+.toast.error {
+  border-left-color: #ef4444;
+  background: #fef2f2;
+}
+
+.toast.warning {
+  border-left-color: #f59e0b;
+  background: #fffbeb;
+}
+
+.toast.info {
+  border-left-color: #3b82f6;
+  background: #eff6ff;
+}
+
+/* Icon Container */
+.iconContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+}
+
+.success .icon {
+  color: #10b981;
+}
+
+.error .icon {
+  color: #ef4444;
+}
+
+.warning .icon {
+  color: #f59e0b;
+}
+
+.info .icon {
+  color: #3b82f6;
+}
+
+/* Content */
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 2px;
+  line-height: 1.4;
+}
+
+.message {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+/* Close Button */
+.closeButton {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.closeButton:hover {
+  color: #6b7280;
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.closeButton:active {
+  transform: scale(0.95);
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .toast {
+    min-width: 280px;
+    max-width: 320px;
+    padding: 12px;
+  }
+  
+  .title {
+    font-size: 13px;
+  }
+  
+  .message {
+    font-size: 12px;
+  }
+}

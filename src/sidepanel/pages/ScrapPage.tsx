@@ -4,9 +4,11 @@ import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
 import { scrapService } from '../../services/scrapService';
+import { useToastHelpers } from '../../hooks/useToast';
 import { Scrap } from '../../types/scrap.d'
 
 const ScrapPage: React.FC = () => {
+  const { showSuccess, showError, showWarning } = useToastHelpers();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
