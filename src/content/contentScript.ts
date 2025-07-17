@@ -334,28 +334,33 @@ async function handlePasteToMaily(content: string): Promise<any> {
       selection.addRange(range);
     }
 
-    // 클립보드에 내용 설정
-    await navigator.clipboard.writeText(content);
+    // 클립보드 사용하지 않고 직접 DataTransfer 객체 생성
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', content);
+    dataTransfer.setData('text/html', markdownToHtml(content));
 
-    // 실제 paste 이벤트 생성 및 발생
+    // paste 이벤트 생성 및 발생
     const pasteEvent = new ClipboardEvent('paste', {
       bubbles: true,
       cancelable: true,
-      clipboardData: new DataTransfer()
+      clipboardData: dataTransfer
     });
-
-    // clipboardData에 텍스트 설정
-    if (pasteEvent.clipboardData) {
-      pasteEvent.clipboardData.setData('text/plain', content);
-      pasteEvent.clipboardData.setData('text/html', markdownToHtml(content));
-    }
 
     // paste 이벤트 발생
     targetElement.dispatchEvent(pasteEvent);
 
-    // fallback: execCommand 사용
+    // fallback: 직접 내용 삽입
     if (!pasteEvent.defaultPrevented) {
-      document.execCommand('paste');
+      // 선택된 내용을 대체
+      if (selection && selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        
+        // HTML 내용 삽입
+        const htmlContent = markdownToHtml(content);
+        const fragment = range.createContextualFragment(htmlContent);
+        range.insertNode(fragment);
+      }
     }
 
     // 추가 fallback: 키보드 이벤트 시뮬레이션 (Ctrl+V)
