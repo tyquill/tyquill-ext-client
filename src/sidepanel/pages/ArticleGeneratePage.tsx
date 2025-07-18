@@ -245,7 +245,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       // 요청 보내기
       articleService.generateArticle(generateData)
         .then(result => {
-          showSuccess('초안 생성 완료', '초안 생성이 완료되었습니다.');
+          showSuccess('초안 생성 완료', '초안 생성이 완료되었습니다. 보관함에서 생성된 초안을 확인해 보세요!');
           // ArchivePage에서 목록 새로고침
           if (currentPage === 'archive' && onRefreshArchiveList) {
             onRefreshArchiveList();

@@ -18,7 +18,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       showSuccess('로그인 성공', 'Tyquill에 오신 것을 환영합니다!');
       onStart(); // 인증 성공 후 메인 페이지로 이동
     } catch (err: any) {
-      const errorMessage = err?.message || '로그인 중 오류가 발생했습니다.';
+      const errorMessage = err?.message || '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
       showError('로그인 실패', errorMessage);
     }
   };
