@@ -8,7 +8,7 @@
 }
 
 .page {
-  padding: 32px 24px;
+  padding: 32px 5vw;
   height: 100%;
   overflow-y: auto;
   background-color: #ffffff;
@@ -891,18 +891,76 @@
 /* Ordered List Styles */
 .previewContent ol, 
 .contentDisplay ol,
-:global(.ql-editor) ol {
-  padding-left: 20px !important;
+:global(.ql-editor) ol,
+:global(.ProseMirror) ol {
+  padding-left: 30px !important;
   list-style-type: decimal !important;
-  counter-reset: list-counter !important;
+  list-style-position: outside !important;
+  margin: 12px 0 !important;
 }
 
 .previewContent ol li,
 .contentDisplay ol li,
-:global(.ql-editor) ol li {
+:global(.ql-editor) ol li,
+:global(.ProseMirror) ol li {
   display: list-item !important;
   list-style-type: decimal !important;
+  list-style-position: outside !important;
   margin-bottom: 4px !important;
+  padding-left: 0 !important;
+}
+
+/* More specific selectors to override any conflicting styles */
+div.previewContent ol,
+div.contentDisplay ol {
+  padding-left: 30px !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+}
+
+div.previewContent ol li,
+div.contentDisplay ol li {
+  display: list-item !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin-bottom: 4px !important;
+  padding-left: 0 !important;
+}
+
+/* Ultra-specific selectors with highest CSS specificity */
+.previewContainer .previewContent ol,
+.previewContainer div.previewContent ol {
+  padding-left: 30px !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin: 12px 0 !important;
+}
+
+.previewContainer .previewContent ol li,
+.previewContainer div.previewContent ol li {
+  display: list-item !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin-bottom: 4px !important;
+  padding-left: 0 !important;
+}
+
+/* Reset any inherited counter styles */
+.previewContent ol li:before,
+.contentDisplay ol li:before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Force browser default numbering */
+.previewContent ol,
+.contentDisplay ol {
+  list-style: decimal outside !important;
+}
+
+.previewContent ol li,
+.contentDisplay ol li {
+  list-style: decimal outside !important;
 }
 
 .previewContent ul,
@@ -1056,7 +1114,7 @@
 }
 
 .previewContent {
-  padding: 32px;
+  padding: 0%;
   min-height: 400px;
   background-color: #fff;
 }
@@ -1887,8 +1945,16 @@
 
 .actionButtons {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 8px;
   margin-bottom: 24px;
+}
+
+.rightActionButtons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .actionButtons .editButton {
@@ -1928,7 +1994,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 20px;
+  height: 40px;
+  padding: 0 16px;
   background-color: #000;
   color: #fff;
   border: none;
@@ -1937,7 +2004,6 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  flex: 1;
 }
 
 .exportButton:hover {

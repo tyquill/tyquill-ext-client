@@ -1,67 +1,207 @@
-/* React Quill Ordered List Override */
-.yooptaWrapper :global(.ql-editor) ol {
-  padding-left: 1.5em !important;
-  margin-left: 0 !important;
-  list-style-type: decimal !important;
-  counter-reset: none !important;
+/* Tiptap Editor Styles */
+.yooptaWrapper :global(.ProseMirror) {
+  outline: none;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: #333;
 }
 
-.yooptaWrapper :global(.ql-editor) ol li {
-  display: list-item !important;
-  list-style-type: decimal !important;
-  list-style-position: outside !important;
-  margin-bottom: 4px !important;
-  padding-left: 0 !important;
+.yooptaWrapper :global(.ProseMirror) h1 {
+  font-size: 2em;
+  font-weight: bold;
+  margin: 0.67em 0;
+  color: #333;
 }
 
-.yooptaWrapper :global(.ql-editor) ul {
-  padding-left: 1.5em !important;
-  margin-left: 0 !important;
-  list-style-type: disc !important;
+.yooptaWrapper :global(.ProseMirror) h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  margin: 0.83em 0;
+  color: #333;
 }
 
-.yooptaWrapper :global(.ql-editor) ul li {
-  display: list-item !important;
-  list-style-type: disc !important;
-  list-style-position: outside !important;
-  margin-bottom: 4px !important;
-  padding-left: 0 !important;
+.yooptaWrapper :global(.ProseMirror) h3 {
+  font-size: 1.17em;
+  font-weight: bold;
+  margin: 1em 0;
+  color: #333;
 }
 
-/* Make sure list item numbers and bullets are visible */
-.yooptaWrapper :global(.ql-editor) ol li::marker {
-  color: #333 !important;
-  font-weight: normal !important;
+.yooptaWrapper :global(.ProseMirror) h4 {
+  font-size: 1em;
+  font-weight: bold;
+  margin: 1.33em 0;
+  color: #333;
 }
 
-.yooptaWrapper :global(.ql-editor) ul li::marker {
-  color: #333 !important;
-  font-weight: normal !important;
+.yooptaWrapper :global(.ProseMirror) h5 {
+  font-size: 0.83em;
+  font-weight: bold;
+  margin: 1.67em 0;
+  color: #333;
 }
 
-/* Fix ReactQuill default list styles */
-.yooptaWrapper :global(.ql-editor) ol li[data-list="ordered"] {
-  counter-increment: none !important;
+.yooptaWrapper :global(.ProseMirror) h6 {
+  font-size: 0.67em;
+  font-weight: bold;
+  margin: 2.33em 0;
+  color: #333;
 }
 
-.yooptaWrapper :global(.ql-editor) ol li[data-list="ordered"]:before {
-  content: none !important;
+.yooptaWrapper :global(.ProseMirror) p {
+  margin: 1em 0;
 }
 
-/* Auto-height Quill editor styles */
-.yooptaWrapper :global(.ql-container) {
-  height: auto !important;
-  border-bottom: none !important;
+.yooptaWrapper :global(.ProseMirror) ul {
+  padding-left: 1.5em;
+  list-style-type: disc;
 }
 
-.yooptaWrapper :global(.ql-editor) {
-  height: auto !important;
-  min-height: 150px !important;
-  max-height: none !important;
-  overflow-y: visible !important;
-  padding-bottom: 20px !important;
+.yooptaWrapper :global(.ProseMirror) ol {
+  padding-left: 30px;
+  list-style-type: decimal;
+  list-style-position: outside;
 }
 
-.yooptaWrapper :global(.ql-toolbar) {
-  border-bottom: 1px solid #ccc !important;
+.yooptaWrapper :global(.ProseMirror) ol li {
+  margin: 0.25em 0;
+  display: list-item;
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 0;
+}
+
+.yooptaWrapper :global(.ProseMirror) li {
+  margin: 0.25em 0;
+}
+
+.yooptaWrapper :global(.ProseMirror) strong {
+  font-weight: bold;
+}
+
+.yooptaWrapper :global(.ProseMirror) em {
+  font-style: italic;
+}
+
+.yooptaWrapper :global(.ProseMirror) u {
+  text-decoration: underline;
+}
+
+.yooptaWrapper :global(.ProseMirror) blockquote {
+  border-left: 4px solid #ddd;
+  padding-left: 1em;
+  margin: 1em 0;
+  color: #666;
+  font-style: italic;
+}
+
+.yooptaWrapper :global(.ProseMirror) code {
+  background-color: #f5f5f5;
+  padding: 0.2em 0.4em;
+  border-radius: 3px;
+  font-family: 'Courier New', monospace;
+}
+
+.yooptaWrapper :global(.ProseMirror) pre {
+  background-color: #f5f5f5;
+  padding: 1em;
+  border-radius: 5px;
+  overflow-x: auto;
+  margin: 1em 0;
+}
+
+.yooptaWrapper :global(.ProseMirror) pre code {
+  background: none;
+  padding: 0;
+}
+
+/* Horizontal Rule Styles */
+.yooptaWrapper :global(.ProseMirror) hr {
+  border: none;
+  border-top: 2px solid #e0e0e0;
+  margin: 2rem 0;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.yooptaWrapper :global(.ProseMirror) hr:hover {
+  border-top-color: #bdbdbd;
+}
+
+.yooptaWrapper :global(.ProseMirror) hr:focus {
+  outline: none;
+  border-top-color: #2196f3;
+}
+
+/* Menu Styles */
+.bubbleMenu {
+  z-index: 1000;
+}
+
+.active {
+  background-color: #e3f2fd !important;
+  color: #1976d2 !important;
+  font-weight: bold;
+}
+
+/* MenuBar Styles */
+.controlGroup {
+  border-bottom: 1px solid #e0e0e0;
+  padding: 8px 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+}
+
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.buttonGroup button {
+  padding: 6px 12px;
+  font-size: 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.buttonGroup button:hover {
+  background-color: #f0f0f0;
+  border-color: #bdbdbd;
+}
+
+.buttonGroup button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.buttonGroup button:disabled:hover {
+  background-color: white;
+  border-color: #e0e0e0;
+}
+
+.isActive {
+  background-color: #2196f3 !important;
+  color: white !important;
+  border-color: #1976d2 !important;
+}
+
+.isActive:hover {
+  background-color: #1976d2 !important;
+}
+
+.editorContent {
+  border-radius: 0 0 8px 8px;
+}
+
+/* Add focus states for better accessibility */
+.buttonGroup button:focus {
+  outline: 2px solid #2196f3;
+  outline-offset: 2px;
 }
