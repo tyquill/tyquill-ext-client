@@ -23,6 +23,9 @@ importers:
       '@tiptap/extension-bubble-menu':
         specifier: ^3.0.7
         version: 3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7)
+      '@tiptap/extension-character-count':
+        specifier: ^3.0.7
+        version: 3.0.7(@tiptap/extensions@3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7))
       '@tiptap/extension-floating-menu':
         specifier: ^3.0.7
         version: 3.0.7(@floating-ui/dom@1.7.2)(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7)
@@ -780,6 +783,11 @@ packages:
     resolution: {integrity: sha512-9gPc3Tw2Bw7qKLbyW0s05YntE77127pOXQXcclB4I3MXAuz/K03f+DGuSRhOq9K2Oo86BPHdL5I9Ap9cmuS0Tg==}
     peerDependencies:
       '@tiptap/extension-list': ^3.0.7
+
+  '@tiptap/extension-character-count@3.0.7':
+    resolution: {integrity: sha512-Ip3qmWADJBVNInGRMNUyx9oDG9U//Qjr57/rI0VwTKotwn2vXSYxRdKGPEm7KvwUlNONCtv/7vTXO6FprkU0Yw==}
+    peerDependencies:
+      '@tiptap/extensions': ^3.0.7
 
   '@tiptap/extension-code-block@3.0.7':
     resolution: {integrity: sha512-WifMv7N1G1Fnd2oZ+g80FjBpV/eI/fxHKCK3hw03l8LoWgeFaU/6LC93qTV6idkfia3YwiA6WnuyOqlI0FSZ9A==}
@@ -3659,6 +3667,10 @@ snapshots:
   '@tiptap/extension-bullet-list@3.0.7(@tiptap/extension-list@3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7))':
     dependencies:
       '@tiptap/extension-list': 3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7)
+
+  '@tiptap/extension-character-count@3.0.7(@tiptap/extensions@3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7))':
+    dependencies:
+      '@tiptap/extensions': 3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7)
 
   '@tiptap/extension-code-block@3.0.7(@tiptap/core@3.0.7(@tiptap/pm@3.0.7))(@tiptap/pm@3.0.7)':
     dependencies:

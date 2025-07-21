@@ -6,6 +6,11 @@ import YooptaEditorWrapper from '../../components/YooptaEditor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../components/ExportButton';
+import { useEditor } from '@tiptap/react'
+import { CharacterCount } from '@tiptap/extension-character-count'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -67,6 +72,56 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
     fetchArticle();
   }, [draftId]);
+
+  // Character count를 위한 별도 에디터 (읽기 전용)
+  const countEditor = useEditor({
+    extensions: [
+      Document,
+      Paragraph,
+      Text,
+      CharacterCount.configure({
+        limit: null, // 제한 없음
+        mode: 'textSize', // 텍스트만 카운트 (HTML 태그 제외)
+      })
+    ],
+    content: '', // 빈 내용으로 시작
+    editable: false,
+    onCreate: ({ editor }) => {
+      // 에디터가 생성된 후 초기 내용을 설정
+      const initialContent = currentArchive?.content || article?.content || '';
+      if (initialContent) {
+        editor.commands.setContent(initialContent);
+      }
+    },
+  });
+
+  // Character count 강제 업데이트를 위한 state
+  const [characterCount, setCharacterCount] = useState({ characters: 0, words: 0 });
+
+  // 컨텐츠가 변경될 때마다 카운트 에디터 업데이트
+  useEffect(() => {
+    if (!countEditor) return;
+    
+    // 편집 중일 때는 editContent를, 그렇지 않을 때는 현재 아카이브나 아티클 내용을 사용
+    const contentToCount = isEditing 
+      ? editContent 
+      : (currentArchive?.content || article?.content || '');
+    
+    // 내용이 있을 때만 업데이트
+    if (contentToCount !== undefined && contentToCount !== null) {
+      countEditor.commands.setContent(contentToCount);
+      
+      // 설정 후 잠시 기다린 다음 character count 업데이트
+      setTimeout(() => {
+        if (countEditor.storage.characterCount) {
+          setCharacterCount({
+            characters: countEditor.storage.characterCount.characters(),
+            words: countEditor.storage.characterCount.words()
+          });
+        }
+      }, 50); // 50ms 지연으로 에디터가 내용을 처리할 시간 제공
+    }
+  }, [countEditor, currentArchive?.content, article?.content, editContent, isEditing]);
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -160,75 +215,84 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         <button className={styles.backButton} onClick={onBack}>
           <IoArrowBack size={20} />
         </button>
-        <h1 className={styles.detailTitle}>
-          {isEditing ? (
-            <input
-              type="text"
-              value={editTitle}
-              onChange={(e) => setEditTitle(e.target.value)}
-              className={styles.editTitleInput}
-              placeholder="제목을 입력하세요"
-            />
-          ) : (
-            currentArchive?.title || article.title
-          )}
-        </h1>
+        <div style={{ flex: 1 }}>
+          <h1 className={styles.detailTitle}>
+            {isEditing ? (
+              <input
+                type="text"
+                value={editTitle}
+                style={{width: '100%'}}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className={styles.editTitleInput}
+                placeholder="제목을 입력하세요"
+              />
+            ) : (
+              currentArchive?.title || article.title
+            )}
+          </h1>
+          <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end'}}>
+            <span>글자수: {characterCount.characters}</span>
+            <span style={{ marginLeft: '12px' }}>단어수: {characterCount.words}</span>
+          </div>
+        </div>
       </div>
 
       <div className={styles.actionButtons}>
-        <div className={styles.rightActionButtons}>
-        {!isEditing && (
-          <>
-            <ExportButton 
-              title={currentArchive?.title || article.title}
-              content={currentArchive?.content || article.content}
-            />
-            <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
-              <IoCreate size={20} />
-              수정
-            </button>
-          </>
-        )}
-        {isEditing && (
-          <>
-            <button 
-              className={styles.saveButton}
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving ? '저장 중...' : '저장'}
-            </button>
-            <button 
-              className={styles.cancelButton}
-              onClick={handleCancel}
-              disabled={saving}
-            >
-              취소
-            </button>
-          </>
-        )}
-        </div>
-        <div className={styles.versionControls}>
-          {article.archives && article.archives.length > 0 && (
-            <div className={styles.versionSelector}>
-              <label htmlFor="version-select" className={styles.versionLabel}>
-                버전:
-              </label>
-              <select
-                id="version-select"
-                value={selectedVersionNumber || ''}
-                onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                className={styles.versionSelect}
-                disabled={isEditing}
-              >
-                {article.archives.map(archive => (
-                  <option key={archive.versionNumber} value={archive.versionNumber}>
-                    {archive.versionNumber}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+          <div className={styles.rightActionButtons}>
+          {!isEditing && (
+            <>
+              <ExportButton 
+                title={currentArchive?.title || article.title}
+                content={currentArchive?.content || article.content}
+              />
+              <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
+                <IoCreate size={20} />
+                수정
+              </button>
+            </>
           )}
+          {isEditing && (
+            <>
+              <button 
+                className={styles.saveButton}
+                onClick={handleSave}
+                disabled={saving}
+              >
+                {saving ? '저장 중...' : '저장'}
+              </button>
+              <button 
+                className={styles.cancelButton}
+                onClick={handleCancel}
+                disabled={saving}
+              >
+                취소
+              </button>
+            </>
+          )}
+          </div>
+          <div className={styles.versionControls}>
+            {article.archives && article.archives.length > 0 && (
+              <div className={styles.versionSelector}>
+                <label htmlFor="version-select" className={styles.versionLabel}>
+                  버전:
+                </label>
+                <select
+                  id="version-select"
+                  value={selectedVersionNumber || ''}
+                  onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                  className={styles.versionSelect}
+                  disabled={isEditing}
+                >
+                  {article.archives.map(archive => (
+                    <option key={archive.versionNumber} value={archive.versionNumber}>
+                      {archive.versionNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
