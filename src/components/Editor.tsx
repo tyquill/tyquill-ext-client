@@ -6,9 +6,9 @@ import TextAlign from '@tiptap/extension-text-align';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
-import styles from './YooptaEditor.module.css';
+import styles from './Editor.module.css';
 
-interface YooptaEditorWrapperProps {
+interface EditorWrapperProps {
   content: string; // HTML content (with backward compatibility for markdown)
   onChange: (content: string) => void; // Returns HTML content
   placeholder?: string;
@@ -368,7 +368,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
   );
 };
 
-const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
+const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   content,
   onChange,
   placeholder = "내용을 입력하세요...",
@@ -492,7 +492,7 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
   }
 
   return (
-    <div className={styles.yooptaWrapper} style={{ 
+    <div className={styles.editorWrapper} style={{ 
       border: '1px solid #e0e0e0', 
       borderRadius: '8px', 
       backgroundColor: '#fff',
@@ -533,4 +533,4 @@ const YooptaEditorWrapper: React.FC<YooptaEditorWrapperProps> = React.memo(({
   );
 });
 
-export default YooptaEditorWrapper;
+export default EditorWrapper;

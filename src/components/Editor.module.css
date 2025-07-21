@@ -1,5 +1,5 @@
 /* Tiptap Editor Styles */
-.yooptaWrapper :global(.ProseMirror) {
+.editorWrapper :global(.ProseMirror) {
   outline: none;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
@@ -7,64 +7,64 @@
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h1 {
+.editorWrapper :global(.ProseMirror) h1 {
   font-size: 2em;
   font-weight: bold;
   margin: 0.67em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h2 {
+.editorWrapper :global(.ProseMirror) h2 {
   font-size: 1.5em;
   font-weight: bold;
   margin: 0.83em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h3 {
+.editorWrapper :global(.ProseMirror) h3 {
   font-size: 1.17em;
   font-weight: bold;
   margin: 1em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h4 {
+.editorWrapper :global(.ProseMirror) h4 {
   font-size: 1em;
   font-weight: bold;
   margin: 1.33em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h5 {
+.editorWrapper :global(.ProseMirror) h5 {
   font-size: 0.83em;
   font-weight: bold;
   margin: 1.67em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) h6 {
+.editorWrapper :global(.ProseMirror) h6 {
   font-size: 0.67em;
   font-weight: bold;
   margin: 2.33em 0;
   color: #333;
 }
 
-.yooptaWrapper :global(.ProseMirror) p {
+.editorWrapper :global(.ProseMirror) p {
   margin: 1em 0;
 }
 
-.yooptaWrapper :global(.ProseMirror) ul {
+.editorWrapper :global(.ProseMirror) ul {
   padding-left: 1.5em;
   list-style-type: disc;
 }
 
-.yooptaWrapper :global(.ProseMirror) ol {
+.editorWrapper :global(.ProseMirror) ol {
   padding-left: 30px;
   list-style-type: decimal;
   list-style-position: outside;
 }
 
-.yooptaWrapper :global(.ProseMirror) ol li {
+.editorWrapper :global(.ProseMirror) ol li {
   margin: 0.25em 0;
   display: list-item;
   list-style-type: decimal;
@@ -72,23 +72,23 @@
   padding-left: 0;
 }
 
-.yooptaWrapper :global(.ProseMirror) li {
+.editorWrapper :global(.ProseMirror) li {
   margin: 0.25em 0;
 }
 
-.yooptaWrapper :global(.ProseMirror) strong {
+.editorWrapper :global(.ProseMirror) strong {
   font-weight: bold;
 }
 
-.yooptaWrapper :global(.ProseMirror) em {
+.editorWrapper :global(.ProseMirror) em {
   font-style: italic;
 }
 
-.yooptaWrapper :global(.ProseMirror) u {
+.editorWrapper :global(.ProseMirror) u {
   text-decoration: underline;
 }
 
-.yooptaWrapper :global(.ProseMirror) blockquote {
+.editorWrapper :global(.ProseMirror) blockquote {
   border-left: 4px solid #ddd;
   padding-left: 1em;
   margin: 1em 0;
@@ -96,14 +96,14 @@
   font-style: italic;
 }
 
-.yooptaWrapper :global(.ProseMirror) code {
+.editorWrapper :global(.ProseMirror) code {
   background-color: #f5f5f5;
   padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: 'Courier New', monospace;
 }
 
-.yooptaWrapper :global(.ProseMirror) pre {
+.editorWrapper :global(.ProseMirror) pre {
   background-color: #f5f5f5;
   padding: 1em;
   border-radius: 5px;
@@ -111,13 +111,13 @@
   margin: 1em 0;
 }
 
-.yooptaWrapper :global(.ProseMirror) pre code {
+.editorWrapper :global(.ProseMirror) pre code {
   background: none;
   padding: 0;
 }
 
 /* Horizontal Rule Styles */
-.yooptaWrapper :global(.ProseMirror) hr {
+.editorWrapper :global(.ProseMirror) hr {
   border: none;
   border-top: 2px solid #e0e0e0;
   margin: 2rem 0;
@@ -125,11 +125,11 @@
   transition: border-color 0.2s ease;
 }
 
-.yooptaWrapper :global(.ProseMirror) hr:hover {
+.editorWrapper :global(.ProseMirror) hr:hover {
   border-top-color: #bdbdbd;
 }
 
-.yooptaWrapper :global(.ProseMirror) hr:focus {
+.editorWrapper :global(.ProseMirror) hr:focus {
   outline: none;
   border-top-color: #2196f3;
 }

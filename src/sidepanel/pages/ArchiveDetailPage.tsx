@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IoArrowBack, IoCreate } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
-import YooptaEditorWrapper from '../../components/YooptaEditor';
+import YooptaEditorWrapper from '../../components/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../components/ExportButton';
