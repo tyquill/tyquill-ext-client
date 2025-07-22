@@ -121,10 +121,10 @@ const ScrapPage: React.FC = () => {
         // 스크랩 목록 새로고침 (약간의 지연 후)
         setTimeout(async () => {
           await loadScraps();
-        }, 1000);
+        }, 300);
         
         // 성공 상태 2초 후 리셋
-        setTimeout(() => setClipStatus('idle'), 2000);
+        setTimeout(() => setClipStatus('idle'), 300);
       } else {
         throw new Error(response.error || 'Clipping failed');
       }
@@ -142,7 +142,7 @@ const ScrapPage: React.FC = () => {
       setClipStatus('error');
       
       // 에러 상태 3초 후 리셋
-      setTimeout(() => setClipStatus('idle'), 3000);
+      setTimeout(() => setClipStatus('idle'), 300);
     } finally {
       setIsClipping(false);
     }
