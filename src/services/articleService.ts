@@ -46,6 +46,27 @@ export interface UpdateArticleDto {
 }
 
 /**
+ * 템플릿 구조 분석 DTO
+ */
+export interface AnalyzeContentDto {
+    content: string;
+}
+
+/**
+ * 템플릿 섹션 인터페이스
+ */
+export interface TemplateSection {
+    title: string;
+    description: string;
+    children?: TemplateSection[];
+    id?: string; // 고유 식별자 추가
+}
+
+export interface AnalyzeContentResponse {
+    sections: TemplateSection[];
+}
+
+/**
  * 아티클 생성 응답 타입 (generate API 전용)
  */
 export interface GenerateArticleResponse {
@@ -227,6 +248,17 @@ export class ArticleService {
         return this.apiRequest('/v1/articles/batch', {
             method: 'DELETE',
             body: JSON.stringify(articleIds),
+        });
+    }
+
+    /**
+     * 콘텐츠 분석하여 템플릿 구조 생성
+     * POST /api/v1/articles/analyze-template
+     */
+    async analyzeContentForTemplate(analyzeData: AnalyzeContentDto): Promise<AnalyzeContentResponse> {
+        return await this.apiRequest('/v1/articles/analyze-structure', {
+            method: 'POST',
+            body: JSON.stringify(analyzeData),
         });
     }
 }
