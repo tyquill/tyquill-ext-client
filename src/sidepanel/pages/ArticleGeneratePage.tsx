@@ -34,9 +34,7 @@ interface ArticleGenerateState {
   generationStatus: 'idle' | 'success' | 'error';
   // New state properties
   templateStructure: TemplateSection[] | null;
-  structuredIdeas: Record<string, string>;
-  templateTitles: Record<string, string>; // 편집된 템플릿 제목들 (sectionId 기반)
-  sectionIdCounter: number; // 고유 ID 생성용 카운터
+  sectionIdCounter: number;
   isAnalyzing: boolean;
 }
 
@@ -84,8 +82,6 @@ const getInitialState = (): ArticleGenerateState => {
         generationError: null,
         generationStatus: 'idle',
         templateStructure: parsedState.templateStructure || null, // 템플릿 구조도 복원
-        structuredIdeas: parsedState.structuredIdeas || {},
-        templateTitles: parsedState.templateTitles || {},
         sectionIdCounter: parsedState.sectionIdCounter || 0,
         isAnalyzing: false,
       };
@@ -110,8 +106,6 @@ const getInitialState = (): ArticleGenerateState => {
     generationError: null,
     generationStatus: 'idle',
     templateStructure: null, // 기본값은 null
-    structuredIdeas: {},
-    templateTitles: {},
     sectionIdCounter: 0,
     isAnalyzing: false,
   };
@@ -173,113 +167,97 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
     // New reducers
     case 'SET_ANALYZING':
       return { ...state, isAnalyzing: action.payload };
-    case 'SET_TEMPLATE_STRUCTURE':
-      // AI로 생성된 섹션에도 고유 ID 부여 및 기본 제목 저장
+    case 'SET_TEMPLATE_STRUCTURE': {
       let counter = state.sectionIdCounter;
-      const initialTitles: Record<string, string> = {};
-      
       const assignIds = (sections: TemplateSection[]): TemplateSection[] => {
         return sections.map(section => {
           const sectionId = section.id || `section_${counter++}`;
-          initialTitles[sectionId] = section.title; // 기본 제목 저장
           return {
             ...section,
             id: sectionId,
-            children: section.children ? assignIds(section.children) : []
+            children: section.children ? assignIds(section.children) : [],
           };
         });
       };
-      
       const sectionsWithIds = action.payload ? assignIds(action.payload) : null;
-      
-      return { 
-        ...state, 
-        templateStructure: sectionsWithIds, 
-        structuredIdeas: {}, 
-        templateTitles: initialTitles, // AI 섹션들의 기본 제목 저장
-        sectionIdCounter: counter
+      return {
+        ...state,
+        templateStructure: sectionsWithIds,
+        sectionIdCounter: counter,
       };
-    case 'SET_STRUCTURED_IDEA':
-      return { ...state, structuredIdeas: { ...state.structuredIdeas, [action.payload.sectionId]: action.payload.idea } };
-    case 'SET_TEMPLATE_TITLE':
-      return { ...state, templateTitles: { ...state.templateTitles, [action.payload.sectionId]: action.payload.newTitle } };
-    case 'ADD_TEMPLATE_SECTION':
+    }
+    case 'SET_STRUCTURED_IDEA': {
+      if (!state.templateStructure) return state;
+      const updateKeyIdea = (sections: TemplateSection[]): TemplateSection[] =>
+        sections.map(section =>
+          section.id === action.payload.sectionId
+            ? { ...section, keyIdea: action.payload.idea }
+            : { ...section, children: section.children ? updateKeyIdea(section.children) : [] }
+        );
+      return {
+        ...state,
+        templateStructure: state.templateStructure ? updateKeyIdea(state.templateStructure) : null,
+      };
+    }
+    case 'SET_TEMPLATE_TITLE': {
+      if (!state.templateStructure) return state;
+      const updateTitle = (sections: TemplateSection[]): TemplateSection[] =>
+        sections.map(section =>
+          section.id === action.payload.sectionId
+            ? { ...section, title: action.payload.newTitle }
+            : { ...section, children: section.children ? updateTitle(section.children) : [] }
+        );
+      return {
+        ...state,
+        templateStructure: state.templateStructure ? updateTitle(state.templateStructure) : null,
+      };
+    }
+    case 'ADD_TEMPLATE_SECTION': {
       const newSectionId = `section_${state.sectionIdCounter}`;
       const newSection: TemplateSection = {
         title: action.payload.title,
-        description: '',
+        keyIdea: '',
         children: [],
-        id: newSectionId
+        id: newSectionId,
       };
-      
       if (!action.payload.parentId) {
-        // 최상위 섹션 추가 (templateStructure가 null이면 새 배열 생성)
         return {
           ...state,
           templateStructure: state.templateStructure ? [...state.templateStructure, newSection] : [newSection],
-          templateTitles: { ...state.templateTitles, [newSectionId]: action.payload.title }, // 기본 제목 저장
-          sectionIdCounter: state.sectionIdCounter + 1
+          sectionIdCounter: state.sectionIdCounter + 1,
         };
       } else {
-        // 하위 섹션 추가 - templateStructure가 없으면 스킵
         if (!state.templateStructure) return state;
-        
-        const addChildToSection = (sections: TemplateSection[]): TemplateSection[] => {
-          return sections.map((section) => {
-            if (section.id === action.payload.parentId) {
-              return {
-                ...section,
-                children: [...(section.children || []), newSection]
-              };
-            }
-            if (section.children && section.children.length > 0) {
-              return {
-                ...section,
-                children: addChildToSection(section.children)
-              };
-            }
-            return section;
-          });
-        };
-        
+        const addChildToSection = (sections: TemplateSection[]): TemplateSection[] =>
+          sections.map(section =>
+            section.id === action.payload.parentId
+              ? { ...section, children: [...(section.children || []), newSection] }
+              : { ...section, children: section.children ? addChildToSection(section.children) : [] }
+          );
         return {
           ...state,
           templateStructure: addChildToSection(state.templateStructure),
-          templateTitles: { ...state.templateTitles, [newSectionId]: action.payload.title }, // 기본 제목 저장
-          sectionIdCounter: state.sectionIdCounter + 1
+          sectionIdCounter: state.sectionIdCounter + 1,
         };
       }
-    case 'REMOVE_TEMPLATE_SECTION':
+    }
+    case 'REMOVE_TEMPLATE_SECTION': {
       if (!state.templateStructure) return state;
-      
-      const removeSectionById = (sections: TemplateSection[], targetId: string): TemplateSection[] => {
-        return sections.filter((section) => {
-          if (section.id === targetId) {
-            return false; // 이 섹션 제거
-          }
-          
+      const removeSectionById = (sections: TemplateSection[], targetId: string): TemplateSection[] =>
+        sections.filter(section => {
+          if (section.id === targetId) return false;
           if (section.children && section.children.length > 0) {
             section.children = removeSectionById(section.children, targetId);
           }
-          
           return true;
         });
-      };
-      
-      // 삭제된 섹션의 데이터도 제거
-      const updatedStructuredIdeas = { ...state.structuredIdeas };
-      const updatedTemplateTitles = { ...state.templateTitles };
-      delete updatedStructuredIdeas[action.payload];
-      delete updatedTemplateTitles[action.payload];
-      
       return {
         ...state,
         templateStructure: removeSectionById(state.templateStructure, action.payload),
-        structuredIdeas: updatedStructuredIdeas,
-        templateTitles: updatedTemplateTitles
       };
+    }
     case 'CLEAR_TEMPLATE':
-      return { ...state, templateStructure: null, structuredIdeas: {}, templateTitles: {} };
+      return { ...state, templateStructure: null };
     default:
       return state;
   }
@@ -310,8 +288,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       selectedTags: state.selectedTags,
       // 템플릿 관련 상태들도 저장
       templateStructure: state.templateStructure,
-      structuredIdeas: state.structuredIdeas,
-      templateTitles: state.templateTitles,
       sectionIdCounter: state.sectionIdCounter,
     };
     
@@ -328,8 +304,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     state.selectedScraps, 
     state.selectedTags,
     state.templateStructure,
-    state.structuredIdeas,
-    state.templateTitles,
     state.sectionIdCounter
   ]);
 
@@ -486,10 +460,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   };
 
   const handleGenerateArticle = async () => {
-    const isTemplateMode = state.templateStructure && Object.values(state.structuredIdeas).some(idea => idea.trim() !== '');
+    // state.structuredIdeas가 존재하는지 확인하고, 객체 타입임을 보장
+    const structuredIdeas = (state as any).structuredIdeas || {};
+    const isTemplateMode = state.templateStructure && Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '');
 
     if (isTemplateMode) {
-      if (!Object.values(state.structuredIdeas).some(idea => idea.trim() !== '')) {
+      if (!Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '')) {
         showError('입력 오류', '섹션의 아이디어를 하나 이상 입력해주세요.');
         return;
       }
@@ -503,20 +479,34 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     if (state.isGenerating) return;
 
+    // Helper function to recursively remove 'id' from template sections
+    const removeIdsFromTemplate = (sections: TemplateSection[]): Omit<TemplateSection, 'id'>[] => {
+      return sections.map(({ id, children, ...rest }) => {
+        const newSection: Partial<TemplateSection> = { ...rest };
+        if (children && children.length > 0) {
+          newSection.children = removeIdsFromTemplate(children);
+        }
+        return newSection;
+      });
+    };
+
     try {
       dispatch({ type: 'SET_GENERATING', payload: true });
       dispatch({ type: 'SET_GENERATION_ERROR', payload: null });
       dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
 
+      const templateWithoutIds = state.templateStructure ? removeIdsFromTemplate(state.templateStructure) : [];
+
       // TODO: Update GenerateArticleDto to include template structure and ideas
       const generateData: GenerateArticleDto = {
         topic: isTemplateMode ? (state.templateStructure?.[0]?.title || '섹션 기반 아티클') : state.topic,
-        keyInsight: isTemplateMode ? JSON.stringify(state.structuredIdeas) : state.keyInsight,
+        keyInsight: isTemplateMode ? JSON.stringify((state as any).structuredIdeas) : state.keyInsight,
         scrapWithOptionalComment: state.selectedScraps.map(scrap => ({
           scrapId: scrap.scrapId,
           userComment: scrap.opinion || undefined,
         })),
         generationParams: state.handle || undefined,
+        articleStructureTemplate: templateWithoutIds,
       };
 
       articleService.generateArticle(generateData)
@@ -830,11 +820,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   </button>
                 </div>
                 {flattenSections(state.templateStructure).map(({ section, level, id, parentId }) => {
-                  // 제목이 한 번이라도 편집되었다면 templateTitles의 값을 사용 (빈 문자열 포함)
-                  const hasBeenEdited = section.id! in state.templateTitles;
-                  const currentTitle = hasBeenEdited ? state.templateTitles[section.id!] : section.title;
                   const isChild = level > 0;
-                  
                   return (
                     <div key={id} style={{
                       marginBottom: '16px',
@@ -855,7 +841,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         <div style={{ flex: 1 }}>
                           <input
                             type="text"
-                            value={currentTitle || ''} // 빈 문자열도 허용
+                            value={section.title || ''}
                             onChange={(e) => {
                               handleTitleChange(section.id!, e.target.value);
                             }}
@@ -941,7 +927,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       
                       {/* 아이디어 입력 필드 */}
                       <textarea
-                        value={state.structuredIdeas[section.id!] || ''}
+                        value={section.keyIdea || ''}
                         onChange={(e) => handleIdeaChange(section.id!, e.target.value)}
                         rows={3}
                         style={{
