@@ -33,6 +33,7 @@ export interface GenerateArticleDto {
     keyInsight: string;
     scrapWithOptionalComment?: ScrapWithOptionalComment[];
     generationParams?: string;
+    articleStructureTemplate?: TemplateSection[];
 }
 
 /**
@@ -57,8 +58,9 @@ export interface AnalyzeContentDto {
  */
 export interface TemplateSection {
     title: string;
-    description: string;
+    keyIdea: string;
     children?: TemplateSection[];
+    
     id?: string; // 고유 식별자 추가
 }
 
