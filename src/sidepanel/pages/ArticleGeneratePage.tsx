@@ -480,7 +480,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     if (state.isGenerating) return;
 
     // Helper function to recursively remove 'id' from template sections
-    const removeIdsFromTemplate = (sections: TemplateSection[]): Omit<TemplateSection, 'id'>[] => {
+    const removeIdsFromTemplate = (sections: TemplateSection[]): any => {
       return sections.map(({ id, children, ...rest }) => {
         const newSection: Partial<TemplateSection> = { ...rest };
         if (children && children.length > 0) {
