@@ -6,6 +6,28 @@ import TextAlign from '@tiptap/extension-text-align';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { 
+  RiBold, 
+  RiItalic, 
+  RiStrikethrough, 
+  RiCodeLine, 
+  RiDeleteBinLine, 
+  RiParagraph, 
+  RiHeading, 
+  RiListUnordered, 
+  RiListOrdered, 
+  RiCodeBoxLine, 
+  RiDoubleQuotesL, 
+  RiSeparator, 
+  RiArrowGoBackLine, 
+  RiArrowGoForwardLine, 
+  RiFormatClear,
+  RiUnderline,
+  RiArrowRightLine,
+  RiSubtractLine,
+  RiText,
+  RiCornerDownLeftLine
+} from 'react-icons/ri';
 import styles from './Editor.module.css';
 
 interface EditorWrapperProps {
@@ -24,6 +46,43 @@ interface MenuBarProps {
 }
 
 const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
+  const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+
+  const handleMouseEnter = (e: React.MouseEvent, tooltipText: string) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const buttonCenterX = rect.left + rect.width / 2;
+    const buttonTop = rect.top;
+    
+    // 툴팁이 화면 위쪽에 표시될 공간이 있는지 확인
+    const tooltipHeight = 30; // 예상 툴팁 높이
+    const spaceAbove = buttonTop;
+    
+    let tooltipX = buttonCenterX;
+    let tooltipY;
+    
+    if (spaceAbove >= tooltipHeight + 10) {
+      // 위쪽에 표시
+      tooltipY = buttonTop - tooltipHeight - 5;
+    } else {
+      // 아래쪽에 표시
+      tooltipY = rect.bottom + 5;
+    }
+    
+    // 화면 경계 체크
+    const tooltipWidth = tooltipText.length * 8 + 20; // 예상 툴팁 너비
+    if (tooltipX - tooltipWidth / 2 < 10) {
+      tooltipX = tooltipWidth / 2 + 10;
+    } else if (tooltipX + tooltipWidth / 2 > window.innerWidth - 10) {
+      tooltipX = window.innerWidth - tooltipWidth / 2 - 10;
+    }
+    
+    setTooltip({ text: tooltipText, x: tooltipX, y: tooltipY });
+  };
+
+  const handleMouseLeave = () => {
+    setTooltip(null);
+  };
+
   const editorState = useEditorState({
     editor,
     selector: ctx => {
@@ -58,127 +117,218 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
 
   return (
     <div className={styles.controlGroup}>
-      <div className={styles.buttonGroup}>
-        <button
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          disabled={!editorState.canBold}
-          className={editorState.isBold ? styles.isActive : ''}
-        >
-          Bold
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          disabled={!editorState.canItalic}
-          className={editorState.isItalic ? styles.isActive : ''}
-        >
-          Italic
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          disabled={!editorState.canUnderline}
-          className={editorState.isUnderline ? styles.isActive : ''}
-        >
-          Underline
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-          disabled={!editorState.canStrike}
-          className={editorState.isStrike ? styles.isActive : ''}
-        >
-          Strike
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          disabled={!editorState.canCode}
-          className={editorState.isCode ? styles.isActive : ''}
-        >
-          Code
-        </button>
-        <button onClick={() => editor.chain().focus().unsetAllMarks().run()}>
-          Clear marks
-        </button>
-        <button onClick={() => editor.chain().focus().clearNodes().run()}>
-          Clear nodes
-        </button>
-        <button
-          onClick={() => editor.chain().focus().setParagraph().run()}
-          className={editorState.isParagraph ? styles.isActive : ''}
-        >
-          Paragraph
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={editorState.isHeading1 ? styles.isActive : ''}
-        >
-          H1
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={editorState.isHeading2 ? styles.isActive : ''}
-        >
-          H2
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          className={editorState.isHeading3 ? styles.isActive : ''}
-        >
-          H3
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 4 }).run()}
-          className={editorState.isHeading4 ? styles.isActive : ''}
-        >
-          H4
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 5 }).run()}
-          className={editorState.isHeading5 ? styles.isActive : ''}
-        >
-          H5
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleHeading({ level: 6 }).run()}
-          className={editorState.isHeading6 ? styles.isActive : ''}
-        >
-          H6
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editorState.isBulletList ? styles.isActive : ''}
-        >
-          Bullet list
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={editorState.isOrderedList ? styles.isActive : ''}
-        >
-          Ordered list
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={editorState.isCodeBlock ? styles.isActive : ''}
-        >
-          Code block
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleBlockquote().run()}
-          className={editorState.isBlockquote ? styles.isActive : ''}
-        >
-          Blockquote
-        </button>
-        <button onClick={() => editor.chain().focus().setHorizontalRule().run()}>
-          Horizontal rule
-        </button>
-        <button onClick={() => editor.chain().focus().setHardBreak().run()}>
-          Hard break
-        </button>
-        <button onClick={() => editor.chain().focus().undo().run()} disabled={!editorState.canUndo}>
-          Undo
-        </button>
-        <button onClick={() => editor.chain().focus().redo().run()} disabled={!editorState.canRedo}>
-          Redo
-        </button>
+      {/* 첫 번째 줄: 텍스트 스타일링 */}
+      <div className={styles.toolbarRow}>
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            disabled={!editorState.canBold}
+            className={editorState.isBold ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "굵게 (Ctrl+B)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiBold size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            disabled={!editorState.canItalic}
+            className={editorState.isItalic ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "기울임 (Ctrl+I)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiItalic size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            disabled={!editorState.canUnderline}
+            className={editorState.isUnderline ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "밑줄 (Ctrl+U)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiUnderline size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleStrike().run()}
+            disabled={!editorState.canStrike}
+            className={editorState.isStrike ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "취소선 (텍스트에 선 그어서 지우기)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiStrikethrough size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            disabled={!editorState.canCode}
+            className={editorState.isCode ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "인라인 코드 (한 줄 코드)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiCodeLine size={16} />
+          </button>
+        </div>
+
+        <div className={styles.toolbarDivider} />
+
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().unsetAllMarks().run()}
+            onMouseEnter={(e) => handleMouseEnter(e, "서식 지우기 (텍스트 스타일 제거)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiFormatClear size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().clearNodes().run()}
+            onMouseEnter={(e) => handleMouseEnter(e, "노드 지우기 (블록 요소 제거)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiDeleteBinLine size={16} />
+          </button>
+        </div>
+
+        <div className={styles.toolbarDivider} />
+
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().setParagraph().run()}
+            className={editorState.isParagraph ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "본문 (일반 텍스트)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiText size={16} />
+          </button>
+                     <select
+             value={
+               editorState.isHeading1 ? 'h1' :
+               editorState.isHeading2 ? 'h2' :
+               editorState.isHeading3 ? 'h3' :
+               editorState.isHeading4 ? 'h4' :
+               editorState.isHeading5 ? 'h5' :
+               editorState.isHeading6 ? 'h6' :
+               'p'
+             }
+             onChange={(e) => {
+               const value = e.target.value;
+               if (value === 'p') {
+                 editor.chain().focus().setParagraph().run();
+               } else {
+                 const level = parseInt(value.replace('h', '')) as 1 | 2 | 3 | 4 | 5 | 6;
+                 editor.chain().focus().toggleHeading({ level }).run();
+               }
+             }}
+             className={styles.headingSelect}
+           >
+            <option value="p">본문</option>
+            <option value="h1">제목 1</option>
+            <option value="h2">제목 2</option>
+            <option value="h3">제목 3</option>
+            <option value="h4">제목 4</option>
+            <option value="h5">제목 5</option>
+            <option value="h6">제목 6</option>
+          </select>
+        </div>
       </div>
+
+      {/* 두 번째 줄: 블록 요소들 */}
+      <div className={styles.toolbarRow}>
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            className={editorState.isBulletList ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "글머리 기호 목록 (• 목록)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiListUnordered size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            className={editorState.isOrderedList ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "번호 매기기 목록 (1. 2. 3. 목록)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiListOrdered size={16} />
+          </button>
+        </div>
+
+        <div className={styles.toolbarDivider} />
+
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            className={editorState.isCodeBlock ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "코드 블록 (여러 줄 코드)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiCodeBoxLine size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().toggleBlockquote().run()}
+            className={editorState.isBlockquote ? styles.isActive : ''}
+            onMouseEnter={(e) => handleMouseEnter(e, "인용구 (들여쓰기된 텍스트)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiDoubleQuotesL size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            onMouseEnter={(e) => handleMouseEnter(e, "구분선 (가로선 추가)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiSubtractLine size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().setHardBreak().run()}
+            onMouseEnter={(e) => handleMouseEnter(e, "줄바꿈 (강제 줄바꿈)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiCornerDownLeftLine size={16} />
+          </button>
+        </div>
+
+        <div className={styles.toolbarDivider} />
+
+        <div className={styles.toolbarGroup}>
+          <button
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editorState.canUndo}
+            onMouseEnter={(e) => handleMouseEnter(e, "실행 취소 (Ctrl+Z)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiArrowGoBackLine size={16} />
+          </button>
+          <button
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editorState.canRedo}
+            onMouseEnter={(e) => handleMouseEnter(e, "다시 실행 (Ctrl+Y)")}
+            onMouseLeave={handleMouseLeave}
+          >
+            <RiArrowGoForwardLine size={16} />
+          </button>
+        </div>
+      </div>
+      
+      {/* 커스텀 툴팁 */}
+      {tooltip && (
+        <div
+          style={{
+            position: 'fixed',
+            left: tooltip.x,
+            top: tooltip.y,
+            transform: 'translateX(-50%)',
+            backgroundColor: '#333',
+            color: 'white',
+            padding: '6px 10px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            whiteSpace: 'nowrap',
+            zIndex: 9999,
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+            pointerEvents: 'none',
+          }}
+        >
+          {tooltip.text}
+        </div>
+      )}
     </div>
   );
 };
@@ -206,19 +356,27 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
     const menuWidth = menuElement ? menuElement.offsetWidth : 120;
     const menuHeight = menuElement ? menuElement.offsetHeight : 40;
     
-    let left = (start.left + end.left) / 2 - editorRect.left;
-    let top = start.top - editorRect.top - menuHeight - 10;
+    // 선택된 텍스트의 중앙 위치 계산 (절대 좌표)
+    let left = (start.left + end.left) / 2;
     
-    // 좌우 경계 체크
-    if (left - menuWidth / 2 < 0) {
-      left = menuWidth / 2 + 5;
-    } else if (left + menuWidth / 2 > editorRect.width) {
-      left = editorRect.width - menuWidth / 2 - 5;
+    // 기본적으로 선택된 텍스트 바로 위에 배치 (절대 좌표)
+    let top = start.top - menuHeight - 10;
+    
+    // 좌우 경계 체크 (화면 기준)
+    if (left - menuWidth / 2 < 10) {
+      left = menuWidth / 2 + 10;
+    } else if (left + menuWidth / 2 > window.innerWidth - 10) {
+      left = window.innerWidth - menuWidth / 2 - 10;
     }
     
-    // 상단 경계 체크 - 메뉴가 에디터 위로 나가면 선택된 텍스트 아래로 이동
-    if (top < 0) {
-      top = end.top - editorRect.top + 10;
+    // 상단 경계 체크 - 메뉴가 화면 위로 나가면 선택된 텍스트 아래로 이동
+    if (top < 10) {
+      top = end.bottom + 10;
+    }
+    
+    // 하단 경계 체크 - 메뉴가 화면 아래로 나가면 선택된 텍스트 위로 이동
+    if (top + menuHeight > window.innerHeight - 10) {
+      top = start.top - menuHeight - 10;
     }
     
     setPosition({ top, left });
@@ -258,20 +416,21 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
     <div
       ref={menuRef}
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: position.top,
         left: position.left,
         transform: 'translateX(-50%)',
         backgroundColor: 'white',
-        border: '1px solid #e0e0e0',
-        borderRadius: '4px',
-        padding: '4px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        border: '1px solid #d1d5db',
+        borderRadius: '6px',
+        padding: '6px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         display: 'flex',
         gap: '4px',
         zIndex: 9999,
         pointerEvents: 'all',
-        whiteSpace: 'nowrap'
+        whiteSpace: 'nowrap',
+        minWidth: '120px'
       }}
     >
       <button
@@ -282,10 +441,13 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           border: 'none', 
           borderRadius: '2px', 
           cursor: 'pointer',
-          backgroundColor: editor.isActive('bold') ? '#f0f0f0' : 'transparent'
+          backgroundColor: editor.isActive('bold') ? '#f0f0f0' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
-        B
+        <RiBold size={14} />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -295,10 +457,13 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           border: 'none', 
           borderRadius: '2px', 
           cursor: 'pointer',
-          backgroundColor: editor.isActive('italic') ? '#f0f0f0' : 'transparent'
+          backgroundColor: editor.isActive('italic') ? '#f0f0f0' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
-        I
+        <RiItalic size={14} />
       </button>
       <button
         onClick={() => editor.chain().focus().toggleUnderline().run()}
@@ -308,10 +473,13 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           border: 'none', 
           borderRadius: '2px', 
           cursor: 'pointer',
-          backgroundColor: editor.isActive('underline') ? '#f0f0f0' : 'transparent'
+          backgroundColor: editor.isActive('underline') ? '#f0f0f0' : 'transparent',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
       >
-        U
+        <RiUnderline size={14} />
       </button>
       <div style={{ width: '1px', height: '20px', backgroundColor: '#e0e0e0', margin: '0 4px' }}></div>
       <select
@@ -358,11 +526,13 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           borderRadius: '2px', 
           cursor: 'pointer',
           backgroundColor: 'transparent',
-          fontSize: '12px'
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
         }}
         title="구분선 추가"
       >
-        —
+        <RiSubtractLine size={14} />
       </button>
     </div>
   );
