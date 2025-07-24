@@ -75,11 +75,11 @@ const STORAGE_KEY = 'tyquill-article-generate-draft';
 const getInitialState = (): ArticleGenerateState => {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
-    console.log('🔍 Loading saved state:', saved);
+    // console.log('🔍 Loading saved state:', saved);
     if (saved) {
       const parsedState = JSON.parse(saved);
-      console.log('🔍 Parsed state:', parsedState);
-      console.log('🔍 Template structure from storage:', parsedState.templateStructure);
+      // console.log('🔍 Parsed state:', parsedState);
+      // console.log('🔍 Template structure from storage:', parsedState.templateStructure);
       
       const restoredState = {
         ...parsedState,
@@ -94,7 +94,7 @@ const getInitialState = (): ArticleGenerateState => {
         isAnalysisConfirmModalOpen: false,
       };
       
-      console.log('✅ Restored state with template:', restoredState.templateStructure);
+      // console.log('✅ Restored state with template:', restoredState.templateStructure);
       return restoredState;
     }
   } catch (error) {
@@ -284,7 +284,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   
   // 디버깅: 템플릿 구조 상태 변화 추적
   useEffect(() => {
-    console.log('📊 Current template structure:', state.templateStructure);
+    // console.log('📊 Current template structure:', state.templateStructure);
   }, [state.templateStructure]);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
 
@@ -418,7 +418,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       const sections = templateSections.sections
 
-      console.log(sections);
+      // console.log(sections);
 
       if (!sections || !Array.isArray(sections) || sections.length === 0) {
         throw new Error('페이지 구조를 분석할 수 없습니다.');
@@ -445,8 +445,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   const addSection = (parentId?: string) => {
     const newTitle = parentId ? '새 하위 섹션' : '새 섹션';
-    console.log('🔥 Adding section:', { parentId, title: newTitle });
-    console.log('🔥 Current template structure before:', state.templateStructure);
+    // console.log('🔥 Adding section:', { parentId, title: newTitle });
+    // console.log('🔥 Current template structure before:', state.templateStructure);
     dispatch({ type: 'ADD_TEMPLATE_SECTION', payload: { parentId, title: newTitle } });
   };
 
