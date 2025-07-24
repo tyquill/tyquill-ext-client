@@ -1,6 +1,7 @@
 import React, { useEffect, useReducer, useState, useMemo } from 'react';
 import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoRemove } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
+import articleStyles from './ArticleGeneratePage.module.css';
 import { Scrap, mockTemplates } from '../../mock/data';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
@@ -36,6 +37,7 @@ interface ArticleGenerateState {
   templateStructure: TemplateSection[] | null;
   sectionIdCounter: number;
   isAnalyzing: boolean;
+  isAnalysisConfirmModalOpen: boolean;
 }
 
 type DraftAction =
@@ -61,7 +63,8 @@ type DraftAction =
   | { type: 'SET_TEMPLATE_TITLE'; payload: { sectionId: string; newTitle: string } }
   | { type: 'ADD_TEMPLATE_SECTION'; payload: { parentId?: string; title: string } }
   | { type: 'REMOVE_TEMPLATE_SECTION'; payload: string }
-  | { type: 'CLEAR_TEMPLATE' };
+  | { type: 'CLEAR_TEMPLATE' }
+  | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 
@@ -84,6 +87,7 @@ const getInitialState = (): ArticleGenerateState => {
         templateStructure: parsedState.templateStructure || null, // 템플릿 구조도 복원
         sectionIdCounter: parsedState.sectionIdCounter || 0,
         isAnalyzing: false,
+        isAnalysisConfirmModalOpen: false,
       };
       
       console.log('✅ Restored state with template:', restoredState.templateStructure);
@@ -108,6 +112,7 @@ const getInitialState = (): ArticleGenerateState => {
     templateStructure: null, // 기본값은 null
     sectionIdCounter: 0,
     isAnalyzing: false,
+    isAnalysisConfirmModalOpen: false,
   };
 };
 
@@ -258,6 +263,8 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
     }
     case 'CLEAR_TEMPLATE':
       return { ...state, templateStructure: null };
+    case 'TOGGLE_ANALYSIS_CONFIRM_MODAL':
+      return { ...state, isAnalysisConfirmModalOpen: !state.isAnalysisConfirmModalOpen };
     default:
       return state;
   }
@@ -313,8 +320,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       // 모달 바깥 클릭 처리
       if (state.isScrapModalOpen) {
-        const modalOverlay = document.querySelector(`.${styles.modalOverlay}`);
-        const scrapModal = document.querySelector(`.${styles.scrapModal}`);
+        const modalOverlay = document.querySelector(`.${articleStyles.modalOverlay}`);
+        const scrapModal = document.querySelector(`.${articleStyles.scrapModal}`);
         
         if (modalOverlay && target === modalOverlay && !scrapModal?.contains(target)) {
           dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
@@ -414,7 +421,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       }
 
       dispatch({ type: 'SET_TEMPLATE_STRUCTURE', payload: sections });
-      showSuccess('섹션 구성 완료', `${sections.length}개의 섹션으로 구성을 만들었습니다.`);
+      showSuccess('AI 분석 완료', `${sections.length}개의 섹션으로 구성을 만들었습니다.`);
 
     } catch (error: any) {
       console.error('Template generation error:', error);
@@ -555,6 +562,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const [allScraps, setAllScraps] = useState<ScrapResponse[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
 
+  // 키메시지 textarea 자동 높이 조정
+  useEffect(() => {
+    const textarea = document.getElementById('message') as HTMLTextAreaElement;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = textarea.scrollHeight + 'px';
+    }
+  }, [state.keyInsight]);
+
   useEffect(() => {
     const fetchScraps = async () => {
       const scraps: ScrapResponse[] = await scrapService.getScraps();
@@ -619,11 +635,22 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </label>
             <textarea
               id="message"
-              className={styles.formTextarea}
+              className={articleStyles.keyMessageTextarea}
               value={state.keyInsight}
-              onChange={(e) => dispatch({ type: 'SET_MESSAGE', payload: e.target.value })}
-              placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성해주세요. (예: 생성형 AI를 활용한 디자인 자동화와 하이퍼-개인화가 핵심이 될 것이다.)"
-              rows={4}
+              onChange={(e) => {
+                dispatch({ type: 'SET_MESSAGE', payload: e.target.value });
+                // 자동 높이 조정
+                e.target.style.height = 'auto';
+                e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+              onInput={(e) => {
+                // 입력 시에도 높이 조정
+                const target = e.target as HTMLTextAreaElement;
+                target.style.height = 'auto';
+                target.style.height = target.scrollHeight + 'px';
+              }}
+              placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성해주세요. (예: 이제는 AI 뉴스레터 도구를 이용해, 뉴스레터 작가는 좋은 컨텐츠를 기획하고 독자와 소통하는 데 더욱 집중할 수 있다.)"
+              rows={1}
             />
           </div>
           {/* <div className={styles.formGroup}>
@@ -662,72 +689,21 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
           {/* 섹션 구성 */}
           <div className={styles.referenceSection}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '16px'
-            }}>
+            <div className={articleStyles.sectionHeader}>
               <h3 className={styles.sectionTitle}>섹션 구성</h3>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div className={articleStyles.sectionActions}>
                 <button 
                   onClick={() => addSection()}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: '#ffffff',
-                    color: '#374151',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                    e.currentTarget.style.borderColor = '#d1d5db';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#ffffff';
-                    e.currentTarget.style.borderColor = '#e2e8f0';
-                  }}
+                  className={articleStyles.sectionButton}
                 >
                   <IoAdd size={14} />
                   섹션 추가
                 </button>
                 
                 <button 
-                  onClick={handleGenerateTemplateFromPage}
+                  onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
                   disabled={state.isAnalyzing}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 12px',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    backgroundColor: state.isAnalyzing ? '#f1f5f9' : 'white',
-                    color: state.isAnalyzing ? '#64748b' : '#374151',
-                    cursor: state.isAnalyzing ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!state.isAnalyzing) {
-                      e.currentTarget.style.backgroundColor = '#f8fafc';
-                      e.currentTarget.style.borderColor = '#d1d5db';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!state.isAnalyzing) {
-                      e.currentTarget.style.backgroundColor = 'white';
-                      e.currentTarget.style.borderColor = '#e2e8f0';
-                    }
-                  }}
+                  className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                   title="현재 페이지를 분석하여 자동으로 섹션 구성을 생성합니다"
                 >
                   <IoSparkles size={14} />
@@ -737,20 +713,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
             
             {!state.templateStructure && (
-              <div style={{
-                padding: '24px',
-                backgroundColor: '#f8fafc',
-                borderRadius: '8px',
-                border: '2px dashed #cbd5e1',
-                textAlign: 'center',
-                color: '#64748b',
-                marginBottom: '20px'
-              }}>
-                <IoSparkles size={24} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                <p style={{ margin: '0 0 8px 0', fontSize: '15px', fontWeight: '500' }}>
+              <div className={articleStyles.emptyState}>
+                <IoSparkles size={24} className={articleStyles.emptyStateIcon} />
+                <p className={articleStyles.emptyStateTitle}>
                   섹션별로 구성해서 더 체계적인 글을 써보세요
                 </p>
-                <p style={{ margin: '0', fontSize: '13px', opacity: 0.8 }}>
+                <p className={articleStyles.emptyStateSubtitle}>
                   "섹션 추가" 또는 "AI 분석"으로 시작해보세요
                 </p>
               </div>
@@ -758,63 +726,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
             {/* 섹션 구성 표시 */}
             {state.templateStructure && (
-              <div style={{ 
-                marginTop: '20px', 
-                padding: '20px', 
-                backgroundColor: '#f8fafc', 
-                borderRadius: '12px', 
-                border: '1px solid #e2e8f0' 
-              }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  marginBottom: '20px' 
-                }}>
+              <div className={articleStyles.sectionContainer}>
+                <div className={articleStyles.sectionHeader}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <h4 style={{ 
-                      fontSize: '16px', 
-                      fontWeight: '600', 
-                      color: '#1e293b',
-                      margin: '0',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px'
-                    }}>
-                      <IoSparkles size={18} style={{ color: '#3b82f6' }} />
+                    <h4 className={articleStyles.sectionTitle}>
+                      <IoSparkles size={18} className={articleStyles.sectionTitleIcon} />
                       섹션 구성
                     </h4>
-                    <span style={{
-                      fontSize: '12px',
-                      color: '#10b981',
-                      backgroundColor: '#d1fae5',
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      fontWeight: '500'
-                    }}>
+                    <span className={articleStyles.sectionStatus}>
                       자동 저장됨
                     </span>
                   </div>
                   <button 
                     onClick={() => dispatch({ type: 'CLEAR_TEMPLATE' })}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#64748b',
-                      cursor: 'pointer',
-                      fontSize: '14px',
-                      padding: '4px 8px',
-                      borderRadius: '6px',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#e2e8f0';
-                      e.currentTarget.style.color = '#475569';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#64748b';
-                    }}
+                    className={articleStyles.clearButton}
                   >
                     × 초기화
                   </button>
@@ -822,22 +747,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 {flattenSections(state.templateStructure).map(({ section, level, id, parentId }) => {
                   const isChild = level > 0;
                   return (
-                    <div key={id} style={{
-                      marginBottom: '16px',
-                      marginLeft: isChild ? '24px' : '0',
-                      padding: '16px',
-                      backgroundColor: isChild ? '#f8fafc' : 'white',
-                      borderRadius: '8px',
-                      border: `1px solid ${isChild ? '#cbd5e1' : '#e2e8f0'}`,
-                      borderLeft: isChild ? '4px solid #3b82f6' : '1px solid #e2e8f0'
-                    }}>
+                    <div key={id} className={`${articleStyles.sectionItem} ${isChild ? articleStyles.sectionItemChild : ''}`}>
                       {/* 섹션 헤더 */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '8px',
-                        marginBottom: '12px'
-                      }}>
+                      <div className={articleStyles.sectionItemHeader}>
                         <div style={{ flex: 1 }}>
                           <input
                             type="text"
@@ -845,83 +757,29 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                             onChange={(e) => {
                               handleTitleChange(section.id!, e.target.value);
                             }}
-                            style={{
-                              width: '100%',
-                              fontSize: isChild ? '14px' : '15px',
-                              fontWeight: isChild ? '400' : '500',
-                              color: '#1e293b',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              padding: '8px 12px',
-                              backgroundColor: isChild ? 'white' : '#f8fafc',
-                              transition: 'all 0.2s',
-                            }}
-                            onFocus={(e) => {
-                              e.target.style.backgroundColor = 'white';
-                              e.target.style.borderColor = '#3b82f6';
-                              e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                            }}
-                            onBlur={(e) => {
-                              e.target.style.backgroundColor = isChild ? 'white' : '#f8fafc';
-                              e.target.style.borderColor = '#e2e8f0';
-                              e.target.style.boxShadow = 'none';
-                            }}
+                            className={`${articleStyles.sectionInput} ${isChild ? articleStyles.sectionInputChild : ''}`}
                           />
                         </div>
                         
                         {/* 액션 버튼들 */}
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                        <div className={articleStyles.sectionActions}>
                           {!isChild && (
-                            <button
+                            <div
                               onClick={() => addSection(id)}
                               title="하위 섹션 추가"
-                              style={{
-                                padding: '6px',
-                                border: 'none',
-                                borderRadius: '4px',
-                                backgroundColor: '#e0f2fe',
-                                color: '#0369a1',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                              }}
-                              onMouseEnter={(e) => {
-                                e.currentTarget.style.backgroundColor = '#bae6fd';
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.style.backgroundColor = '#e0f2fe';
-                              }}
+                              className={articleStyles.addChildButton}
                             >
-                              <IoAdd size={14} />
-                            </button>
+                              <IoAdd size={15} />
+                            </div>
                           )}
                           
-                          <button
+                          <div
                             onClick={() => removeSection(id)}
                             title="섹션 삭제"
-                            style={{
-                              padding: '6px',
-                              border: 'none',
-                              borderRadius: '4px',
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              cursor: 'pointer',
-                              transition: 'all 0.2s',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.backgroundColor = '#fecaca';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.backgroundColor = '#fee2e2';
-                            }}
+                            className={articleStyles.removeButton}
                           >
-                            <IoTrash size={14} />
-                          </button>
+                            <IoTrash size={15} />
+                          </div>
                         </div>
                       </div>
                       
@@ -930,26 +788,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         value={section.keyIdea || ''}
                         onChange={(e) => handleIdeaChange(section.id!, e.target.value)}
                         rows={3}
-                        style={{
-                          width: '100%',
-                          minHeight: '80px',
-                          fontSize: '14px',
-                          lineHeight: '1.5',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '6px',
-                          padding: '12px',
-                          backgroundColor: 'white',
-                          resize: 'vertical',
-                          transition: 'all 0.2s',
-                        }}
-                        onFocus={(e) => {
-                          e.target.style.borderColor = '#3b82f6';
-                          e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
-                        }}
-                        onBlur={(e) => {
-                          e.target.style.borderColor = '#e2e8f0';
-                          e.target.style.boxShadow = 'none';
-                        }}
+                        className={articleStyles.ideaTextarea}
                       />
                     </div>
                   );
@@ -958,33 +797,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 {/* 새 섹션 추가 버튼 */}
                 <button
                   onClick={() => addSection()}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px dashed #cbd5e1',
-                    borderRadius: '8px',
-                    backgroundColor: 'transparent',
-                    color: '#64748b',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    transition: 'all 0.2s',
-                    marginTop: '16px'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#3b82f6';
-                    e.currentTarget.style.color = '#3b82f6';
-                    e.currentTarget.style.backgroundColor = '#f8fafc';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#cbd5e1';
-                    e.currentTarget.style.color = '#64748b';
-                    e.currentTarget.style.backgroundColor = 'transparent';
-                  }}
+                  className={articleStyles.addSectionButton}
                 >
                   <IoAdd size={16} />
                   섹션 추가
@@ -994,20 +807,19 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           </div>
 
           {/* 참고 자료 */}
-          <div className={styles.referenceSection}>
-            <h3 className={styles.sectionTitle}>참고 자료</h3>
+          <div className={articleStyles.referenceSection}>
+            <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
             <button 
-              className={styles.addReferenceButton}
+              className={articleStyles.addReferenceButton}
               onClick={() => dispatch({ type: 'TOGGLE_SCRAP_MODAL' })}
-              style={{ width: '100%', marginBottom: '16px' }}
             >
               <IoAdd size={16} />
               스크랩에서 자료 추가
             </button>
             
-            <div className={styles.referenceList}>
+            <div className={articleStyles.referenceList}>
               {state.selectedScraps.map(scrap => (
-                <div key={scrap.scrapId} className={styles.referenceItem}>
+                <div key={scrap.scrapId} className={articleStyles.referenceItem}>
                   <div>
                     <div>{scrap.title}</div>
                     <input
@@ -1019,7 +831,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     />
                   </div>
                   <button 
-                    className={styles.removeButton}
+                    className={articleStyles.referenceRemoveButton}
                     onClick={() => handleRemoveScrap(scrap.scrapId)}
                   >
                     ×
@@ -1030,14 +842,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           </div>
 
           {state.generationError && (
-            <div className={styles.errorMessage}>
+            <div className={articleStyles.errorMessage}>
               {state.generationError}
             </div>
           )}
 
-          <div className={styles.addButtonContainer}>
+          <div className={articleStyles.addButtonContainer}>
             <button 
-              className={`${styles.addButton} ${state.isGenerating ? styles.loading : ''}`}
+              className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
               onClick={handleGenerateArticle}
               disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
             >
@@ -1061,20 +873,92 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           </div>
         </div>
 
+        {/* AI 분석 컨펌 모달 */}
+        {state.isAnalysisConfirmModalOpen && (
+          <div 
+            className={articleStyles.analysisModalOverlay}
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+              }
+            }}
+          >
+            <div className={articleStyles.analysisModal}>
+              <div className={articleStyles.modalHeader}>
+                <h2 className={articleStyles.modalTitle}>AI 페이지 분석</h2>
+                <button 
+                  className={articleStyles.modalCloseButton}
+                  onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
+                >
+                  <IoClose />
+                </button>
+              </div>
+              
+              <div className={articleStyles.analysisModalContent}>
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <IoSparkles size={48} style={{ color: '#3b82f6', marginBottom: '16px' }} />
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '600' }}>
+                    현재 페이지를 분석하여 섹션을 자동 생성합니다
+                  </h3>
+                  <p style={{ margin: '0 0 20px 0', color: '#666', lineHeight: '1.6', fontSize: '16px' }}>
+                    AI가 현재 페이지의 내용을 분석하여 적절한 섹션 구성을 제안합니다.<br />
+                    분석에는 약 10~30초 정도 소요됩니다.
+                  </p>
+                  
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                    <button
+                      onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
+                      style={{
+                        padding: '10px 20px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '6px',
+                        background: 'white',
+                        color: '#666',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={async () => {
+                        dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+                        await handleGenerateTemplateFromPage();
+                      }}
+                      style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '500'
+                      }}
+                    >
+                      분석 시작
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {state.isScrapModalOpen && (
           <div 
-            className={styles.modalOverlay}
+            className={articleStyles.modalOverlay}
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
               }
             }}
           >
-            <div className={styles.scrapModal}>
-              <div className={styles.modalHeader}>
-                <h2 className={styles.modalTitle}>스크랩 선택</h2>
+            <div className={articleStyles.scrapModal}>
+              <div className={articleStyles.modalHeader}>
+                <h2 className={articleStyles.modalTitle}>스크랩 선택</h2>
                 <button 
-                  className={styles.modalCloseButton}
+                  className={articleStyles.modalCloseButton}
                   onClick={() => dispatch({ type: 'TOGGLE_SCRAP_MODAL' })}
                 >
                   <IoClose />
@@ -1088,23 +972,23 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 onTagRemove={(tag) => dispatch({ type: 'REMOVE_TAG', payload: tag })}
               />
 
-              <div className={styles.modalContent}>
+              <div className={articleStyles.modalContent}>
                 {filteredScraps.map((scrap: ScrapResponse) => (
                   <div
                     key={scrap.scrapId}
-                    className={`${styles.scrapItem} ${
-                      state.selectedScraps.find(s => s.scrapId === scrap.scrapId) ? styles.selected : ''
+                    className={`${articleStyles.scrapItem} ${
+                      state.selectedScraps.find(s => s.scrapId === scrap.scrapId) ? articleStyles.selected : ''
                     }`}
                     onClick={() => handleScrapSelect(scrap)}
                     data-url={scrap.url}
                   >
-                    <div className={styles.scrapTitle}>{scrap.title}</div>
-                    <div className={styles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
-                    <div className={styles.scrapFooter}>
-                      <div className={styles.scrapTags}>
+                    <div className={articleStyles.scrapTitle}>{scrap.title}</div>
+                    <div className={articleStyles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
+                    <div className={articleStyles.scrapFooter}>
+                      <div className={articleStyles.scrapTags}>
                         <TagList tags={scrap.tags?.map(tag => tag.name) || []} />
                       </div>
-                      <div className={styles.scrapDate}>{formatScrapDate(scrap.createdAt)}</div>
+                      <div className={articleStyles.scrapDate}>{formatScrapDate(scrap.createdAt)}</div>
                     </div>
                   </div>
                 ))}
