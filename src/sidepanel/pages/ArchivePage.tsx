@@ -99,7 +99,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   return (
     <div className={styles.page}>
       <div className={styles.pageHeader}>
-        <div className={styles.headerContent}>
+        <div className={styles.headerControls}>
           <h1 className={styles.pageTitle}>보관함</h1>
           <button 
             className={styles.refreshButton}
@@ -121,13 +121,14 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
           </div>
         ) : (
           articles.map(article => (
-            <div key={article.articleId} className={styles.archiveItem}>
+            <div 
+              key={article.articleId} 
+              className={styles.archiveItem}
+              onClick={() => onDraftClick(article.articleId.toString())}
+              style={{ cursor: 'pointer' }}
+            >
               <div className={styles.archiveGrid}>
-                <div 
-                  className={styles.archiveContent}
-                  onClick={() => onDraftClick(article.articleId.toString())}
-                  style={{ cursor: 'pointer' }}
-                >
+                <div className={styles.archiveContent}>
                   <div className={styles.archiveTitle}>{article.title || '제목 없음'}</div>
                   <div className={styles.archiveInfo}>
                     <span>{new Date(article.createdAt).toLocaleString('ko-KR', {
@@ -166,11 +167,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                   </button>
                 </div>
               </div>
-              <div 
-                className={styles.archivePreview}
-                onClick={() => onDraftClick(article.articleId.toString())}
-                style={{ cursor: 'pointer' }}
-              >
+              <div className={styles.archivePreview}>
                 {getPreviewContent(article.content)}
               </div>
             </div>
