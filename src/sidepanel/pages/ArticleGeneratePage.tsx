@@ -11,6 +11,7 @@ import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../components/DiscoBallScene';
+import { FaWandMagicSparkles } from "react-icons/fa6";
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -709,7 +710,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                   title="현재 페이지를 분석하여 자동으로 섹션 구성을 생성합니다"
                 >
-                  <RiAiGenerate size={14} />
+                  <FaWandMagicSparkles size={14} />
                   {state.isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
                 </button>
               </div>
