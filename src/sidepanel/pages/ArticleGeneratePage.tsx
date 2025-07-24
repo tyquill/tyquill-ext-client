@@ -1,5 +1,7 @@
 import React, { useEffect, useReducer, useState, useMemo } from 'react';
 import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoRemove } from 'react-icons/io5';
+import { RiAiGenerate } from 'react-icons/ri';
+import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
 import articleStyles from './ArticleGeneratePage.module.css';
 import { Scrap, mockTemplates } from '../../mock/data';
@@ -706,15 +708,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                   title="현재 페이지를 분석하여 자동으로 섹션 구성을 생성합니다"
                 >
-                  <IoSparkles size={14} />
-                  {state.isAnalyzing ? '분석 중...' : 'AI 분석'}
+                  <RiAiGenerate size={14} />
+                  {state.isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
                 </button>
               </div>
             </div>
             
             {!state.templateStructure && (
               <div className={articleStyles.emptyState}>
-                <IoSparkles size={24} className={articleStyles.emptyStateIcon} />
+                <RiAiGenerate size={24} className={articleStyles.emptyStateIcon} />
                 <p className={articleStyles.emptyStateTitle}>
                   섹션별로 구성해서 더 체계적인 글을 써보세요
                 </p>
@@ -730,7 +732,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <div className={articleStyles.sectionHeader}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h4 className={articleStyles.sectionTitle}>
-                      <IoSparkles size={18} className={articleStyles.sectionTitleIcon} />
+                      <TbListDetails size={18} className={articleStyles.sectionTitleIcon} />
                       섹션 구성
                     </h4>
                     <span className={articleStyles.sectionStatus}>
@@ -896,7 +898,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <IoSparkles size={48} style={{ color: '#3b82f6', marginBottom: '16px' }} />
+                  <RiAiGenerate size={48} style={{ color: '#000000', marginBottom: '16px' }} />
                   <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '600' }}>
                     현재 페이지를 분석하여 섹션을 자동 생성합니다
                   </h3>
@@ -917,7 +919,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       fontSize: '14px',
                       lineHeight: '1.5'
                     }}>
-                      ⚠️ <strong>주의:</strong> 기존에 작성한 섹션이 있습니다. 
+                      ⚠️ <strong>주의:</strong> 기존에 작성한 섹션이 있는 것 같습니다. 
                       <br />
                       AI 분석을 진행하면 현재 섹션 구성은 사라집니다.
                     </div>
