@@ -27,7 +27,7 @@ const ScrapPage: React.FC = () => {
   const [scrapsError, setScrapsError] = useState<string | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
-  const loadingTimeoutRef = useRef<NodeJS.Timeout>();
+  const loadingTimeoutRef = useRef<number>();
   const inputRef = useRef<HTMLInputElement>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
 
