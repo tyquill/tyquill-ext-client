@@ -905,6 +905,24 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     분석에는 약 10~30초 정도 소요됩니다.
                   </p>
                   
+                  {/* 기존 섹션이 있을 때 경고 메시지 */}
+                  {state.templateStructure && state.templateStructure.length > 0 && (
+                    <div style={{ 
+                      margin: '0 0 20px 0', 
+                      padding: '12px 16px', 
+                      backgroundColor: '#fef3c7', 
+                      border: '1px solid #f59e0b', 
+                      borderRadius: '8px',
+                      color: '#92400e',
+                      fontSize: '14px',
+                      lineHeight: '1.5'
+                    }}>
+                      ⚠️ <strong>주의:</strong> 기존에 작성한 섹션이 있습니다. 
+                      <br />
+                      AI 분석을 진행하면 현재 섹션 구성은 사라집니다.
+                    </div>
+                  )}
+                  
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                     <button
                       onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
