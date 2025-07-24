@@ -1,0 +1,639 @@
+/* ArticleGeneratePage 전용 스타일 */
+
+/* 섹션 구성 관련 스타일 */
+.sectionContainer {
+  margin-top: 0;
+  padding: 20px;
+  background-color: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.sectionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sectionTitleIcon {
+  color: #000000;
+}
+
+.sectionStatus {
+  font-size: 12px;
+  color: #10b981;
+  background-color: #d1fae5;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 8px;
+}
+
+.sectionButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.sectionButton:hover {
+  background-color: #f8fafc;
+  border-color: #d1d5db;
+}
+
+.sectionButton:disabled,
+.sectionButtonDisabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+.sectionButton:hover:not(:disabled) {
+  background-color: #f8fafc;
+  border-color: #d1d5db;
+}
+
+.clearButton {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.clearButton:hover {
+  background-color: #e2e8f0;
+  color: #475569;
+}
+
+/* 빈 상태 스타일 */
+.emptyState {
+  padding: 24px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 2px dashed #cbd5e1;
+  text-align: center;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.emptyStateIcon {
+  margin-bottom: 8px;
+  opacity: 0.5;
+}
+
+.emptyStateTitle {
+  margin: 0 0 8px 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.emptyStateSubtitle {
+  margin: 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* 섹션 아이템 스타일 */
+.sectionItem {
+  margin: 16px 0px;
+  padding: 16px;
+  background-color: white;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  transition: all 0.2s;
+}
+
+.sectionItemChild {
+  margin-left: 24px;
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-left: 4px solid #3b82f6;
+}
+
+.sectionItemHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  margin-top: 0px;
+}
+
+.sectionInput {
+  flex: 1;
+  min-width: 200px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'Inter', 'Apple SD Gothic Neo', Arial, sans-serif;
+  color: #1e293b;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+}
+
+.sectionInput:focus {
+  background-color: white;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.sectionInputChild {
+  font-size: 14px;
+  font-weight: 400;
+  background-color: white;
+}
+
+.sectionActions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.actionButton {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 500;
+  min-width: 44px;
+  height: 44px;
+  position: relative;
+  outline: none;
+}
+
+.actionButton:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.actionButton:hover {
+  opacity: 0.8;
+}
+
+.addChildButton {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.addChildButton:hover {
+  background-color: #bae6fd;
+}
+
+.addChildButton:active {
+  background-color: #7dd3fc;
+}
+
+.removeButton {
+  background-color: #fee2e2;
+  color: #dc2626;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.removeButton:hover {
+  background-color: #fecaca;
+}
+
+.removeButton:active {
+  background-color: #fca5a5;
+}
+
+.actionButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* 아이디어 입력 필드 */
+.ideaTextarea {
+  width: 100%;
+  min-height: 80px;
+  font-size: 14px;
+  font-family: 'Inter', 'Apple SD Gothic Neo', Arial, sans-serif;
+  line-height: 1.5;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 12px;
+  background-color: #f8fafc;
+  resize: vertical;
+  transition: all 0.2s;
+}
+
+.ideaTextarea:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+/* 새 섹션 추가 버튼 */
+.addSectionButton {
+  width: 100%;
+  padding: 12px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 8px;
+  background-color: transparent;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+  margin-top: 16px;
+}
+
+.addSectionButton:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background-color: #f8fafc;
+}
+
+/* 에러 메시지 */
+.errorMessage {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 12px;
+  margin: 16px 0;
+  font-size: 14px;
+}
+
+/* 키메시지 textarea */
+.keyMessageTextarea {
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'Inter', 'Apple SD Gothic Neo', Arial, sans-serif;
+  transition: all 0.2s ease;
+  background-color: #f8fafc;
+  resize: none;
+  min-height: 44px;
+  max-height: 250px;
+  overflow-y: auto;
+  line-height: 1.5;
+}
+
+.keyMessageTextarea:hover {
+  border-color: #ccc;
+  background-color: #fff;
+}
+
+.keyMessageTextarea:focus {
+  outline: none;
+  border-color: #000;
+  background-color: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+/* 참고 자료 섹션 */
+.referenceSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.referenceSectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+  color: #222;
+}
+
+.addReferenceButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #f8fafc;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.addReferenceButton:hover {
+  background-color: #f0f0f0;
+  border-color: #ccc;
+  transform: translateY(-1px);
+}
+
+.referenceList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.referenceItem {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px;
+  background-color: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  gap: 12px;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.referenceItem:hover {
+  border-color: #ccc;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.referenceItem > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.referenceItem input {
+  margin-top: 8px;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.referenceItem input:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.referenceRemoveButton {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 6px;
+  font-size: 18px;
+  transition: all 0.2s ease;
+  border-radius: 50%;
+}
+
+.referenceRemoveButton:hover {
+  color: #444;
+  background-color: #f0f0f0;
+}
+
+/* 생성 버튼 */
+.addButtonContainer {
+  width: 100%;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+
+.addButton {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 16px;
+  height: 56px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.addButton:hover {
+  background-color: #222;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.addButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.addButton.loading {
+  cursor: wait;
+}
+
+/* AI 분석 컨펌 모달 */
+.analysisModalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.analysisModal {
+  position: relative;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-width: 500px;
+  max-height: calc(100vh - 192px);
+  overflow-y: auto;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.analysisModalContent {
+  margin-top: 8px;
+  padding: 16px 0 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 332px);
+  box-sizing: border-box;
+}
+
+/* 스크랩 모달 */
+.modalOverlay {
+  position: fixed;
+  top: 160px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.scrapModal {
+  position: relative;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-height: calc(100vh - 192px);
+  overflow-y: auto;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.modalTitle {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.modalCloseButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: #666;
+}
+
+.modalCloseButton:hover {
+  color: #333;
+}
+
+.modalContent {
+  margin-top: 16px;
+  padding: 24px 0 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 332px);
+  box-sizing: border-box;
+}
+
+.scrapItem {
+  position: relative;
+  padding: 24px 16px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scrapItem:hover {
+  background-color: #f9fafb;
+}
+
+.scrapItem.selected {
+  background-color: #f0f0f0;
+  border-color: #999;
+}
+
+.scrapTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.scrapContent {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.5;
+}
+
+.scrapFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+}
+
+.scrapTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.scrapDate {
+  color: #999;
+} 

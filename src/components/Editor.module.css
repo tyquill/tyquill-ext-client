@@ -151,49 +151,100 @@
   padding: 8px 16px;
   background-color: #f8f9fa;
   border-radius: 8px 8px 0 0;
+  position: relative;
+  overflow: visible;
+  height: 88px;
+  box-sizing: border-box;
 }
 
-.buttonGroup {
+.toolbarRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  height: 32px;
 }
 
-.buttonGroup button {
-  padding: 6px 12px;
-  font-size: 14px;
-  border: 1px solid #e0e0e0;
+.toolbarRow:last-child {
+  margin-bottom: 0;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 24px;
+  background-color: #e0e0e0;
+  margin: 0 4px;
+}
+
+.toolbarGroup button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
   border-radius: 4px;
-  background-color: white;
-  color: #333;
+  background-color: transparent;
+  color: #666;
   cursor: pointer;
   transition: all 0.2s ease;
   font-family: inherit;
 }
 
-.buttonGroup button:hover {
-  background-color: #f0f0f0;
-  border-color: #bdbdbd;
+.toolbarGroup button:hover {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
 }
 
-.buttonGroup button:disabled {
-  opacity: 0.5;
+.toolbarGroup button:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.buttonGroup button:disabled:hover {
-  background-color: white;
-  border-color: #e0e0e0;
+.toolbarGroup button:disabled:hover {
+  background-color: transparent;
+  border-color: transparent;
+  color: #666;
 }
 
 .isActive {
-  background-color: #2196f3 !important;
-  color: white !important;
-  border-color: #1976d2 !important;
+  background-color: #e3f2fd !important;
+  color: #1976d2 !important;
+  border-color: #2196f3 !important;
 }
 
 .isActive:hover {
-  background-color: #1976d2 !important;
+  background-color: #bbdefb !important;
+  border-color: #1976d2 !important;
+}
+
+.headingSelect {
+  padding: 4px 8px;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.headingSelect:hover {
+  border-color: #2196f3;
+}
+
+.headingSelect:focus {
+  outline: none;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
 .editorContent {
@@ -201,7 +252,29 @@
 }
 
 /* Add focus states for better accessibility */
-.buttonGroup button:focus {
+.toolbarGroup button:focus {
   outline: 2px solid #2196f3;
   outline-offset: 2px;
+}
+
+/* 툴팁 스타일 개선 */
+.toolbarGroup button {
+  position: relative;
+  overflow: visible;
+}
+
+/* 툴팁이 레이아웃에 영향을 주지 않도록 설정 */
+.toolbarGroup button:hover {
+  overflow: visible;
+}
+
+/* 툴팁 컨테이너가 레이아웃에 영향을 주지 않도록 설정 */
+.toolbarGroup {
+  position: relative;
+  overflow: visible;
+}
+
+.toolbarRow {
+  position: relative;
+  overflow: visible;
 }

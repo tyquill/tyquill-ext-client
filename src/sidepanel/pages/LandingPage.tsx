@@ -38,7 +38,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </h2>
         <p className={styles.description}>
           웹사이트에서 리소스를 저장하고,<br />
-          전문 뉴스레터 AI와 1분만에 초안을 생성하세요.<br />
+          전문 뉴스레터 AI에게 초안을 생성을 맡기세요.<br />
           1초만에 에디터로 옮겨넣을 수 있습니다.
         </p>
 

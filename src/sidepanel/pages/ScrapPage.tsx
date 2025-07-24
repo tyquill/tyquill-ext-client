@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../components/TagSelector';
 import { TagList } from '../components/TagList';
@@ -30,6 +30,7 @@ const ScrapPage: React.FC = () => {
   const loadingTimeoutRef = useRef<number>();
   const inputRef = useRef<HTMLInputElement>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
     const fetchAllTags = async () => {
@@ -121,7 +122,7 @@ const ScrapPage: React.FC = () => {
         // 스크랩 목록 새로고침 (약간의 지연 후)
         setTimeout(async () => {
           await loadScraps();
-        }, 300);
+        }, 700);
         
         // 성공 상태 2초 후 리셋
         setTimeout(() => setClipStatus('idle'), 300);
@@ -339,6 +340,21 @@ const ScrapPage: React.FC = () => {
     }
   }, [handleAddTag]);
 
+
+  // 스크랩 목록 새로고침
+  const handleRefresh = useCallback(async () => {
+    if (!isAuthenticated || isRefreshing) return;
+    
+    try {
+      setIsRefreshing(true);
+      await loadScraps();
+      showSuccess('새로고침 완료', '스크랩 목록이 업데이트되었습니다.');
+    } catch (error: any) {
+      showError('새로고침 실패', error.message || '스크랩 목록 새로고침에 실패했습니다.');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [isAuthenticated, isRefreshing, loadScraps, showSuccess, showError]);
 
   // 로그인 페이지로 이동 (또는 로그아웃 처리)
   const handleLogin = useCallback(async () => {
@@ -560,14 +576,26 @@ const ScrapPage: React.FC = () => {
           )}
         </div>
 
-        <TagSelector
-          availableTags={allTags}
-          selectedTags={selectedTags}
-          onTagSelect={(tag) => setSelectedTags(prev => 
-            prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+        <div className={styles.headerControls}>
+          <TagSelector
+            availableTags={allTags}
+            selectedTags={selectedTags}
+            onTagSelect={(tag) => setSelectedTags(prev => 
+              prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+            )}
+            onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
+          />
+          {isAuthenticated && (
+            <button
+              className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              title="스크랩 목록 새로고침"
+            >
+              <IoRefresh size={16} />
+            </button>
           )}
-          onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
-        />
+        </div>
       </div>
 
       <div className={styles.scrollableContent}>

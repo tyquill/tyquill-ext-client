@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IoArrowBack, IoCreate } from 'react-icons/io5';
+import { IoArrowBack, IoCreate, IoClose } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import YooptaEditorWrapper from '../../components/Editor';
@@ -27,6 +27,22 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [saving, setSaving] = useState(false);
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [currentArchive, setCurrentArchive] = useState<ArchiveResponse | null>(null);
+  const [showWidthTip, setShowWidthTip] = useState(false);
+  const [dontShowAgain, setDontShowAgain] = useState(false);
+  const [tipVisible, setTipVisible] = useState(false);
+
+  // 툴팁 표시 여부 확인
+  useEffect(() => {
+    const hasSeenWidthTip = localStorage.getItem('tyquill-width-tip-dismissed');
+    if (!hasSeenWidthTip) {
+      // 바로 툴팁 표시
+      setShowWidthTip(true);
+      // 부드러운 애니메이션을 위해 약간의 지연 후 visible 상태로 변경
+      setTimeout(() => {
+        setTipVisible(true);
+      }, 100);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -196,6 +212,17 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   };
 
+  const handleCloseTip = () => {
+    setTipVisible(false);
+    // 애니메이션 완료 후 툴팁 제거
+    setTimeout(() => {
+      setShowWidthTip(false);
+      if (dontShowAgain) {
+        localStorage.setItem('tyquill-width-tip-dismissed', 'true');
+      }
+    }, 300);
+  };
+
 
   if (loading) {
     return <div className={styles.loadingContainer}>로딩 중...</div>;
@@ -230,18 +257,20 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               currentArchive?.title || article.title
             )}
           </h1>
-          <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end'}}>
-            <span>글자수: {characterCount.characters}</span>
-            <span style={{ marginLeft: '12px' }}>단어수: {characterCount.words}</span>
-          </div>
+
         </div>
       </div>
 
+      <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '16px'}}>
+        <span>글자 수: {characterCount.characters}</span>
+        <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
+      </div>
+
       <div className={styles.actionButtons}>
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-          <div className={styles.rightActionButtons}>
-          {!isEditing && (
-            <>
+        {!isEditing ? (
+          // 미리보기 페이지: 두 줄 레이아웃
+          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+            <div className={styles.rightActionButtons}>
               <ExportButton 
                 title={currentArchive?.title || article.title}
                 content={currentArchive?.content || article.content}
@@ -250,10 +279,34 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 <IoCreate size={20} />
                 수정
               </button>
-            </>
-          )}
-          {isEditing && (
-            <>
+            </div>
+            <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
+              {article.archives && article.archives.length > 0 && (
+                <div className={styles.versionSelector}>
+                  <label htmlFor="version-select" className={styles.versionLabel}>
+                    버전:
+                  </label>
+                  <select
+                    id="version-select"
+                    value={selectedVersionNumber || ''}
+                    onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                    className={styles.versionSelect}
+                    disabled={isEditing}
+                  >
+                    {article.archives.map(archive => (
+                      <option key={archive.versionNumber} value={archive.versionNumber}>
+                        {archive.versionNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          // 수정 페이지: 한 줄 레이아웃
+          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
+            <div className={styles.rightActionButtons}>
               <button 
                 className={styles.saveButton}
                 onClick={handleSave}
@@ -268,32 +321,31 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               >
                 취소
               </button>
-            </>
-          )}
+            </div>
+            <div className={styles.versionControls}>
+              {article.archives && article.archives.length > 0 && (
+                <div className={styles.versionSelector}>
+                  <label htmlFor="version-select" className={styles.versionLabel}>
+                    버전:
+                  </label>
+                  <select
+                    id="version-select"
+                    value={selectedVersionNumber || ''}
+                    onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                    className={styles.versionSelect}
+                    disabled={isEditing}
+                  >
+                    {article.archives.map(archive => (
+                      <option key={archive.versionNumber} value={archive.versionNumber}>
+                        {archive.versionNumber}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           </div>
-          <div className={styles.versionControls}>
-            {article.archives && article.archives.length > 0 && (
-              <div className={styles.versionSelector}>
-                <label htmlFor="version-select" className={styles.versionLabel}>
-                  버전:
-                </label>
-                <select
-                  id="version-select"
-                  value={selectedVersionNumber || ''}
-                  onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                  className={styles.versionSelect}
-                  disabled={isEditing}
-                >
-                  {article.archives.map(archive => (
-                    <option key={archive.versionNumber} value={archive.versionNumber}>
-                      {archive.versionNumber}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-        </div>
+        )}
       </div>
 
       <div className={styles.detailContent}>
@@ -324,6 +376,75 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           </div>
         </div>
       </div>
+
+      {/* Width 조절 툴팁 */}
+      {showWidthTip && (
+        <div
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            backgroundColor: 'rgba(26, 26, 26, 0.9)',
+            color: 'white',
+            padding: '10px',
+            borderRadius: '8px',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            zIndex: 10000,
+            width: '300px',
+            fontSize: '14px',
+            lineHeight: '1.5',
+            border: '1px solid rgba(51, 51, 51, 0.8)',
+            backdropFilter: 'blur(10px)',
+            opacity: tipVisible ? 1 : 0,
+            transform: tipVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            pointerEvents: tipVisible ? 'auto' : 'none'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+            <div style={{ fontWeight: '600', fontSize: '15px' }}>💡 글을 보기 불편하시다면?</div>
+            <button
+              onClick={handleCloseTip}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#999',
+                cursor: 'pointer',
+                padding: '0',
+                fontSize: '16px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+            >
+              <IoClose size={16} />
+            </button>
+          </div>
+          
+            <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
+              <strong>확장 프로그램 왼쪽 경계를 드래그</strong>해서 
+              <br />
+              사이드바 너비를 조절할 수 있습니다.
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ccc' }}>
+                <input
+                  type="checkbox"
+                  checked={dontShowAgain}
+                  onChange={(e) => {
+                    setDontShowAgain(e.target.checked);
+                    if (e.target.checked) {
+                      // 체크박스가 체크되면 자동으로 툴팁 닫기
+                      handleCloseTip();
+                    }
+                  }}
+                  style={{ margin: 0 }}
+                />
+                다시 보지 않기
+              </label>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

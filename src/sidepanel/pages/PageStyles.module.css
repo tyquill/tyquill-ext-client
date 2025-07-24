@@ -2,7 +2,7 @@
 
 /* Character Count Styles */
 .characterCount {
-  font-size: 12px;
+  font-size: 14px;
   color: #888;
   margin-top: 4px;
   margin-left: 2px;
@@ -25,7 +25,7 @@
 }
 
 .page {
-  padding: 32px 5vw;
+  padding: 16px 2vw;
   height: 100%;
   overflow-y: auto;
   background-color: #ffffff;
@@ -65,26 +65,23 @@
 
 .formLabel {
   font-weight: 600;
-  font-size: 15px;
+  font-size: 18px;
   color: #222;
   letter-spacing: -0.01em;
 }
 
 .formInput,
-.formTextarea,
 .formSelect {
   padding: 12px 16px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
+  font-family: 'Inter', 'Apple SD Gothic Neo', Arial, sans-serif;
   transition: all 0.2s ease;
-  background-color: #fafafa;
+  background-color: #f8fafc;
 }
 
-.formTextarea {
-  resize: vertical;
-  min-height: 100px;
-}
+
 
 .formInput:hover,
 .formTextarea:hover,
@@ -110,7 +107,7 @@
 }
 
 .sectionTitle {
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0;
   color: #222;
@@ -999,9 +996,9 @@ div.contentDisplay ol li {
 .detailHeader {
   display: flex;
   align-items: center;
-  gap: 20px;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding-bottom: 16px;
   border-bottom: 1px solid #eaeaea;
 }
 
@@ -1009,8 +1006,8 @@ div.contentDisplay ol li {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
   background-color: #f7f7f7;
   border-radius: 12px;
@@ -1025,7 +1022,7 @@ div.contentDisplay ol li {
 }
 
 .detailTitle {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 600;
   color: #000;
   margin: 0;
@@ -1038,7 +1035,7 @@ div.contentDisplay ol li {
 }
 
 .sectionTitle {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
   color: #000;
   margin: 0;
@@ -1540,7 +1537,7 @@ div.contentDisplay ol li {
   position: sticky;
   top: 0;
   background-color: white;
-  padding: 16px;
+  padding: 20px;
   border-bottom: 1px solid #eee;
   z-index: 10;
 }
@@ -1656,11 +1653,11 @@ div.contentDisplay ol li {
 .scrollableContent {
   flex: 1;
   overflow-y: auto;
-  padding: 0 20px 20px;
+  padding: 0 24px 24px;
   border: 1px solid #eee;
   border-radius: 12px;
   background-color: #fff;
-  margin: 0 20px;
+  margin: 0 24px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
@@ -1686,8 +1683,8 @@ div.contentDisplay ol li {
 .scrapList {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding-top: 20px;
+  gap: 16px;
+  padding-top: 16px;
 }
 
 /* Template Page Styles */
@@ -1912,10 +1909,10 @@ div.contentDisplay ol li {
 }
 
 .editTitleInput {
-  height: 40px;
-  font-size: 24px;
+  height: 36px;
+  font-size: 18px;
   font-weight: 600;
-  padding: 0 12px;
+  padding: 0 8px;
   border: 2px solid #000;
   border-radius: 8px;
   background-color: #fff;
@@ -1923,7 +1920,7 @@ div.contentDisplay ol li {
   display: flex;
   align-items: center;
   box-sizing: border-box;
-  line-height: 40px;
+  line-height: 36px;
 }
 
 .editTitleInput:focus {
@@ -1966,32 +1963,33 @@ div.contentDisplay ol li {
 
 .actionButtons {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 6px;
+  align-items: stretch;
   margin-bottom: 24px;
 }
 
 .rightActionButtons {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: row;
+  gap: 6px;
 }
 
 .actionButtons .editButton {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 16px;
-  height: 40px;
+  padding: 0 10px;
+  height: 36px;
   border: 1px solid #000;
   background-color: #fff;
   color: #000;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex: 3;
 }
 
 .actionButtons .editButton:hover {
@@ -2015,16 +2013,17 @@ div.contentDisplay ol li {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  height: 40px;
-  padding: 0 16px;
+  height: 36px;
+  padding: 0 10px;
   background-color: #000;
   color: #fff;
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  flex: 7;
 }
 
 .exportButton:hover {
@@ -2039,15 +2038,17 @@ div.contentDisplay ol li {
 }
 
 .saveButton {
-  padding: 8px 20px;
+  padding: 0 20px;
+  height: 36px;
   background-color: #000;
   color: #fff;
   border: none;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 80px;
 }
 
 .saveButton:hover {
@@ -2062,15 +2063,17 @@ div.contentDisplay ol li {
 }
 
 .cancelButton {
-  padding: 8px 20px;
+  padding: 0 20px;
+  height: 36px;
   background-color: #f7f7f7;
   color: #000;
   border: 1px solid #eaeaea;
   border-radius: 10px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-width: 80px;
 }
 
 .cancelButton:hover {
@@ -2256,6 +2259,14 @@ div.contentDisplay ol li {
   gap: 12px;
 }
 
+.headerControls {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  padding: 0 16px;
+}
+
 .refreshButton {
   background: none;
   border: none;
@@ -2267,6 +2278,8 @@ div.contentDisplay ol li {
   display: flex;
   align-items: center;
   justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .refreshButton:hover {
@@ -2279,49 +2292,19 @@ div.contentDisplay ol li {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.refreshButton.loading svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 } 
 
-/* 반응형: 600px 이하(사이드패널/팝업) */
-@media (max-width: 600px) {
-  .page {
-    padding: 16px 2vw;
-  }
-  .detailHeader {
-    gap: 10px;
-    padding-bottom: 16px;
-  }
-  .detailTitle {
-    font-size: 18px;
-  }
-  .editTitleInput {
-    font-size: 18px;
-    height: 36px;
-    line-height: 36px;
-    padding: 0 8px;
-  }
-  .backButton {
-    width: 36px;
-    height: 36px;
-  }
-  .characterCount {
-    font-size: 11px;
-    margin-top: 2px;
-  }
-  .actionButtons {
-    flex-direction: column;
-    gap: 6px;
-    align-items: stretch;
-  }
-  .rightActionButtons {
-    flex-direction: row;
-    gap: 6px;
-  }
-  .exportButton,
-  .editButton,
-  .saveButton,
-  .cancelButton {
-    font-size: 13px;
-    height: 36px;
-    padding: 0 10px;
-  }
-} 
+ 
