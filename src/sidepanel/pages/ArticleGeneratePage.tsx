@@ -10,6 +10,7 @@ import { TagList } from '../components/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
+import DiscoBallScene from '../components/DiscoBallScene';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -898,7 +899,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <RiAiGenerate size={48} style={{ color: '#000000', marginBottom: '16px' }} />
+                  <DiscoBallScene />
                   <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '600' }}>
                     현재 페이지를 분석하여 섹션을 자동 생성합니다
                   </h3>
