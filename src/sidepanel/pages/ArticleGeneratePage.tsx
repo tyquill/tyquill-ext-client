@@ -649,7 +649,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 target.style.height = 'auto';
                 target.style.height = target.scrollHeight + 'px';
               }}
-              placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성해주세요. (예: 이제는 AI 뉴스레터 도구를 이용해, 뉴스레터 작가는 좋은 컨텐츠를 기획하고 독자와 소통하는 데 더욱 집중할 수 있다.)"
+              placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성하세요. (예: 이제는 AI 뉴스레터 도구를 이용해, 뉴스레터 작가는 좋은 컨텐츠를 기획하고 소통하는 활동에 더욱 집중할 수 있다.)"
               rows={1}
             />
           </div>

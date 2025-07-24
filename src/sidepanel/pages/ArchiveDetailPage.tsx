@@ -431,7 +431,13 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 <input
                   type="checkbox"
                   checked={dontShowAgain}
-                  onChange={(e) => setDontShowAgain(e.target.checked)}
+                  onChange={(e) => {
+                    setDontShowAgain(e.target.checked);
+                    if (e.target.checked) {
+                      // 체크박스가 체크되면 자동으로 툴팁 닫기
+                      handleCloseTip();
+                    }
+                  }}
                   style={{ margin: 0 }}
                 />
                 다시 보지 않기
