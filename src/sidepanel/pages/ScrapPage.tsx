@@ -6,7 +6,8 @@ import { TagList } from '../components/TagList';
 import { scrapService } from '../../services/scrapService';
 import { useToastHelpers } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
-import { Scrap } from '../../types/scrap.d'
+import { Scrap } from '../../types/scrap.d';
+import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -19,7 +20,7 @@ const ScrapPage: React.FC = () => {
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
   const [isClipping, setIsClipping] = useState(false);
-  const [clipStatus, setClipStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [clipStatus, setClipStatus] = useState<ScrapStatus>('idle');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [scraps, setScraps] = useState<Scrap[]>([]);
@@ -53,123 +54,6 @@ const ScrapPage: React.FC = () => {
       );
     });
   }, [scraps, selectedTags]);
-
-  // 웹 클리핑 기능
-  const handleClipCurrentPage = useCallback(async () => {
-    if (isClipping) return;
-
-    try {
-      setIsClipping(true);
-      setClipStatus('idle');
-
-      // 현재 활성 탭 정보 가져오기
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      
-      if (!tab?.id) {
-        throw new Error('No active tab found');
-      }
-
-      // console.log('📋 Attempting to clip page on tab:', {
-      //   tabId: tab.id,
-      //   url: tab.url,
-      //   title: tab.title
-      // });
-
-      // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('chrome://') || 
-          tab.url?.startsWith('chrome-extension://') ||
-          tab.url?.startsWith('edge://') ||
-          tab.url?.startsWith('about:')) {
-        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
-      }
-
-      // Content Script가 로드되었는지 확인
-      try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
-      } catch (pingError) {
-        // console.warn('⚠️ Content script not ready, injecting...');
-        
-        // Content script 수동 주입 시도
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['contentScript/index.js']
-        });
-        
-        // 잠시 대기 후 재시도
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
-      // Content Script로 클리핑 요청
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: true }
-      });
-
-      if (response.success) {
-        // console.log('✅ Page clipped:', response.data);
-        
-        // 스크랩 서비스로 저장
-        const scrapResponse = await scrapService.quickScrap(
-          response.data,
-          '', // userComment
-          selectedTags // 선택된 태그들
-        );
-
-        // console.log('✅ Scrap saved:', scrapResponse);
-        setClipStatus('success');
-        showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
-        
-        // 스크랩 목록 새로고침 (약간의 지연 후)
-        setTimeout(async () => {
-          await loadScraps();
-        }, 700);
-        
-        // 성공 상태 2초 후 리셋
-        setTimeout(() => setClipStatus('idle'), 300);
-      } else {
-        throw new Error(response.error || 'Clipping failed');
-      }
-    } catch (error: any) {
-      // console.error('❌ Clipping error:', error);
-      
-      // 인증 에러인 경우 인증 상태 재확인
-      if (error.message.includes('Authentication required')) {
-        setIsAuthenticated(false);
-        showError('인증 만료', '로그인이 만료되었습니다. 다시 로그인해주세요.');
-      } else {
-        showError('스크랩 실패', error.message || '페이지 스크랩 중 오류가 발생했습니다.');
-      }
-      
-      setClipStatus('error');
-      
-      // 에러 상태 3초 후 리셋
-      setTimeout(() => setClipStatus('idle'), 300);
-    } finally {
-      setIsClipping(false);
-    }
-  }, [isClipping, selectedTags]);
-
-  // 인증 상태 확인
-  const checkAuthStatus = useCallback(async () => {
-    try {
-      const result = await chrome.storage.local.get(['authState']);
-      const authState = result.authState;
-      const hasToken = !!(authState?.accessToken && authState?.isAuthenticated);
-      setIsAuthenticated(hasToken);
-      setAuthChecked(true);
-      
-      // console.log('🔐 Auth status:', { 
-      //   hasToken, 
-      //   isAuthenticated: authState?.isAuthenticated,
-      //   hasAccessToken: !!authState?.accessToken,
-      //   user: authState?.user?.email 
-      // });
-    } catch (error) {
-      // console.error('❌ Auth check error:', error);
-      setIsAuthenticated(false);
-      setAuthChecked(true);
-    }
-  }, []);
 
   // 스크랩 목록 불러오기
   const loadScraps = useCallback(async () => {
@@ -212,6 +96,71 @@ const ScrapPage: React.FC = () => {
       setScrapsLoading(false);
     }
   }, [isAuthenticated]);
+
+  // 인증 상태 확인
+  const checkAuthStatus = useCallback(async () => {
+    try {
+      const result = await chrome.storage.local.get(['authState']);
+      const authState = result.authState;
+      const hasToken = !!(authState?.accessToken && authState?.isAuthenticated);
+      setIsAuthenticated(hasToken);
+      setAuthChecked(true);
+      
+      // console.log('🔐 Auth status:', { 
+      //   hasToken, 
+      //   isAuthenticated: authState?.isAuthenticated,
+      //   hasAccessToken: !!authState?.accessToken,
+      //   user: authState?.user?.email 
+      // });
+    } catch (error) {
+      // console.error('❌ Auth check error:', error);
+      setIsAuthenticated(false);
+      setAuthChecked(true);
+    }
+  }, []);
+
+  // 웹 클리핑 기능
+  const handleClipCurrentPage = useCallback(async () => {
+    if (isClipping) return;
+
+    try {
+      setIsClipping(true);
+      setClipStatus('loading');
+
+      // 공통 헬퍼를 통해 스크랩 처리
+      const scrapResponse = await clipAndScrapCurrentPage(selectedTags);
+
+      console.log('✅ 스크랩 완료:', scrapResponse);
+      setClipStatus('success');
+      showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
+      
+      // 스크랩 목록 새로고침 (약간의 지연 후)
+      setTimeout(async () => {
+        await loadScraps();
+      }, 700);
+      
+      // 성공 상태 2초 후 리셋
+      setTimeout(() => setClipStatus('idle'), 2000);
+      
+    } catch (error: any) {
+      console.error('❌ 스크랩 실패:', error);
+      
+      // 인증 에러인 경우 인증 상태 재확인
+      if (error.message.includes('Authentication required')) {
+        setIsAuthenticated(false);
+        showError('인증 만료', '로그인이 만료되었습니다. 다시 로그인해주세요.');
+      } else {
+        showError('스크랩 실패', error.message || '페이지 스크랩 중 오류가 발생했습니다.');
+      }
+      
+      setClipStatus('error');
+      
+      // 에러 상태 3초 후 리셋
+      setTimeout(() => setClipStatus('idle'), 3000);
+    } finally {
+      setIsClipping(false);
+    }
+  }, [isClipping, selectedTags, loadScraps, showSuccess, showError]);
 
   // 컴포넌트 마운트 시 인증 상태 확인
   useEffect(() => {
@@ -560,7 +509,7 @@ const ScrapPage: React.FC = () => {
                     <IoClose size={20} />
                     실패
                   </>
-                ) : isClipping ? (
+                ) : clipStatus === 'loading' || isClipping ? (
                   <>
                     <IoClipboard size={20} />
                     클리핑 중...

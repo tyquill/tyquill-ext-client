@@ -10,7 +10,8 @@
     "scripting"
   ],
   "host_permissions": [
-    "https://maily.so/*", 
+    "https://maily.so/*",
+    "http://localhost:3000/*",
     "<all_urls>"
   ],
   "icons": {
