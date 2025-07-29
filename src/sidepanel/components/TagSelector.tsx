@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IoChevronDown, IoClose } from 'react-icons/io5';
+import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
 import styles from './TagSelector.module.css';
 
 interface TagSelectorProps {
@@ -56,7 +56,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
         tabIndex={-1}
       >
         태그 선택
-        <IoChevronDown size={16} />
+        {isDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
       </button>
       
       <div className={`${styles.tagFilterDropdown} ${isDropdownOpen ? styles.visible : ''}`}>
