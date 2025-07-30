@@ -2,6 +2,9 @@
 import { scrapService } from '../services/scrapService';
 import { ScrapResult } from '../utils/webClipper';
 
+// 사이드패널 상태 (전역)
+let isSidePanelOpen = false;
+
 chrome.runtime.onInstalled.addListener(() => {
   // console.log('Tyquill Extension installed');
 });
@@ -40,6 +43,7 @@ chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.Messa
   if (request.action === 'openSidePanel') {
     handleOpenSidePanel(sender)
       .then(() => {
+        isSidePanelOpen = true;
         sendResponse({ success: true });
       })
       .catch(error => {
@@ -50,8 +54,26 @@ chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.Messa
     // Return true to indicate we will respond asynchronously
     return true;
   }
-  
-  sendResponse({ success: true });
+
+  if (request.action === 'closeSidePanel') {
+    // 사이드패널에 닫기 메시지 전달
+    isSidePanelOpen = false;
+    sendResponse({ success: true });
+    return true;
+  }
+
+  if (request.action === 'getSidePanelState') {
+    sendResponse({ success: true, isOpen: isSidePanelOpen });
+    return true;
+  }
+
+  if (request.action === 'sidePanelClosed') {
+    // 사이드패널이 닫혔음을 알림
+    isSidePanelOpen = false;
+    sendResponse({ success: true });
+    return true;
+  }
+
 });
 
 /**
@@ -60,9 +82,7 @@ chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.Messa
 async function handleOpenSidePanel(sender: chrome.runtime.MessageSender) {
   try {
     if (sender.tab?.id) {
-      console.log('📱 Background: Opening side panel for tab', sender.tab.id);
       await chrome.sidePanel.open({ tabId: sender.tab.id });
-      console.log('✅ Background: Side panel opened successfully');
     } else {
       throw new Error('No tab ID available');
     }
@@ -72,13 +92,12 @@ async function handleOpenSidePanel(sender: chrome.runtime.MessageSender) {
   }
 }
 
+
 /**
  * 스크랩 요청 처리
  */
 async function handleScrapRequest(scrapData: ScrapResult) {
   try {
-    console.log('📝 Background: Processing scrap request');
-    
     // 태그 정보 추출 (scrapHelper에서 추가된 경우)
     const tags = (scrapData as any).tags || [];
     
@@ -88,7 +107,6 @@ async function handleScrapRequest(scrapData: ScrapResult) {
       tags // tags
     );
     
-    console.log('✅ Background: Scrap completed successfully');
     return response;
   } catch (error) {
     console.error('❌ Background: Scrap failed:', error);

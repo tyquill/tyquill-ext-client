@@ -49,6 +49,29 @@ const App: React.FC = () => {
     }
   }, [isAuthenticated]);
 
+  // 사이드패널 닫기 메시지 리스너
+  useEffect(() => {
+    const messageListener = (request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+      if (request.action === 'closeSidePanel') {
+        window.close();
+        sendResponse({ success: true });
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(messageListener);
+
+    // 사이드패널이 닫힐 때 background에 알리기
+    const handleBeforeUnload = () => {
+      chrome.runtime.sendMessage({ action: 'sidePanelClosed' });
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
   // 로딩 중이거나 인증되지 않은 경우 랜딩 페이지
   if (!isAuthenticated || currentPage.type === 'landing') {
     return (
