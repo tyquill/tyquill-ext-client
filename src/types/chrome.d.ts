@@ -65,8 +65,13 @@ declare namespace chrome {
       tabId?: number;
       windowId?: number;
     }
+    interface CloseOptions {
+      tabId?: number;
+      windowId?: number;
+    }
 
     const open: (options: OpenOptions) => Promise<void>;
+    const close: (options: CloseOptions) => Promise<void>;
   }
 
   namespace tabs {

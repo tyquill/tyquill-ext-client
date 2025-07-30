@@ -6,6 +6,7 @@
  */
 
 import { webClipper, clipSelection } from '../utils/webClipper';
+import { FloatingButton } from '../components/content/FloatingButton';
 
 // console.log('🔗 Tyquill content script loaded');
 
@@ -409,7 +410,14 @@ async function handlePasteToMaily(content: string): Promise<any> {
   }
 }
 
-
+const floatingButton = new FloatingButton();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    floatingButton.show();
+  });
+} else {
+  floatingButton.show();
+}
 
 // 초기화 완료 알림
 // console.log('🚀 Tyquill content script ready');
