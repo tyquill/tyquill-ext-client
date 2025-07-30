@@ -6,6 +6,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { htmlToMarkdown, markdownToHtml } from '../utils/markdownConverter';
 import { 
   RiBold, 
   RiItalic, 
@@ -28,7 +29,7 @@ import styles from './Editor.module.css';
 
 interface EditorWrapperProps {
   content: string; // HTML content (with backward compatibility for markdown)
-  onChange: (content: string) => void; // Returns HTML content
+  onChange: (content: string) => void; // Returns Markdown content for AI editing
   placeholder?: string;
   readOnly?: boolean;
 }
@@ -572,7 +573,7 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
 }) => {
   const isUpdatingRef = useRef(false);
 
-  // Markdown을 HTML로 변환하는 간단한 함수 (입력 호환성을 위해)
+  // Markdown을 HTML로 변환하는 함수 (입력 호환성을 위해)
   const convertMarkdownToHtml = useCallback((markdown: string): string => {
     if (!markdown) return '<p></p>';
     
@@ -581,36 +582,8 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
       return markdown;
     }
     
-    // 간단한 마크다운 변환만 수행
-    return markdown
-      .split('\n')
-      .map(line => {
-        const trimmed = line.trim();
-        if (!trimmed) return '';
-        
-        // 헤딩 변환
-        if (trimmed.startsWith('# ')) return `<h1>${trimmed.slice(2)}</h1>`;
-        if (trimmed.startsWith('## ')) return `<h2>${trimmed.slice(3)}</h2>`;
-        if (trimmed.startsWith('### ')) return `<h3>${trimmed.slice(4)}</h3>`;
-        if (trimmed.startsWith('#### ')) return `<h4>${trimmed.slice(5)}</h4>`;
-        if (trimmed.startsWith('##### ')) return `<h5>${trimmed.slice(6)}</h5>`;
-        if (trimmed.startsWith('###### ')) return `<h6>${trimmed.slice(7)}</h6>`;
-        
-        // 리스트 변환
-        const orderedMatch = trimmed.match(/^(\d+)\. (.+)$/);
-        if (orderedMatch) {
-          return `<ol><li>${orderedMatch[2]}</li></ol>`;
-        }
-        
-        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          return `<ul><li>${trimmed.slice(2)}</li></ul>`;
-        }
-        
-        // 일반 문단
-        return `<p>${trimmed}</p>`;
-      })
-      .filter(Boolean)
-      .join('');
+    // markdownConverter의 함수 사용
+    return markdownToHtml(markdown);
   }, []);
 
   const editor = useEditor({
@@ -636,9 +609,12 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
       try {
         isUpdatingRef.current = true;
         const html = editor.getHTML();
-        onChange(html); // HTML을 직접 반환
+        // AI 편집을 위해 마크다운으로 변환하여 반환
+        const markdown = htmlToMarkdown(html);
+        onChange(markdown);
       } catch (error) {
-        console.error('Error getting HTML content:', error);
+        console.error('Error converting HTML to Markdown:', error);
+        // 변환 실패 시 텍스트만 반환
         const textContent = editor.getText().trim();
         onChange(textContent);
       } finally {

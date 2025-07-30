@@ -4,6 +4,7 @@ import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import YooptaEditorWrapper from '../../components/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
+import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../components/ExportButton';
 import { useEditor } from '@tiptap/react'
@@ -361,7 +362,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               <ErrorBoundary>
                 <YooptaEditorWrapper
                   key={`editor-${article.articleId}-${isEditing}`}
-                  content={editContent}
+                  content={markdownToHtml(editContent)}
                   onChange={setEditContent}
                   placeholder="내용을 입력하세요..."
                   readOnly={false}
