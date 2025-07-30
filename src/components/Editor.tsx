@@ -12,22 +12,18 @@ import {
   RiStrikethrough, 
   RiCodeLine, 
   RiDeleteBinLine, 
-  RiParagraph, 
-  RiHeading, 
   RiListUnordered, 
   RiListOrdered, 
   RiCodeBoxLine, 
   RiDoubleQuotesL, 
-  RiSeparator, 
   RiArrowGoBackLine, 
   RiArrowGoForwardLine, 
   RiFormatClear,
   RiUnderline,
-  RiArrowRightLine,
   RiSubtractLine,
   RiText,
-  RiCornerDownLeftLine
-} from 'react-icons/ri';
+  RiCornerDownLeftLine} from 'react-icons/ri';
+import { TbMoodPuzzled } from "react-icons/tb";
 import styles from './Editor.module.css';
 
 interface EditorWrapperProps {
@@ -533,6 +529,36 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
         title="구분선 추가"
       >
         <RiSubtractLine size={14} />
+      </button>
+      <div style={{ width: '1px', height: '20px', backgroundColor: '#e0e0e0', margin: '0 4px' }}></div>
+      <button
+        onClick={() => {
+          const selectedText = editor.state.doc.textBetween(
+            editor.state.selection.from,
+            editor.state.selection.to
+          );
+          if (selectedText.trim()) {
+            console.log('AI 편집 요청:', selectedText);
+            // TODO: AI 편집 기능 구현
+          }
+        }}
+        style={{ 
+          padding: '4px 8px', 
+          border: 'none', 
+          borderRadius: '2px', 
+          cursor: 'pointer',
+          backgroundColor: '#f0f9ff',
+          color: '#0369a1',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '12px',
+          fontWeight: '500'
+        }}
+        title="AI로 편집"
+      >
+        <TbMoodPuzzled size={14} />
+        <span style={{ marginLeft: '4px' }}>AI</span>
       </button>
     </div>
   );
