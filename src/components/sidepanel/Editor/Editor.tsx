@@ -6,7 +6,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { htmlToMarkdown, markdownToHtml } from '../utils/markdownConverter';
+import { htmlToMarkdown, markdownToHtml } from '../../../utils/markdownConverter';
 import { 
   RiBold, 
   RiItalic, 

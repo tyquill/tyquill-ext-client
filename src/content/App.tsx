@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useContentScript } from './hooks/useContentScript';
-import FloatingButton from './components/FloatingButton';
+import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();

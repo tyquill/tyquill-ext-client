@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { createScrapViaBackground } from '../../utils/scrapHelper';
-import { quickClip } from '../../utils/webClipper';
+import { createScrapViaBackground } from '../../../utils/scrapHelper';
+import { quickClip } from '../../../utils/webClipper';
 
 // 타입 정의
 type ButtonStyle = {

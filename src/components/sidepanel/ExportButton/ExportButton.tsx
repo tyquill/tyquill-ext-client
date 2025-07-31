@@ -1,7 +1,7 @@
 import React from 'react';
 import { IoArrowUpCircle } from 'react-icons/io5';
-import styles from '../pages/PageStyles.module.css';
-import { useToastHelpers } from '../../hooks/useToast';
+import styles from '../../../sidepanel/pages/PageStyles.module.css';
+import { useToastHelpers } from '../../../hooks/useToast';
 
 interface ExportButtonProps {
   title: string;

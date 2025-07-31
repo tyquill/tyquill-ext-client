@@ -1,7 +1,7 @@
 // DiscoBallScene.tsx
 import React from 'react';
 import { Canvas } from '@react-three/fiber';
-import DiscoBall from './DiscoBall';
+import DiscoBall from '../DiscoBall/DiscoBall';
 
 const DiscoBallScene: React.FC = () => {
   return (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoClose } from 'react-icons/io5';
-import styles from '../pages/PageStyles.module.css';
+import styles from '../../../sidepanel/pages/PageStyles.module.css';
 
 interface TagListProps {
   tags: string[];

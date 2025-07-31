@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IoClipboard, IoDocument, IoSparkles, IoArchive, IoLogOut } from 'react-icons/io5';
 import { IconType } from 'react-icons';
-import { useAuth } from '../../hooks/useAuth';
+import { useAuth } from '../../../hooks/useAuth';
 import styles from './Header.module.css';
 
 interface HeaderProps {

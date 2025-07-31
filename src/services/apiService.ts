@@ -12,7 +12,7 @@ export interface ApiService {
 /**
  * API 요청 옵션 타입
  */
-export interface ApiRequestOptions extends RequestInit {
+export interface ApiRequestOptions extends Omit<RequestInit, 'headers'> {
   headers?: Record<string, string>;
 }
 

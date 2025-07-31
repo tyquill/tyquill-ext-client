@@ -4,8 +4,7 @@
  * @description 아티클 관리 서비스 - 백엔드 articles controller와 연동
  */
 
-import { getAuthToken } from '../utils/auth/tokenUtil';
-import { API_BASE_URL } from '../config/environment';
+import { globalApiClient } from './globalApiClient';
 
 /**
  * 아티클 생성 DTO
@@ -108,55 +107,14 @@ export interface ArticleResponse {
 }
 
 export class ArticleService {
-    private apiUrl: string;
-
-    constructor() {
-        this.apiUrl = API_BASE_URL;
-    }
-    
+    /**
+     * API 요청 헬퍼 - 글로벌 클라이언트 사용
+     */
     private async apiRequest<T>(
         endpoint: string,
         options: RequestInit = {}
     ): Promise<T> {
-        const token = await getAuthToken();
-
-        if (!token) {
-            throw new Error('Authentication required');
-        }
-
-        const url = `${this.apiUrl}${endpoint}`;
-        const config: RequestInit = {
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-                ...options.headers,
-            },
-            ...options,
-        };
-
-        // console.log('🌐 API Request:', { url, method: config.method || 'GET' });
-
-        const response = await fetch(url, config);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            // console.error('❌ API Error:', {
-            //     status: response.status,
-            //     statusText: response.statusText,
-            //     error: errorText,
-            // });
-
-            if (response.status === 401) {
-                throw new Error('Authentication failed');
-            }
-
-            throw new Error(`API Error: ${response.status} ${response.statusText}`);
-        }
-        
-        const data = await response.json();
-        // console.log('✅ API Response:', data);
-        
-        return data;
+        return globalApiClient.request<T>(endpoint, options as any);
     }
 
     /**
