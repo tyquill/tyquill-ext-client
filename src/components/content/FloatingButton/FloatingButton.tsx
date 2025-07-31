@@ -1,7 +1,8 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { createScrapViaBackground } from '../../../utils/scrapHelper';
-import { quickClip } from '../../../utils/webClipper';
+import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
+import styles from './FloatingButton.module.css';
+import { BsBook } from 'react-icons/bs';
 
 // 타입 정의
 type ButtonStyle = {
@@ -26,7 +27,6 @@ type ToolboxStyle = {
 
 const FloatingButton: React.FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const shortcutSpanRef = useRef<HTMLSpanElement>(null);
   const toolboxRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   
@@ -66,27 +66,49 @@ const FloatingButton: React.FC = () => {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const hiddenButtonWidth = 40;
 
-  // 툴박스 위치 계산
+  // 현재 버튼 위치 확인
+  const getCurrentSide = useCallback((): 'left' | 'right' => {
+    if (!buttonRef.current) return 'right';
+    const computedStyle = getComputedStyle(buttonRef.current);
+    return computedStyle.right === 'auto' ||
+      computedStyle.left === `-${hiddenButtonWidth}px`
+      ? 'left'
+      : 'right';
+  }, []);
+
+  // 툴박스 위치 계산 (버튼의 실제 보이는 위치 기준, hover 효과 제외)
   const positionToolbox = useCallback(() => {
     if (!buttonRef.current || !toolboxRef.current) return;
 
-    const buttonRect = buttonRef.current.getBoundingClientRect();
     const gap = 16;
     const toolboxSize = 36;
     const viewportWidth = window.innerWidth;
-
-    let logoCenterX: number;
-
+    const currentSide = getCurrentSide();
+    
+    // 현재 버튼의 실제 rect 가져오기
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    
+    // 버튼의 보이는 부분 계산 (hidden width 제외)
+    let visibleButtonLeft;
+    if (currentSide === 'left') {
+      visibleButtonLeft = buttonRect.left + hiddenButtonWidth;
+    } else {
+      visibleButtonLeft = buttonRect.left;
+    }
+    
+    // 이미지(로고)의 중심점 계산
+    let logoCenterX;
     if (imgRef.current) {
       const imgRect = imgRef.current.getBoundingClientRect();
       logoCenterX = imgRect.left + imgRect.width / 2;
     } else {
-      logoCenterX = buttonRect.left + buttonRect.width / 2;
+      // 이미지 ref가 없으면 추정
+      logoCenterX = visibleButtonLeft + (currentSide === 'left' ? 56 : 24);
     }
-
-    const currentSide = getCurrentSide();
+    
     let toolboxLeft = logoCenterX - toolboxSize / 2;
 
+    // 뷰포트 경계 체크
     const margin = 8;
     if (toolboxLeft < margin) {
       toolboxLeft = margin;
@@ -98,17 +120,7 @@ const FloatingButton: React.FC = () => {
       left: `${toolboxLeft}px`,
       top: `${buttonRect.top - toolboxSize - gap}px`
     });
-  }, []);
-
-  // 현재 버튼 위치 확인
-  const getCurrentSide = useCallback((): 'left' | 'right' => {
-    if (!buttonRef.current) return 'right';
-    const computedStyle = getComputedStyle(buttonRef.current);
-    return computedStyle.right === 'auto' ||
-      computedStyle.left === `-${hiddenButtonWidth}px`
-      ? 'left'
-      : 'right';
-  }, []);
+  }, [getCurrentSide]);
 
   // 호버 효과 처리
   const handleHover = useCallback((isEntering: boolean) => {
@@ -169,6 +181,13 @@ const FloatingButton: React.FC = () => {
     if (!hasMoved && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
       setHasMoved(true);
       
+      // 실제 드래그가 시작될 때 툴박스 숨기기
+      setToolboxStyle(prev => ({
+        ...prev,
+        opacity: 0,
+        pointerEvents: 'none'
+      }));
+      
       // 드래그 스타일 적용
       setButtonStyle({
         borderRadius: '50%',
@@ -186,12 +205,6 @@ const FloatingButton: React.FC = () => {
         right: 'auto',
         transform: 'none'
       });
-
-      setToolboxStyle(prev => ({
-        ...prev,
-        opacity: 0,
-        pointerEvents: 'none'
-      }));
     }
 
     if (hasMoved) {
@@ -216,6 +229,7 @@ const FloatingButton: React.FC = () => {
     setIsDragging(false);
     
     if (hasMoved && buttonRef.current) {
+      // 실제 드래그가 발생한 경우
       setHasMoved(false); // 드래그 완료 후 hasMoved 리셋
       const rect = buttonRef.current.getBoundingClientRect();
       const buttonCenterX = rect.left + rect.width / 2;
@@ -249,6 +263,9 @@ const FloatingButton: React.FC = () => {
         }));
         positionToolbox();
       }, 300);
+    } else if (!hasMoved) {
+      // 단순 클릭인 경우 - 툴박스가 숨겨지지 않았으므로 아무것도 하지 않음
+      // 툴박스는 이미 보이는 상태를 유지
     }
   }, [isDragging, hasMoved, positionToolbox]);
 
@@ -320,8 +337,7 @@ const FloatingButton: React.FC = () => {
         cursor: 'wait'
       }));
 
-      const scrapResult = await quickClip();
-      const response = await createScrapViaBackground(scrapResult);
+      await clipAndScrapCurrentPage();
 
       // 성공 상태
       setToolboxStyle(prev => ({
@@ -476,19 +492,8 @@ const FloatingButton: React.FC = () => {
       <button
         ref={buttonRef}
         id="tyquill-floating-button"
+        className={`${styles.floatingButton} ${isDragging ? styles.dragging : ''} ${hasMoved ? styles.moved : ''}`}
         style={{
-          position: 'fixed',
-          zIndex: 1000000,
-          display: 'flex',
-          alignItems: 'center',
-          cursor: isDragging ? 'grabbing' : 'grab',
-          userSelect: 'none',
-          whiteSpace: 'nowrap',
-          border: '1px solid rgba(0, 0, 0, 0.1)',
-          backgroundColor: 'white',
-          boxShadow: '0 3.2px 12px 0 rgba(0, 0, 0, 0.08), 0 5px 25px 0 rgba(0, 0, 0, 0.04)',
-          transition: isDragging ? 'none' : 'right 0.3s ease, left 0.3s ease, transform 0.2s ease-in-out, border-radius 0.3s ease, width 0.3s ease, height 0.3s ease, padding 0.3s ease',
-          minWidth: hasMoved ? '40px' : '80px', // 드래그 시에는 40px, 일반 시에는 80px
           ...buttonPosition,
           ...buttonStyle
         }}
@@ -508,12 +513,7 @@ const FloatingButton: React.FC = () => {
         <img
           ref={imgRef}
           src="https://4bvbvpozg7fnspb5.public.blob.vercel-storage.com/Gemini_Generated_Image_y6f5u2y6f5u2y6f5.png"
-          style={{
-            width: '24px',
-            height: '24px',
-            borderRadius: '4px',
-            pointerEvents: 'none'
-          }}
+          className={styles.logoImage}
           draggable={false}
         />
         {/* 텍스트 제거 - 버튼 최소 너비로 hover 효과 보장 */}
@@ -523,35 +523,9 @@ const FloatingButton: React.FC = () => {
       <div
         ref={toolboxRef}
         id="tyquill-toolbox"
-        className="tyquill-tool-item"
+        className={`tyquill-tool-item ${styles.toolbox}`}
         style={{
-          position: 'fixed',
-          zIndex: 999999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: '36px',
-          height: '36px',
-          minWidth: '36px',
-          minHeight: '36px',
-          boxSizing: 'border-box',
-          borderRadius: '50%',
-          transition: 'background-color 0.2s ease, transform 0.2s ease, top 0.3s ease, left 0.3s ease, right 0.3s ease',
           border: `1px solid ${toolboxStyle.borderColor}`,
-          userSelect: 'none',
-          padding: '8px',
-          boxShadow: '0 3.2px 12px 0 rgba(0, 0, 0, 0.08), 0 5px 25px 0 rgba(0, 0, 0, 0.04)',
-          visibility: 'visible',
-          margin: '0',
-          fontSize: '0',
-          lineHeight: '1',
-          textAlign: 'center',
-          verticalAlign: 'baseline',
-          outline: 'none',
-          textDecoration: 'none',
-          fontFamily: 'inherit',
-          fontWeight: 'normal',
-          fontStyle: 'normal',
           ...toolboxPosition,
           ...toolboxStyle
         }}
@@ -559,17 +533,13 @@ const FloatingButton: React.FC = () => {
         onMouseLeave={handleToolboxMouseLeave}
         onClick={handleToolboxClick}
       >
-        <svg 
-          xmlns="http://www.w3.org/2000/svg" 
-          width="18" 
-          height="18" 
-          fill="currentColor" 
-          className="bi bi-book" 
-          viewBox="0 0 16 16" 
-          style={{ display: 'block', flexShrink: 0 }}
-        >
-          <path d="M1 2.828c.885-.37 2.154-.769 3.388-.893 1.33-.134 2.458.063 3.112.752v9.746c-.935-.53-2.12-.603-3.213-.493-1.18.12-2.37.461-3.287.811zm7.5-.141c.654-.689 1.782-.886 3.112-.752 1.234.124 2.503.523 3.388.893v9.923c-.918-.35-2.107-.692-3.287-.81-1.094-.111-2.278-.039-3.213.492zM8 1.783C7.015.936 5.587.81 4.287.94c-1.514.153-3.042.672-3.994 1.105A.5.5 0 0 0 0 2.5v11a.5.5 0 0 0 .707.455c.882-.4 2.303-.881 3.68-1.02 1.409-.142 2.59.087 3.223.877a.5.5 0 0 0 .78 0c.633-.79 1.814-1.019 3.222-.877 1.378.139 2.8.62 3.681 1.02A.5.5 0 0 0 16 13.5v-11a.5.5 0 0 0-.293-.455c-.952-.433-2.48-.952-3.994-1.105C10.413.809 8.985.936 8 1.783"/>
-        </svg>
+        <BsBook
+          size={18}
+          className={`bi bi-book ${styles.toolboxIcon}`}
+          aria-label="스크랩 툴박스"
+          tabIndex={0}
+          role="img"
+        />
       </div>
     </>
   );

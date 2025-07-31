@@ -128,16 +128,14 @@ const ScrapPage: React.FC = () => {
       setClipStatus('loading');
 
       // 공통 헬퍼를 통해 스크랩 처리
-      const scrapResponse = await clipAndScrapCurrentPage(selectedTags);
+      const scrapResponse = await clipAndScrapCurrentPage();
 
       console.log('✅ 스크랩 완료:', scrapResponse);
       setClipStatus('success');
       showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
       
-      // 스크랩 목록 새로고침 (약간의 지연 후)
-      setTimeout(async () => {
-        await loadScraps();
-      }, 700);
+      // 스크랩 목록 새로고침
+      await loadScraps();
       
       // 성공 상태 2초 후 리셋
       setTimeout(() => setClipStatus('idle'), 2000);
@@ -191,6 +189,24 @@ const ScrapPage: React.FC = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [isAuthenticated, authChecked, loadScraps]);
+
+  // Background script로부터 스크랩 생성 알림 수신
+  useEffect(() => {
+    let isActive = true;
+    
+    const handleScrapCreatedMessage = (message: any) => {
+      if (isActive && message.action === 'scrapCreated' && isAuthenticated) {
+        // console.log('📱 Scrap created notification received, refreshing list...');
+        loadScraps();
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(handleScrapCreatedMessage);
+    
+    return () => {
+      isActive = false;
+    };
+  }, [isAuthenticated, loadScraps]);
 
   // 스크랩에 태그 추가
   const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
