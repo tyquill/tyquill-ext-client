@@ -6,7 +6,7 @@ module.exports = {
   entry: {
     background: './src/background/index.ts',
     sidepanel: './src/sidepanel/index.tsx',
-    contentScript: './src/content/contentScript.ts',
+    content: './src/content/index.tsx',
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
