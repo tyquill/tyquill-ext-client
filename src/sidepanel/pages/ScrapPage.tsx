@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
-import { TagSelector } from '../components/TagSelector';
-import { TagList } from '../components/TagList';
+import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
+import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
 import { useToastHelpers } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';

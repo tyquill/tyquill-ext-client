@@ -5,12 +5,12 @@ import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
 import articleStyles from './ArticleGeneratePage.module.css';
 import { Scrap, mockTemplates } from '../../mock/data';
-import { TagSelector } from '../components/TagSelector';
-import { TagList } from '../components/TagList';
+import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
+import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
-import DiscoBallScene from '../components/DiscoBallScene';
+import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import { FaWandMagicSparkles } from "react-icons/fa6";
 
 interface ArticleGeneratePageProps {

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { IoArrowBack, IoCreate, IoClose } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
-import YooptaEditorWrapper from '../../components/Editor';
+import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
-import ExportButton from '../components/ExportButton';
+import ExportButton from '../../components/sidepanel/ExportButton/ExportButton';
 import { useEditor } from '@tiptap/react'
 import { CharacterCount } from '@tiptap/extension-character-count'
 import Document from '@tiptap/extension-document'
@@ -360,7 +360,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           <div className={styles.previewContent}>
             {isEditing ? (
               <ErrorBoundary>
-                <YooptaEditorWrapper
+                  <EditorWrapper
                   key={`editor-${article.articleId}-${isEditing}`}
                   content={markdownToHtml(editContent)}
                   onChange={setEditContent}

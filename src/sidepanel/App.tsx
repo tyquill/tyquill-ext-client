@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ToastProvider } from '../hooks/useToast';
 import LandingPage from './pages/LandingPage';
-import Header from './components/Header';
+import Header from '../components/sidepanel/Header/Header';
 import ScrapPage from './pages/ScrapPage';
 import TemplatePage from './pages/TemplatePage';
 import ArticleGeneratePage from './pages/ArticleGeneratePage';
