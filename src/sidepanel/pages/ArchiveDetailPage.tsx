@@ -34,15 +34,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
-    const hasSeenWidthTip = localStorage.getItem('tyquill-width-tip-dismissed');
-    if (!hasSeenWidthTip) {
-      // 바로 툴팁 표시
-      setShowWidthTip(true);
-      // 부드러운 애니메이션을 위해 약간의 지연 후 visible 상태로 변경
-      setTimeout(() => {
-        setTipVisible(true);
-      }, 100);
-    }
+    chrome.storage.local.get('tyquill-width-tip-dismissed', (result) => {
+      const hasSeenWidthTip = result['tyquill-width-tip-dismissed'];
+      if (!hasSeenWidthTip) {
+        setShowWidthTip(true);
+        setTimeout(() => {
+          setTipVisible(true);
+        }, 100);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -215,12 +215,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   const handleCloseTip = () => {
     setTipVisible(false);
-    // 애니메이션 완료 후 툴팁 제거
+    chrome.storage.local.set({ 'tyquill-width-tip-dismissed': 'true' });
     setTimeout(() => {
       setShowWidthTip(false);
-      if (dontShowAgain) {
-        localStorage.setItem('tyquill-width-tip-dismissed', 'true');
-      }
     }, 300);
   };
 
