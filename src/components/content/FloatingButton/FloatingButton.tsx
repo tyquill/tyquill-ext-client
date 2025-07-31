@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { createScrapViaBackground } from '../../../utils/scrapHelper';
-import { quickClip } from '../../../utils/webClipper';
+import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 
 // 타입 정의
 type ButtonStyle = {
@@ -26,7 +25,6 @@ type ToolboxStyle = {
 
 const FloatingButton: React.FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const shortcutSpanRef = useRef<HTMLSpanElement>(null);
   const toolboxRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   
@@ -66,27 +64,49 @@ const FloatingButton: React.FC = () => {
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const hiddenButtonWidth = 40;
 
-  // 툴박스 위치 계산
+  // 현재 버튼 위치 확인
+  const getCurrentSide = useCallback((): 'left' | 'right' => {
+    if (!buttonRef.current) return 'right';
+    const computedStyle = getComputedStyle(buttonRef.current);
+    return computedStyle.right === 'auto' ||
+      computedStyle.left === `-${hiddenButtonWidth}px`
+      ? 'left'
+      : 'right';
+  }, []);
+
+  // 툴박스 위치 계산 (버튼의 실제 보이는 위치 기준, hover 효과 제외)
   const positionToolbox = useCallback(() => {
     if (!buttonRef.current || !toolboxRef.current) return;
 
-    const buttonRect = buttonRef.current.getBoundingClientRect();
     const gap = 16;
     const toolboxSize = 36;
     const viewportWidth = window.innerWidth;
-
-    let logoCenterX: number;
-
+    const currentSide = getCurrentSide();
+    
+    // 현재 버튼의 실제 rect 가져오기
+    const buttonRect = buttonRef.current.getBoundingClientRect();
+    
+    // 버튼의 보이는 부분 계산 (hidden width 제외)
+    let visibleButtonLeft;
+    if (currentSide === 'left') {
+      visibleButtonLeft = buttonRect.left + hiddenButtonWidth;
+    } else {
+      visibleButtonLeft = buttonRect.left;
+    }
+    
+    // 이미지(로고)의 중심점 계산
+    let logoCenterX;
     if (imgRef.current) {
       const imgRect = imgRef.current.getBoundingClientRect();
       logoCenterX = imgRect.left + imgRect.width / 2;
     } else {
-      logoCenterX = buttonRect.left + buttonRect.width / 2;
+      // 이미지 ref가 없으면 추정
+      logoCenterX = visibleButtonLeft + (currentSide === 'left' ? 56 : 24);
     }
-
-    const currentSide = getCurrentSide();
+    
     let toolboxLeft = logoCenterX - toolboxSize / 2;
 
+    // 뷰포트 경계 체크
     const margin = 8;
     if (toolboxLeft < margin) {
       toolboxLeft = margin;
@@ -98,17 +118,7 @@ const FloatingButton: React.FC = () => {
       left: `${toolboxLeft}px`,
       top: `${buttonRect.top - toolboxSize - gap}px`
     });
-  }, []);
-
-  // 현재 버튼 위치 확인
-  const getCurrentSide = useCallback((): 'left' | 'right' => {
-    if (!buttonRef.current) return 'right';
-    const computedStyle = getComputedStyle(buttonRef.current);
-    return computedStyle.right === 'auto' ||
-      computedStyle.left === `-${hiddenButtonWidth}px`
-      ? 'left'
-      : 'right';
-  }, []);
+  }, [getCurrentSide]);
 
   // 호버 효과 처리
   const handleHover = useCallback((isEntering: boolean) => {
@@ -169,6 +179,13 @@ const FloatingButton: React.FC = () => {
     if (!hasMoved && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
       setHasMoved(true);
       
+      // 실제 드래그가 시작될 때 툴박스 숨기기
+      setToolboxStyle(prev => ({
+        ...prev,
+        opacity: 0,
+        pointerEvents: 'none'
+      }));
+      
       // 드래그 스타일 적용
       setButtonStyle({
         borderRadius: '50%',
@@ -186,12 +203,6 @@ const FloatingButton: React.FC = () => {
         right: 'auto',
         transform: 'none'
       });
-
-      setToolboxStyle(prev => ({
-        ...prev,
-        opacity: 0,
-        pointerEvents: 'none'
-      }));
     }
 
     if (hasMoved) {
@@ -216,6 +227,7 @@ const FloatingButton: React.FC = () => {
     setIsDragging(false);
     
     if (hasMoved && buttonRef.current) {
+      // 실제 드래그가 발생한 경우
       setHasMoved(false); // 드래그 완료 후 hasMoved 리셋
       const rect = buttonRef.current.getBoundingClientRect();
       const buttonCenterX = rect.left + rect.width / 2;
@@ -249,6 +261,9 @@ const FloatingButton: React.FC = () => {
         }));
         positionToolbox();
       }, 300);
+    } else if (!hasMoved) {
+      // 단순 클릭인 경우 - 툴박스가 숨겨지지 않았으므로 아무것도 하지 않음
+      // 툴박스는 이미 보이는 상태를 유지
     }
   }, [isDragging, hasMoved, positionToolbox]);
 
@@ -320,8 +335,7 @@ const FloatingButton: React.FC = () => {
         cursor: 'wait'
       }));
 
-      const scrapResult = await quickClip();
-      const response = await createScrapViaBackground(scrapResult);
+      await clipAndScrapCurrentPage();
 
       // 성공 상태
       setToolboxStyle(prev => ({

@@ -263,7 +263,10 @@ class AuthService {
    */
   async refreshToken(): Promise<AuthResponse> {
     if (!this.authState.refreshToken) {
-      throw new Error('No refresh token available');
+      const restored = await this.restoreAuthState();
+      if (!restored) {
+        throw new Error('No refresh token available');
+      }
     }
 
     try {
@@ -310,9 +313,13 @@ class AuthService {
   /**
    * 인증된 API 요청을 위한 헤더 반환
    */
-  getAuthHeaders(): Record<string, string> {
+  async getAuthHeaders(): Promise<Record<string, string>> {
     if (!this.authState.accessToken) {
-      throw new Error('No access token available');
+      const refreshAccessToken = await this.refreshToken();
+      this.authState.accessToken = refreshAccessToken.accessToken;
+      if (!this.authState.accessToken) {
+        throw new Error('No access token available');
+      }
     }
 
     return {

@@ -81,18 +81,7 @@ export class GlobalApiClient {
 
     try {
       // 인증이 필요한 경우 토큰 가져오기
-      let headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        ...requestOptions.headers,
-      };
-
-      if (!skipAuth) {
-        const authState = authService.getAuthState();
-        if (!authState.accessToken) {
-          throw new Error('No access token available');
-        }
-        headers['Authorization'] = `Bearer ${authState.accessToken}`;
-      }
+      const headers = await authService.getAuthHeaders();
 
       const url = `${this.apiUrl}${endpoint}`;
       const config: RequestInit = {
