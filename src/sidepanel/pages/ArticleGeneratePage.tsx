@@ -618,7 +618,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
         </div>
         
-        <div className={styles.draftForm}>
+        <div className={articleStyles.scrollableContent}>
+          <div className={styles.draftForm}>
           <div className={styles.formGroup}>
             <label htmlFor="subject" className={styles.formLabel}>
               주제
@@ -850,30 +851,30 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               {state.generationError}
             </div>
           )}
-
-          <div className={articleStyles.addButtonContainer}>
-            <button 
-              className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
-              onClick={handleGenerateArticle}
-              disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
-            >
-              {state.generationStatus === 'success' ? (
-                <>
-                  <IoCheckmark size={20} />
-                  생성 요청 완료
-                </>
-              ) : state.generationStatus === 'error' ? (
-                <>
-                  <IoClose size={20} />
-                  실패
-                </>
-              ) : (
-                <>
-                  <IoSparkles size={20} />
-                  초안 생성하기
-                </>
-              )}
-            </button>
+          </div>
+          <div className={articleStyles.fixedButtonContainer}>
+          <button 
+            className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
+            onClick={handleGenerateArticle}
+            disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
+          >
+            {state.generationStatus === 'success' ? (
+              <>
+                <IoCheckmark size={20} />
+                생성 요청 완료
+              </>
+            ) : state.generationStatus === 'error' ? (
+              <>
+                <IoClose size={20} />
+                실패
+              </>
+            ) : (
+              <>
+                <IoSparkles size={20} />
+                초안 생성하기
+              </>
+            )}
+          </button>
           </div>
         </div>
 

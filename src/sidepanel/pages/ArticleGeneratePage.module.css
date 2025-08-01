@@ -435,7 +435,31 @@
   background-color: #f0f0f0;
 }
 
-/* 생성 버튼 */
+/* 스크롤 가능한 콘텐츠 영역 */
+.scrollableContent {
+  flex: 1;
+  overflow-y: auto;
+  /* Proper bottom padding to prevent content being hidden behind fixed button */
+  padding-bottom: calc(56px + 48px); /* Button height (56px) + safe margin (48px) */
+}
+
+/* 고정된 버튼 컨테이너 */
+.fixedButtonContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 60px; /* Sidebar width (min-width: 60px) */
+  background-color: #fff;
+  padding: 16px 20px;
+  margin: 0;
+  z-index: 10;
+  flex-shrink: 0;
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+/* 기존 생성 버튼 컨테이너 (제거됨) */
 .addButtonContainer {
   width: 100%;
   padding: 0 20px;
@@ -460,6 +484,8 @@
   height: 56px;
   letter-spacing: 0.02em;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .addButton:hover {
