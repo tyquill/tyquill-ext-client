@@ -104,6 +104,9 @@ const Header: React.FC<HeaderProps> = () => {
 
   return (
     <div className={styles.header}>
+      <div className={styles.brandLogo}>
+        <span className={styles.brandText}>Tyquill</span>
+      </div>
       <div className={styles.spacer}></div>
       
       <div 
