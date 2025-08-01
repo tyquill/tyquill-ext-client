@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClipboard, IoSparkles, IoArchive, IoLogOut } from 'react-icons/io5';
 import { IconType } from 'react-icons';
@@ -16,6 +16,10 @@ interface MenuItem {
 const Header: React.FC<HeaderProps> = () => {
   const { user, logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [authState, setAuthState] = useState<any>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const avatarRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     try {
@@ -28,27 +32,164 @@ const Header: React.FC<HeaderProps> = () => {
     }
   };
 
+  const getAvatarText = (email: string | undefined) => {
+    if (!email) return '?';
+    return email.charAt(0).toUpperCase();
+  };
+
+  const getAvatarColor = (email: string | undefined) => {
+    if (!email) return '#6b7280';
+    
+    // Generate a consistent color based on email
+    let hash = 0;
+    for (let i = 0; i < email.length; i++) {
+      hash = email.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    
+    const colors = [
+      '#3b82f6', // blue
+      '#10b981', // emerald
+      '#f59e0b', // amber
+      '#ef4444', // red
+      '#8b5cf6', // violet
+      '#06b6d4', // cyan
+      '#84cc16', // lime
+      '#f97316', // orange
+    ];
+    
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  // Load auth state from chrome storage
+  useEffect(() => {
+    const loadAuthState = () => {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(['authState'], (result) => {
+          if (result.authState) {
+            setAuthState(result.authState);
+          }
+        });
+      }
+    };
+    
+    loadAuthState();
+  }, []);
+
+  // Close menu when clicking outside or handle hover behavior
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuRef.current &&
+        avatarRef.current &&
+        !menuRef.current.contains(event.target as Node) &&
+        !avatarRef.current.contains(event.target as Node)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleMouseEnter = () => {
+    setIsMenuOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className={styles.header}>
-      <div className={styles.brand}>
-        <span className={styles.brandName}>Tyquill</span>
-      </div>
-      <div className={styles.userInfo}>
-        <span className={styles.userEmail}>{user?.email || 'Loading...'}</span>
-        <motion.button 
-          className={styles.logoutButton}
-          onClick={handleLogout}
-          disabled={isLoggingOut}
-          title="로그아웃"
+      <div className={styles.spacer}></div>
+      
+      <div 
+        className={styles.userSection}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        <motion.div
+          ref={avatarRef}
+          className={styles.avatarContainer}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          animate={isLoggingOut ? { rotate: 360 } : { rotate: 0 }}
-          transition={isLoggingOut ? {
-            rotate: { duration: 1, ease: "linear", repeat: Infinity }
-          } : { duration: 0.2 }}
+          title={user?.email || 'User menu'}
         >
-          <IoLogOut size={16} />
-        </motion.button>
+          {authState?.user?.avatarUrl ? (
+            <img 
+              src={authState.user.avatarUrl} 
+              alt="Profile" 
+              className={styles.avatarImage}
+            />
+          ) : (
+            <div 
+              className={styles.avatarFallback}
+              style={{ backgroundColor: getAvatarColor(user?.email) }}
+            >
+              {getAvatarText(user?.email)}
+            </div>
+          )}
+        </motion.div>
+
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div
+              ref={menuRef}
+              className={styles.userMenu}
+              initial={{ opacity: 0, scale: 0.95, y: -10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -10 }}
+              transition={{ duration: 0.15, ease: [0.4, 0, 0.2, 1] }}
+            >
+              <div className={styles.menuHeader}>
+                {authState?.user?.avatarUrl ? (
+                  <img 
+                    src={authState.user.avatarUrl} 
+                    alt="Profile" 
+                    className={styles.menuAvatarImage}
+                  />
+                ) : (
+                  <div 
+                    className={styles.menuAvatar}
+                    style={{ backgroundColor: getAvatarColor(user?.email) }}
+                  >
+                    {getAvatarText(user?.email)}
+                  </div>
+                )}
+                <div className={styles.userDetails}>
+                  <span className={styles.userEmail}>
+                    {user?.email || 'Loading...'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className={styles.menuDivider}></div>
+              
+              <motion.button
+                className={styles.menuItem}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                whileHover={{ backgroundColor: '#f3f4f6' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <motion.span
+                  className={styles.menuItemIcon}
+                  animate={isLoggingOut ? { rotate: 360 } : { rotate: 0 }}
+                  transition={isLoggingOut ? {
+                    rotate: { duration: 1, ease: "linear", repeat: Infinity }
+                  } : { duration: 0.2 }}
+                >
+                  <IoLogOut size={16} />
+                </motion.span>
+                <span className={styles.menuItemText}>
+                  {isLoggingOut ? 'Signing out...' : 'Sign out'}
+                </span>
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

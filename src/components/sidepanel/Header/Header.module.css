@@ -2,64 +2,162 @@
   background: #ffffff;
   border-bottom: 2px solid #000000;
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 20px;
   position: sticky;
   top: 0;
   z-index: 100;
+  min-height: 56px;
 }
 
-.brand {
+.spacer {
+  flex: 1;
+}
+
+.userSection {
+  position: relative;
   display: flex;
   align-items: center;
 }
 
-.brandName {
-  font-size: 24px;
-  font-weight: bold;
-  color: #000000;
-  margin: 0;
+/* Avatar Container */
+.avatarContainer {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  will-change: transform;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
 }
 
-.userInfo {
+.avatarContainer:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.avatarImage {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* User Menu Dropdown */
+.userMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 
+    0 10px 25px rgba(0, 0, 0, 0.1),
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.menuHeader {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.menuAvatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+}
+
+.menuAvatarImage {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.userDetails {
+  flex: 1;
+  min-width: 0;
 }
 
 .userEmail {
   font-size: 14px;
-  color: #666666;
-  background: #f5f5f5;
-  padding: 6px 12px;
-  border-radius: 16px;
-  border: 1px solid #cccccc;
+  color: #374151;
+  font-weight: 500;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.logoutButton {
+.menuDivider {
+  height: 1px;
+  background: #f3f4f6;
+  margin: 0;
+}
+
+.menuItem {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.15s ease;
+  will-change: background-color;
+}
+
+.menuItem:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.menuItem:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.menuItemIcon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: #f5f5f5;
-  color: #666666;
-  cursor: pointer;
-  will-change: transform, background-color;
+  color: #6b7280;
+  will-change: transform;
 }
 
-.logoutButton:hover {
-  background: #e5e5e5;
-  color: #333333;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.logoutButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+.menuItemText {
+  font-weight: 500;
 }
 
 .sidebar {
@@ -74,7 +172,7 @@
   will-change: transform, opacity;
 }
 
-.menuItem {
+.sidebar .menuItem {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -87,20 +185,23 @@
   min-width: 48px;
   position: relative;
   overflow: hidden;
+  width: auto;
+  font-size: inherit;
+  color: inherit;
 }
 
-.menuItem:hover:not(.active) {
+.sidebar .menuItem:hover:not(.active) {
   background-color: #f8f9fa;
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.menuItem.active {
+.sidebar .menuItem.active {
   color: white;
   z-index: 1;
 }
 
-.menuItem.active .menuIcon {
+.sidebar .menuItem.active .menuIcon {
   filter: brightness(0) invert(1);
   z-index: 2;
 }
