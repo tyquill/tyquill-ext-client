@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { IoArrowBack, IoCreate, IoClose } from 'react-icons/io5';
+import { IoArrowBack, IoCreate, IoClose, IoCheckmark } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
+import detailStyles from './ArchiveDetailPage.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../../components/sidepanel/ExportButton/ExportButton';
+import CopyButton from '../../components/sidepanel/CopyButton/CopyButton';
 import { useEditor } from '@tiptap/react'
 import { CharacterCount } from '@tiptap/extension-character-count'
 import Document from '@tiptap/extension-document'
@@ -44,6 +46,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       }
     });
   }, []);
+
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -268,14 +271,18 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         {!isEditing ? (
           // 미리보기 페이지: 두 줄 레이아웃
           <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-            <div className={styles.rightActionButtons}>
+            <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
+              {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
               <ExportButton 
                 title={currentArchive?.title || article.title}
                 content={currentArchive?.content || article.content}
               />
-              <button className={styles.editButton} onClick={handleEdit} title="초안 수정하기">
+              <CopyButton 
+                title={currentArchive?.title || article.title}
+                content={currentArchive?.content || article.content}
+              />
+              <button className={detailStyles.primaryActionButton} onClick={handleEdit} title="초안 수정하기">
                 <IoCreate size={20} />
-                수정
               </button>
             </div>
             <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
@@ -302,25 +309,27 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             </div>
           </div>
         ) : (
-          // 수정 페이지: 한 줄 레이아웃
-          <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px'}}>
-            <div className={styles.rightActionButtons}>
+          // 수정 페이지: 두 줄 레이아웃 (저장/취소 위, 버전 아래)
+          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+            <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
               <button 
-                className={styles.saveButton}
+                className={detailStyles.editPrimaryButton}
                 onClick={handleSave}
                 disabled={saving}
+                title={saving ? '저장 중...' : '저장'}
               >
-                {saving ? '저장 중...' : '저장'}
+                <IoCheckmark size={18} />
               </button>
               <button 
-                className={styles.cancelButton}
+                className={detailStyles.editSecondaryButton}
                 onClick={handleCancel}
                 disabled={saving}
+                title="취소"
               >
-                취소
+                <IoClose size={18} />
               </button>
             </div>
-            <div className={styles.versionControls}>
+            <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
               {article.archives && article.archives.length > 0 && (
                 <div className={styles.versionSelector}>
                   <label htmlFor="version-select" className={styles.versionLabel}>
