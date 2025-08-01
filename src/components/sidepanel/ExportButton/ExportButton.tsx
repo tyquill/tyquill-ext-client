@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoArrowUpCircle } from 'react-icons/io5';
-import styles from '../../../sidepanel/pages/PageStyles.module.css';
+import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
 
 interface ExportButtonProps {
@@ -10,6 +10,72 @@ interface ExportButtonProps {
 
 const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
   const { showSuccess, showError } = useToastHelpers();
+  const [isMailyPage, setIsMailyPage] = useState(false);
+  
+  // maily.so 페이지 여부 확인
+  useEffect(() => {
+    const checkMailyPage = async () => {
+      try {
+        let currentTab = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+        
+        while (!currentTab && attempts < maxAttempts) {
+          try {
+            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            currentTab = tabs[0];
+            
+            if (!currentTab && attempts < maxAttempts - 1) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+          } catch (err) {
+            console.warn(`ExportButton tab query attempt ${attempts + 1} failed:`, err);
+          }
+          attempts++;
+        }
+        
+        if (currentTab?.url && 
+            currentTab.url.includes('maily.so') && 
+            (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
+          setIsMailyPage(true);
+        } else {
+          setIsMailyPage(false);
+        }
+      } catch (error) {
+        console.error('Error checking maily page in ExportButton:', error);
+        setIsMailyPage(false);
+      }
+    };
+
+    checkMailyPage();
+    
+    // 탭 변경 감지를 위한 이벤트 리스너
+    const handleTabUpdate = () => {
+      setTimeout(checkMailyPage, 100);
+    };
+    
+    if (chrome.tabs && chrome.tabs.onUpdated) {
+      chrome.tabs.onUpdated.addListener(handleTabUpdate);
+    }
+    
+    if (chrome.tabs && chrome.tabs.onActivated) {
+      chrome.tabs.onActivated.addListener(handleTabUpdate);
+    }
+    
+    return () => {
+      if (chrome.tabs && chrome.tabs.onUpdated) {
+        chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+      }
+      if (chrome.tabs && chrome.tabs.onActivated) {
+        chrome.tabs.onActivated.removeListener(handleTabUpdate);
+      }
+    };
+  }, []);
+  
+  // maily.so 페이지가 아니면 버튼을 렌더링하지 않음
+  if (!isMailyPage) {
+    return null;
+  }
 
   const handleExport = async () => {
     if (!title.trim() || !content.trim()) {
@@ -18,12 +84,11 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
     }
 
     try {
+      // 이미 isMailyPage로 체크했으므로 다시 확인할 필요 없음
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
       
-      if (currentTab?.url && 
-          currentTab.url.includes('maily.so') && 
-          (currentTab.url.includes('/edit') || currentTab.url.includes('/new') || currentTab.url.includes('/drafts'))) {
+      if (currentTab?.id) {
         
         await chrome.scripting.executeScript({
           target: { tabId: currentTab.id! },
@@ -216,7 +281,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
 
         showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
       } else {
-        showError('내보내기 실패', 'maily.so 뉴스레터 편집 또는 생성 페이지에서만 사용할 수 있습니다.');
+        showError('내보내기 실패', '현재 탭을 찾을 수 없습니다.');
       }
     } catch (error) {
       console.error('Export error:', error);
@@ -228,9 +293,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
     <button 
       className={styles.exportButton}
       onClick={handleExport}
+      title="maily.so로 내보내기"
     >
       <IoArrowUpCircle size={20} />
-      maily.so로 내보내기
     </button>
   );
 };

@@ -1227,8 +1227,10 @@ div.contentDisplay ol li {
 .editButton {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   background-color: #f8f8f8;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
@@ -1655,9 +1657,8 @@ div.contentDisplay ol li {
   overflow-y: auto;
   padding: 0 24px 24px;
   border: 1px solid #eee;
-  border-radius: 12px;
   background-color: #fff;
-  margin: 0 24px;
+  margin: 0px;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
@@ -2038,17 +2039,20 @@ div.contentDisplay ol li {
 }
 
 .saveButton {
-  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
   height: 36px;
+  padding: 0;
   background-color: #000;
   color: #fff;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 80px;
 }
 
 .saveButton:hover {
@@ -2063,17 +2067,20 @@ div.contentDisplay ol li {
 }
 
 .cancelButton {
-  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
   height: 36px;
+  padding: 0;
   background-color: #f7f7f7;
   color: #000;
   border: 1px solid #eaeaea;
-  border-radius: 10px;
+  border-radius: 8px;
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 80px;
 }
 
 .cancelButton:hover {

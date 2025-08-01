@@ -1,0 +1,246 @@
+.actionButtonsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.primaryActionRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.secondaryActionRow {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.singleRowActions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.utilityRow {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Primary Action Button - Edit */
+.primaryActionButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  /* Remove CSS transitions as Framer Motion handles them */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.primaryActionButton:hover {
+  background-color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.primaryActionButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.primaryActionButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Icon-only Edit Mode Buttons - Black/White Theme */
+.editPrimaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background-color: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  /* Remove CSS transitions as Framer Motion handles them */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.editPrimaryButton:hover {
+  background-color: #333;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.editPrimaryButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.editPrimaryButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.2);
+}
+
+.editPrimaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.editPrimaryButton:disabled:hover {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.editSecondaryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background-color: #f8f9fa;
+  color: #6c757d;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  cursor: pointer;
+  /* Remove CSS transitions as Framer Motion handles them */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.editSecondaryButton:hover {
+  background-color: #e9ecef;
+  color: #495057;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.editSecondaryButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.editSecondaryButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(108, 117, 125, 0.2);
+}
+
+.editSecondaryButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.editSecondaryButton:disabled:hover {
+  transform: none;
+  background-color: #f8f9fa;
+  border-color: #e9ecef;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Loading Spinner for Save Button - Framer Motion handles animation */
+.loadingSpinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #ffffff40;
+  border-top: 2px solid #ffffff;
+  border-radius: 50%;
+  /* Framer Motion handles the rotation animation */
+}
+
+/* Version Controls - Consistent with Preview Mode */
+.versionControls {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.versionSelector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.versionLabel {
+  font-size: 13px;
+  color: #666;
+  font-weight: 500;
+}
+
+.versionSelect {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  background-color: #fff;
+  cursor: pointer;
+  /* Remove CSS transitions as Framer Motion handles them */
+  min-width: 60px;
+}
+
+.versionSelect:hover {
+  border-color: #bbb;
+  background-color: #f8f9fa;
+}
+
+.versionSelect:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+.versionSelect:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #f8f9fa;
+}
+
+/* Edit Mode Layout - Consistent with Preview Mode */
+.editModeActions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.editModeButtons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 400px) {
+  .secondaryActionRow {
+    flex-direction: column;
+    gap: 6px;
+  }
+  
+  .actionButtonsContainer {
+    gap: 10px;
+  }
+  
+  .editModeActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .editModeButtons {
+    justify-content: flex-end;
+  }
+}
