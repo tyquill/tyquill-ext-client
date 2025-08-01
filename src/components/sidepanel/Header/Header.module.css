@@ -65,11 +65,11 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 16px 8px;
+  gap: 6px;
+  padding: 12px 6px;
   background: #ffffff;
   border-left: 1px solid #e5e5e5;
-  min-width: 80px;
+  min-width: 60px;
   height: 100%;
   will-change: transform, opacity;
 }
@@ -78,13 +78,13 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 12px 8px;
-  border-radius: 8px;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 6px;
   background: transparent;
   border: none;
   cursor: pointer;
-  min-width: 64px;
+  min-width: 48px;
   position: relative;
   overflow: hidden;
 }
@@ -130,7 +130,7 @@
 }
 
 .menuLabel {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   position: relative;
   z-index: 1;
