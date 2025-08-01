@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ToastProvider } from '../hooks/useToast';
 import LandingPage from './pages/LandingPage';
-import Header from '../components/sidepanel/Header/Header';
+import Header, { Sidebar } from '../components/sidepanel/Header/Header';
 import ScrapPage from './pages/ScrapPage';
 import TemplatePage from './pages/TemplatePage';
 import ArticleGeneratePage from './pages/ArticleGeneratePage';
@@ -81,27 +81,30 @@ const App: React.FC = () => {
     );
   }
 
-  // 메인 앱 (헤더 + 페이지)
+  // 메인 앱 (헤더 + 메인 콘텐츠 + 사이드바)
   return (
     <ToastProvider>
       <div className={styles.app}>
-        <Header activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
-        <div className={styles.appContent}>
-          {currentPage.type === 'scrap' && <ScrapPage />}
-          {/* {currentPage.type === 'template' && <TemplatePage />} */}
-          {currentPage.type === 'draft' && (
-            <ArticleGeneratePage 
-              onNavigateToDetail={handleNavigateToDetail}
-            />
-          )}
-          {currentPage.type === 'archive' && (
-            <ArchivePage 
-              onDraftClick={handleArchiveDetail}
-            />
-          )}
-          {currentPage.type === 'archive-detail' && currentPage.draftId && (
-            <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
-          )}
+        <Header />
+        <div className={styles.appMain}>
+          <div className={styles.appContent}>
+            {currentPage.type === 'scrap' && <ScrapPage />}
+            {/* {currentPage.type === 'template' && <TemplatePage />} */}
+            {currentPage.type === 'draft' && (
+              <ArticleGeneratePage 
+                onNavigateToDetail={handleNavigateToDetail}
+              />
+            )}
+            {currentPage.type === 'archive' && (
+              <ArchivePage 
+                onDraftClick={handleArchiveDetail}
+              />
+            )}
+            {currentPage.type === 'archive-detail' && currentPage.draftId && (
+              <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
+            )}
+          </div>
+          <Sidebar activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
         </div>
       </div>
     </ToastProvider>

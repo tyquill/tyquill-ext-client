@@ -27,6 +27,12 @@ html, body {
   overflow: hidden;
 }
 
+.appMain {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
 .appContent {
   flex: 1;
   overflow: hidden;
