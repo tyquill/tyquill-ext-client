@@ -7,6 +7,7 @@ module.exports = {
     background: './src/background/index.ts',
     sidepanel: './src/sidepanel/index.tsx',
     content: './src/content/index.tsx',
+    options: './src/options/index.tsx',
   },
   output: {
     path: path.resolve(__dirname, '../dist'),
@@ -49,6 +50,11 @@ module.exports = {
       template: './src/sidepanel/index.html',
       filename: 'sidepanel.html',
       chunks: ['sidepanel'],
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/options/index.html',
+      filename: 'options.html',
+      chunks: ['options'],
     }),
     new CopyWebpackPlugin({
       patterns: [

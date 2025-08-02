@@ -61,34 +61,42 @@ const FloatingButton: React.FC = () => {
     pointerEvents: 'auto',
     cursor: 'pointer'
   });
-  const [isVisible, setIsVisible] = useState(true);
+
+  const [settings, setSettings] = useState({
+    floatingButtonVisible: true
+  });
 
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const hiddenButtonWidth = 40;
 
-  // 유튜브 전체화면 감지 함수
-  const checkYouTubeFullscreen = useCallback(() => {
-    // 유튜브 전체화면 감지
-    const isYouTubeFullscreen = 
-      document.fullscreenElement?.classList.contains('html5-video-player') ||
-      document.fullscreenElement?.tagName === 'VIDEO' ||
-      document.fullscreenElement?.classList.contains('ytp-fullscreen') ||
-      document.querySelector('.ytp-fullscreen') !== null ||
-      document.querySelector('.html5-video-player.ytp-fullscreen') !== null ||
-      document.querySelector('.ytp-fullscreen-button[aria-pressed="true"]') !== null;
+  // 설정 로드 및 변경 감지
+  useEffect(() => {
+    const loadSettings = () => {
+      chrome.storage.sync.get(['tyquillSettings'], (result) => {
+        if (result.tyquillSettings) {
+          setSettings(prev => ({ ...prev, ...result.tyquillSettings }));
+        }
+      });
+    };
 
-    // 일반 전체화면 감지
-    const isGeneralFullscreen = !!document.fullscreenElement;
+    // 초기 설정 로드
+    loadSettings();
 
-    // 유튜브 페이지에서 전체화면 모드인지 확인
-    const isYouTubePage = window.location.hostname.includes('youtube.com') || 
-                         window.location.hostname.includes('youtu.be');
-    
-    const shouldHide = (isYouTubePage && isYouTubeFullscreen) || isGeneralFullscreen;
-    
-    setIsVisible(!shouldHide);
+    // 설정 변경 감지
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+      if (changes.tyquillSettings) {
+        setSettings(prev => ({ ...prev, ...changes.tyquillSettings.newValue }));
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, []);
+  
 
   // 현재 버튼 위치 확인
   const getCurrentSide = useCallback((): 'left' | 'right' => {
@@ -501,41 +509,7 @@ const FloatingButton: React.FC = () => {
     };
   }, [debouncePositionUpdate]);
 
-  // 전체화면 상태 감지
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      checkYouTubeFullscreen();
-    };
 
-    // 초기 상태 확인
-    checkYouTubeFullscreen();
-
-    // 전체화면 변경 이벤트 리스너
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-    // 유튜브 전체화면 버튼 클릭 감지
-    const observer = new MutationObserver(() => {
-      checkYouTubeFullscreen();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'aria-pressed']
-    });
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-      observer.disconnect();
-    };
-  }, [checkYouTubeFullscreen]);
 
   // 초기 툴박스 위치 설정
   useEffect(() => {
@@ -547,7 +521,7 @@ const FloatingButton: React.FC = () => {
   }, [positionToolbox]);
 
   // 버튼이 숨겨져야 하는 경우 렌더링하지 않음
-  if (!isVisible) {
+  if (!settings.floatingButtonVisible) {
     return null;
   }
 
