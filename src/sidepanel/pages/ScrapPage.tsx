@@ -8,14 +8,13 @@ import { useToastHelpers } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
 import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
+import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { logout } = useAuth();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
@@ -366,11 +365,11 @@ const ScrapPage: React.FC = () => {
   // 불필요한 useEffect 제거 (inputRef.current?.focus())
 
   useEffect(() => {
-    if (loading || !hasMore) return;
+    if (loading) return;
 
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting && hasMore) {
+        if (entries[0].isIntersecting) {
           setLoading(true);
           // 이전 타임아웃이 있다면 클리어
           if (loadingTimeoutRef.current) {
@@ -401,23 +400,9 @@ const ScrapPage: React.FC = () => {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [loading, hasMore]);
+  }, [loading]);
 
-  const formatScrapDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return date.toLocaleString('ko-KR', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false
-      }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5');
-    } catch (error) {
-      return dateString;
-    }
-  };
+
 
   const ScrapItem = React.memo<{ scrap: Scrap; onDelete: () => void }>(({ scrap, onDelete }) => {
     return (
@@ -431,9 +416,7 @@ const ScrapPage: React.FC = () => {
           </button>
         </div>
         <div className={styles.contentDescription}>
-          {scrap.content.length > 100 
-            ? `${scrap.content.substring(0, 100)}...` 
-            : scrap.content}
+          {markdownToPlainTextPreview(scrap.content)}
         </div>
         <div className={styles.contentFooter}>
           <div className={styles.tags}>
