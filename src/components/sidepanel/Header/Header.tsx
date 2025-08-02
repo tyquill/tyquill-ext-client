@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClipboard, IoSparkles, IoArchive, IoLogOut } from 'react-icons/io5';
+import { IoClipboard, IoSparkles, IoArchive, IoLogOut, IoSettings } from 'react-icons/io5';
 import { IconType } from 'react-icons';
 import { useAuth } from '../../../hooks/useAuth';
 import styles from './Header.module.css';
@@ -233,6 +233,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
     { key: 'archive', label: '보관함', icon: IoArchive }
   ];
 
+  const handleSettingsClick = () => {
+    // Chrome extension options page 열기
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.openOptionsPage();
+    }
+  };
+
   return (
     <motion.div 
       className={styles.sidebar}
@@ -241,56 +248,88 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
       animate="animate"
       transition={sidebarTransition}
     >
-      {menuItems.map((item) => {
-        const IconComponent = item.icon;
-        const isActive = activeMenu === item.key;
+      {/* 메인 메뉴 아이템들 */}
+      <div className={styles.menuItemsContainer}>
+        {menuItems.map((item) => {
+          const IconComponent = item.icon;
+          const isActive = activeMenu === item.key;
+          
+          return (
+            <motion.button
+              key={item.key}
+              className={`${styles.menuItem} ${isActive ? styles.active : ''}`}
+              variants={menuItemVariants}
+              whileHover="hover"
+              whileTap="tap"
+              onClick={() => onMenuClick(item.key)}
+              layout
+            >
+              {/* Active state background indicator */}
+              <AnimatePresence>
+                {isActive && (
+                  <motion.div
+                    className={styles.activeIndicator}
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                    layoutId="activeIndicator"
+                  />
+                )}
+              </AnimatePresence>
+              
+              <motion.span 
+                className={styles.menuIcon}
+                whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <IconComponent size={20} />
+              </motion.span>
+              
+              <motion.span 
+                className={styles.menuLabel}
+                animate={{
+                  color: isActive ? '#ffffff' : '#666666',
+                  fontWeight: isActive ? 600 : 500
+                }}
+                transition={{ duration: 0.2 }}
+              >
+                {item.label}
+              </motion.span>
+            </motion.button>
+          );
+        })}
+      </div>
+
+      {/* 설정 버튼 - 제일 아래쪽에 배치 */}
+      <motion.button
+        className={styles.settingsButton}
+        variants={menuItemVariants}
+        whileHover="hover"
+        whileTap="tap"
+        onClick={handleSettingsClick}
+        title="설정"
+      >
+        <motion.span 
+          className={styles.menuIcon}
+          whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        >
+          <IoSettings size={20} />
+        </motion.span>
         
-        return (
-          <motion.button
-            key={item.key}
-            className={`${styles.menuItem} ${isActive ? styles.active : ''}`}
-            variants={menuItemVariants}
-            whileHover="hover"
-            whileTap="tap"
-            onClick={() => onMenuClick(item.key)}
-            layout
-          >
-            {/* Active state background indicator */}
-            <AnimatePresence>
-              {isActive && (
-                <motion.div
-                  className={styles.activeIndicator}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-                  layoutId="activeIndicator"
-                />
-              )}
-            </AnimatePresence>
-            
-            <motion.span 
-              className={styles.menuIcon}
-              whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
-              animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-              transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-            >
-              <IconComponent size={20} />
-            </motion.span>
-            
-            <motion.span 
-              className={styles.menuLabel}
-              animate={{
-                color: isActive ? '#ffffff' : '#666666',
-                fontWeight: isActive ? 600 : 500
-              }}
-              transition={{ duration: 0.2 }}
-            >
-              {item.label}
-            </motion.span>
-          </motion.button>
-        );
-      })}
+        <motion.span 
+          className={styles.menuLabel}
+          animate={{
+            color: '#666666',
+            fontWeight: 500
+          }}
+          transition={{ duration: 0.2 }}
+        >
+          설정
+        </motion.span>
+      </motion.button>
     </motion.div>
   );
 };

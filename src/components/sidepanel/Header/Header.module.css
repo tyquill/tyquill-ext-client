@@ -36,6 +36,7 @@
   position: relative;
   display: flex;
   align-items: center;
+  z-index: 999999;
 }
 
 /* Avatar Container */
@@ -87,7 +88,7 @@
     0 4px 10px rgba(0, 0, 0, 0.05),
     0 0 0 1px rgba(0, 0, 0, 0.05);
   overflow: hidden;
-  z-index: 1000;
+  z-index: 999999;
 }
 
 .menuHeader {
@@ -187,7 +188,7 @@
   min-width: 60px;
   height: 100%;
   will-change: transform, opacity;
-  z-index: 200;
+  z-index: 1;
   position: relative;
 }
 
@@ -255,4 +256,57 @@
   position: relative;
   z-index: 1;
   transition: all 0.2s ease;
+}
+
+/* 메뉴 아이템 컨테이너 */
+.menuItemsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+/* 설정 버튼 */
+.settingsButton {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  min-width: 48px;
+  position: relative;
+  overflow: hidden;
+  width: auto;
+  font-size: inherit;
+  color: inherit;
+  margin-top: auto;
+  transition: all 0.2s ease;
+}
+
+.settingsButton:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.settingsButton .menuIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+  color: #666666;
+}
+
+.settingsButton .menuLabel {
+  font-size: 10px;
+  font-weight: 500;
+  position: relative;
+  z-index: 1;
+  transition: all 0.2s ease;
+  color: #666666;
 } 
