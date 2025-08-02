@@ -83,17 +83,26 @@ const FloatingButton: React.FC = () => {
     // 초기 설정 로드
     loadSettings();
 
-    // 설정 변경 감지
+    // 설정 변경 감지 (Chrome Storage)
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
       if (changes.tyquillSettings) {
         setSettings(prev => ({ ...prev, ...changes.tyquillSettings.newValue }));
       }
     };
 
+    // 설정 변경 감지 (CustomEvent - Context Menu에서 변경 시)
+    const handleSettingsChanged = (event: CustomEvent) => {
+      if (event.detail) {
+        setSettings(prev => ({ ...prev, ...event.detail }));
+      }
+    };
+
     chrome.storage.onChanged.addListener(handleStorageChange);
+    window.addEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
 
     return () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
+      window.removeEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
     };
   }, []);
   

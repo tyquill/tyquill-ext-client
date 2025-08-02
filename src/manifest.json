@@ -7,7 +7,8 @@
     "storage", 
     "sidePanel", 
     "activeTab", 
-    "scripting"
+    "scripting",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://maily.so/*",
