@@ -90,6 +90,8 @@ const FloatingButton: React.FC = () => {
     right: '-6px'
   });
 
+  const [isVisible, setIsVisible] = useState(true);
+
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
   const hiddenButtonWidth = 40;
 
@@ -131,6 +133,45 @@ const FloatingButton: React.FC = () => {
       chrome.storage.onChanged.removeListener(handleStorageChange);
       window.removeEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
     };
+  }, []);
+
+  // 유튜브 전체화면 감지 함수
+  const checkYouTubeFullscreen = useCallback(() => {
+    // 유튜브 전체화면 감지 (더 정확한 방법)
+    const isYouTubeFullscreen = 
+      document.fullscreenElement?.classList.contains('html5-video-player') ||
+      document.fullscreenElement?.tagName === 'VIDEO' ||
+      document.fullscreenElement?.classList.contains('ytp-fullscreen') ||
+      document.querySelector('.ytp-fullscreen') !== null ||
+      document.querySelector('.html5-video-player.ytp-fullscreen') !== null ||
+      document.querySelector('.ytp-fullscreen-button[aria-pressed="true"]') !== null ||
+      document.querySelector('.ytp-fullscreen-button.ytp-button[aria-pressed="true"]') !== null ||
+      document.querySelector('.ytp-fullscreen') !== null ||
+      document.querySelector('.ytp-fullscreen-button.ytp-button')?.getAttribute('aria-pressed') === 'true' ||
+      document.querySelector('.ytp-fullscreen-button')?.getAttribute('aria-pressed') === 'true';
+
+    // 일반 전체화면 감지
+    const isGeneralFullscreen = !!document.fullscreenElement;
+
+    // 유튜브 페이지에서 전체화면 모드인지 확인
+    const isYouTubePage = window.location.hostname.includes('youtube.com') || 
+                         window.location.hostname.includes('youtu.be');
+    
+    // 추가적인 유튜브 전체화면 감지
+    const youtubeFullscreenButton = document.querySelector('.ytp-fullscreen-button');
+    const isYouTubeFullscreenActive = youtubeFullscreenButton?.getAttribute('aria-pressed') === 'true';
+    
+    const shouldHide = (isYouTubePage && (isYouTubeFullscreen || isYouTubeFullscreenActive)) || isGeneralFullscreen;
+    
+    console.log('🔍 유튜브 전체화면 감지:', {
+      isYouTubePage,
+      isYouTubeFullscreen,
+      isYouTubeFullscreenActive,
+      isGeneralFullscreen,
+      shouldHide
+    });
+    
+    setIsVisible(!shouldHide);
   }, []);
 
   // 현재 버튼 위치 확인 및 상태 업데이트
@@ -575,10 +616,44 @@ const FloatingButton: React.FC = () => {
     return () => clearTimeout(timer);
   }, [getCurrentSide, positionToolbar, settings.floatingButtonVisible]);
 
+  // 전체화면 상태 감지
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      checkYouTubeFullscreen();
+    };
 
+    // 초기 상태 확인
+    checkYouTubeFullscreen();
+
+    // 전체화면 변경 이벤트 리스너
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    // 유튜브 전체화면 버튼 클릭 감지
+    const observer = new MutationObserver(() => {
+      checkYouTubeFullscreen();
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'aria-pressed']
+    });
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      observer.disconnect();
+    };
+  }, [checkYouTubeFullscreen]);
 
   // 버튼이 숨겨져야 하는 경우 렌더링하지 않음
-  if (!settings.floatingButtonVisible) {
+  if (!settings.floatingButtonVisible || !isVisible) {
     return null;
   }
 
