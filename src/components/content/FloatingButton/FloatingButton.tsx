@@ -4,6 +4,8 @@ import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 import styles from './FloatingButton.module.css';
 import { BsBook } from 'react-icons/bs';
 import { IoClose } from 'react-icons/io5';
+import { IoMdCheckmark } from 'react-icons/io';
+import { motion } from 'framer-motion';
 
 // 타입 정의
 type ButtonStyle = {
@@ -26,25 +28,39 @@ type ToolboxStyle = {
   transform?: string;
 };
 
+type ToolGroup = {
+  id: string;
+  tools: Tool[];
+  position: 'top' | 'bottom';
+};
+
+type Tool = {
+  id: string;
+  icon: React.ReactNode;
+  label: string;
+  action: () => void;
+  shortcut?: string;
+  tooltip?: string;
+  disabled?: boolean;
+};
+
 const FloatingButton: React.FC = () => {
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const toolboxRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   
   const [isDragging, setIsDragging] = useState(false);
   const [hasMoved, setHasMoved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isToolboxActive, setIsToolboxActive] = useState(false);
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  
   const [buttonPosition, setButtonPosition] = useState({
     top: '50%',
     right: '-40px',
     left: 'auto',
     transform: 'translateY(-50%)'
   });
-  const [toolboxPosition, setToolboxPosition] = useState({
-    left: '0px',
-    top: '0px'
-  });
+
   const [buttonStyle, setButtonStyle] = useState<ButtonStyle>({
     borderRadius: '32px 0 0 32px',
     flexDirection: 'row',
@@ -54,7 +70,8 @@ const FloatingButton: React.FC = () => {
     justifyContent: 'flex-start',
     gap: '6px'
   });
-  const [toolboxStyle, setToolboxStyle] = useState<ToolboxStyle>({
+  
+  const [toolbarStyle, setToolbarStyle] = useState<ToolboxStyle>({
     backgroundColor: 'white',
     color: '#333',
     borderColor: 'rgba(0, 0, 0, 0.1)',
@@ -74,8 +91,11 @@ const FloatingButton: React.FC = () => {
   });
 
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
-  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const hiddenButtonWidth = 40;
+
+
+
+  // 툴 그룹 정의는 handleScrap 함수 정의 후에 이동
 
   // 설정 로드 및 변경 감지
   useEffect(() => {
@@ -151,83 +171,69 @@ const FloatingButton: React.FC = () => {
     }
   }, [settings.floatingButtonVisible]);
 
-  // 툴박스 위치 계산 (버튼의 실제 보이는 위치 기준, hover 효과 제외)
-  const positionToolbox = useCallback(() => {
-    if (!buttonRef.current || !toolboxRef.current) return;
+  // 툴바 위치 계산 (CSS left/right 속성 사용)
+  const positionToolbar = useCallback(() => {
+    if (!buttonRef.current || !toolbarRef.current) return;
 
-    const gap = 16;
-    const toolboxSize = 36;
-    const viewportWidth = window.innerWidth;
-    const currentSide = getCurrentSide();
-    
-    // 현재 버튼의 실제 rect 가져오기
     const buttonRect = buttonRef.current.getBoundingClientRect();
     
-    // 버튼의 보이는 부분 계산 (hidden width 제외)
-    let visibleButtonLeft;
-    if (currentSide === 'left') {
-      visibleButtonLeft = buttonRect.left + hiddenButtonWidth;
+    // 버튼의 실제 위치를 기반으로 오른쪽/왼쪽 판단
+    const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+    const isRightSide = buttonCenterX > window.innerWidth / 2;
+    
+    // 툴바를 메인 버튼 위에 배치
+    const toolbarTop = buttonRect.top - 44; // 툴바 높이(36px) + 간격(8px)
+
+    // CSS left/right 속성으로 툴바 위치 설정
+    if (isRightSide) {
+      // 오른쪽에 있을 때는 right: 0; left: auto;
+      toolbarRef.current.style.right = '0';
+      toolbarRef.current.style.left = 'auto';
     } else {
-      visibleButtonLeft = buttonRect.left;
+      // 왼쪽에 있을 때는 left: 0; right: auto;
+      toolbarRef.current.style.left = '0';
+      toolbarRef.current.style.right = 'auto';
     }
     
-    // 이미지(로고)의 중심점 계산
-    let logoCenterX;
-    if (imgRef.current) {
-      const imgRect = imgRef.current.getBoundingClientRect();
-      logoCenterX = imgRect.left + imgRect.width / 2;
-    } else {
-      // 이미지 ref가 없으면 추정
-      logoCenterX = visibleButtonLeft + (currentSide === 'left' ? 56 : 24);
-    }
-    
-    let toolboxLeft = logoCenterX - toolboxSize / 2;
-
-    // 뷰포트 경계 체크
-    const margin = 8;
-    if (toolboxLeft < margin) {
-      toolboxLeft = margin;
-    } else if (toolboxLeft + toolboxSize > viewportWidth - margin) {
-      toolboxLeft = viewportWidth - toolboxSize - margin;
-    }
-
-    setToolboxPosition({
-      left: `${toolboxLeft}px`,
-      top: `${buttonRect.top - toolboxSize - gap}px`
-    });
-  }, [getCurrentSide]);
+    toolbarRef.current.style.top = `${toolbarTop}px`;
+  }, []);
 
   // 호버 효과 처리
   const handleHover = useCallback((isEntering: boolean) => {
     const currentSide = getCurrentSide();
-    const yTransform = buttonPosition.top === '50%' ? 'translateY(-50%)' : '';
+    // 드래그 후에도 translateY(-50%)를 유지하기 위해 조건 수정
+    const yTransform = buttonPosition.top === '50%' || buttonPosition.transform?.includes('translateY(-50%)') ? 'translateY(-50%)' : '';
     
     if (currentSide === 'left') {
       if (isEntering) {
+        const transforms = [yTransform, `translateX(${hiddenButtonWidth}px)`, 'scale(1.02)'].filter(Boolean);
         setButtonPosition(prev => ({
           ...prev,
-          transform: `${yTransform} translateX(${hiddenButtonWidth}px) scale(1.02)`.trim()
+          transform: transforms.join(' ')
         }));
       } else {
+        const transforms = [yTransform, 'scale(1)'].filter(Boolean);
         setButtonPosition(prev => ({
           ...prev,
-          transform: `${yTransform} scale(1)`.trim()
+          transform: transforms.join(' ')
         }));
       }
     } else {
       if (isEntering) {
+        const transforms = [yTransform, `translateX(-${hiddenButtonWidth}px)`, 'scale(1.02)'].filter(Boolean);
         setButtonPosition(prev => ({
           ...prev,
-          transform: `${yTransform} translateX(-${hiddenButtonWidth}px) scale(1.02)`.trim()
+          transform: transforms.join(' ')
         }));
       } else {
+        const transforms = [yTransform, 'scale(1)'].filter(Boolean);
         setButtonPosition(prev => ({
           ...prev,
-          transform: `${yTransform} scale(1)`.trim()
+          transform: transforms.join(' ')
         }));
       }
     }
-  }, [buttonPosition.top, getCurrentSide]);
+  }, [buttonPosition.top, buttonPosition.transform, getCurrentSide]);
 
   // 마우스 이벤트 핸들러들
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
@@ -256,12 +262,12 @@ const FloatingButton: React.FC = () => {
     if (!hasMoved && (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10)) {
       setHasMoved(true);
       
-      // 실제 드래그가 시작될 때 툴박스 숨기기
-      setToolboxStyle(prev => ({
-        ...prev,
-        opacity: 0,
-        pointerEvents: 'none'
-      }));
+      // 실제 드래그가 시작될 때 툴바 완전히 숨기기
+      if (toolbarRef.current) {
+        toolbarRef.current.style.opacity = '0';
+        toolbarRef.current.style.pointerEvents = 'none';
+        toolbarRef.current.style.visibility = 'hidden';
+      }
       
       // 드래그 스타일 적용
       setButtonStyle({
@@ -289,12 +295,17 @@ const FloatingButton: React.FC = () => {
       const maxLeft = window.innerWidth - 40;
       const maxTop = window.innerHeight - 40;
 
+      const finalLeft = Math.max(0, Math.min(newLeft, maxLeft));
+      const finalTop = Math.max(0, Math.min(newTop, maxTop));
+
       setButtonPosition({
-        top: `${Math.max(0, Math.min(newTop, maxTop))}px`,
-        left: `${Math.max(0, Math.min(newLeft, maxLeft))}px`,
+        top: `${finalTop}px`,
+        left: `${finalLeft}px`,
         right: 'auto',
         transform: 'none'
       });
+
+      // 드래그 중에는 툴바 숨기기 (이미 handleMouseMove에서 처리됨)
     }
   }, [isDragging, hasMoved]);
 
@@ -329,22 +340,44 @@ const FloatingButton: React.FC = () => {
         transform: 'translateY(-50%)'
       });
 
-      // 툴박스 다시 표시
+      // 툴바 다시 표시
       setTimeout(() => {
-        setToolboxStyle(prev => ({
-          ...prev,
-          opacity: 1,
-          pointerEvents: 'auto'
-        }));
-        positionToolbox();
-        // 버튼 위치 상태 업데이트
-        getCurrentSide();
+        if (toolbarRef.current) {
+          // 툴바 직접 표시
+          toolbarRef.current.style.opacity = '1';
+          toolbarRef.current.style.pointerEvents = 'auto';
+          toolbarRef.current.style.visibility = 'visible';
+          
+          // 버튼 위치 상태 업데이트 후 툴바 위치 업데이트
+          if (buttonRef.current) {
+            const buttonRect = buttonRef.current.getBoundingClientRect();
+            
+            // 버튼의 실제 위치를 기반으로 오른쪽/왼쪽 판단
+            const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+            const isRightSide = buttonCenterX > window.innerWidth / 2;
+            
+            const toolbarTop = buttonRect.top - 44;
+            
+            // CSS left/right 속성으로 툴바 위치 설정
+            if (isRightSide) {
+              // 오른쪽에 있을 때는 right: 0; left: auto;
+              toolbarRef.current.style.right = '0';
+              toolbarRef.current.style.left = 'auto';
+            } else {
+              // 왼쪽에 있을 때는 left: 0; right: auto;
+              toolbarRef.current.style.left = '0';
+              toolbarRef.current.style.right = 'auto';
+            }
+            
+            toolbarRef.current.style.top = `${toolbarTop}px`;
+          }
+        }
       }, 300);
     } else if (!hasMoved) {
       // 단순 클릭인 경우 - 툴박스가 숨겨지지 않았으므로 아무것도 하지 않음
       // 툴박스는 이미 보이는 상태를 유지
     }
-  }, [isDragging, hasMoved, positionToolbox]);
+  }, [isDragging, hasMoved]);
 
   // 사이드패널 관련 함수들
   const getSidePanelState = useCallback(async (): Promise<boolean> => {
@@ -407,7 +440,7 @@ const FloatingButton: React.FC = () => {
 
     try {
       setIsLoading(true);
-      setToolboxStyle(prev => ({
+      setToolbarStyle(prev => ({
         ...prev,
         opacity: 0.7,
         pointerEvents: 'none',
@@ -416,8 +449,11 @@ const FloatingButton: React.FC = () => {
 
       await clipAndScrapCurrentPage();
 
+      // 성공 애니메이션 표시
+      setShowSuccessAnimation(true);
+      
       // 성공 상태
-      setToolboxStyle(prev => ({
+      setToolbarStyle(prev => ({
         ...prev,
         backgroundColor: '#10b981',
         color: 'white',
@@ -425,7 +461,7 @@ const FloatingButton: React.FC = () => {
       }));
     } catch (error) {
       // 에러 상태
-      setToolboxStyle(prev => ({
+      setToolbarStyle(prev => ({
         ...prev,
         backgroundColor: '#ef4444',
         color: 'white',
@@ -437,7 +473,7 @@ const FloatingButton: React.FC = () => {
 
       // 3초 후 원래 상태로 복원
       setTimeout(() => {
-        setToolboxStyle({
+        setToolbarStyle({
           backgroundColor: 'white',
           color: '#333',
           borderColor: 'rgba(0, 0, 0, 0.1)',
@@ -445,13 +481,32 @@ const FloatingButton: React.FC = () => {
           pointerEvents: 'auto',
           cursor: 'pointer'
         });
+        setShowSuccessAnimation(false);
       }, 3000);
     }
   }, [isLoading]);
 
+  // 툴 그룹 정의 (handleScrap 함수 정의 후)
+  const toolGroups: ToolGroup[] = [
+    {
+      id: 'main',
+      position: 'top',
+      tools: [
+        {
+          id: 'scrap',
+          icon: <BsBook size={18} />,
+          label: '스크랩',
+          action: handleScrap,
+          shortcut: '⌘S',
+          tooltip: '현재 페이지를 스크랩합니다'
+        }
+      ]
+    }
+  ];
+
   // 메인 버튼 클릭 핸들러
   const handleButtonClick = useCallback(async () => {
-    if (hasMoved) return;
+    if (hasMoved || isDragging) return;
 
     const currentState = await getSidePanelState();
     
@@ -460,45 +515,9 @@ const FloatingButton: React.FC = () => {
     } else {
       await closeSidePanel();
     }
-  }, [hasMoved, getSidePanelState, openSidePanel, closeSidePanel]);
+  }, [hasMoved, isDragging, getSidePanelState, openSidePanel, closeSidePanel]);
 
-  // 툴박스 호버 효과
-  const handleToolboxMouseEnter = useCallback(() => {
-    setIsToolboxActive(true);
-    setToolboxStyle(prev => ({
-      ...prev,
-      backgroundColor: '#f5f5f5',
-      transform: 'scale(1.05)'
-    }));
-  }, []);
 
-  const handleToolboxMouseLeave = useCallback(() => {
-    setIsToolboxActive(false);
-    if (!isLoading) {
-      const currentBgColor = toolboxStyle.backgroundColor;
-      if (
-        currentBgColor !== 'rgb(16, 185, 129)' &&
-        currentBgColor !== 'rgb(239, 68, 68)'
-      ) {
-        setToolboxStyle(prev => ({
-          ...prev,
-          backgroundColor: 'white',
-          transform: 'scale(1)'
-        }));
-      } else {
-        setToolboxStyle(prev => ({
-          ...prev,
-          transform: 'scale(1)'
-        }));
-      }
-    }
-  }, [isLoading, toolboxStyle.backgroundColor]);
-
-  // 툴박스 클릭 핸들러
-  const handleToolboxClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    handleScrap();
-  }, [handleScrap]);
 
   // 닫기 버튼 클릭 핸들러
   const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {
@@ -522,18 +541,11 @@ const FloatingButton: React.FC = () => {
     }
   }, []);
 
-  // 뷰포트 변화 감지
-  const debouncePositionUpdate = useCallback((() => {
-    let timeoutId: number;
-    return () => {
-      clearTimeout(timeoutId);
-      timeoutId = window.setTimeout(() => {
-        if (!isDragging) {
-          positionToolbox();
-        }
-      }, 100);
-    };
-  })(), [isDragging, positionToolbox]);
+  // 툴 클릭 핸들러
+  const handleToolClick = useCallback((tool: Tool) => {
+    if (tool.disabled) return;
+    tool.action();
+  }, []);
 
   // 이벤트 리스너 설정
   useEffect(() => {
@@ -551,43 +563,19 @@ const FloatingButton: React.FC = () => {
     };
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
-  // 뷰포트 리사이즈 감지
-  useEffect(() => {
-    const handleResize = () => {
-      debouncePositionUpdate();
-    };
-
-    window.addEventListener('resize', handleResize);
-
-    // ResizeObserver 설정
-    resizeObserverRef.current = new ResizeObserver(() => {
-      debouncePositionUpdate();
-    });
-
-    if (document.documentElement) {
-      resizeObserverRef.current.observe(document.documentElement);
-    }
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-      if (resizeObserverRef.current) {
-        resizeObserverRef.current.disconnect();
-      }
-    };
-  }, [debouncePositionUpdate]);
-
-
-
-  // 초기 툴박스 위치 설정
+  // 초기 버튼 위치 상태 설정 및 버튼 표시 상태 변경 시 툴바 위치 재계산
   useEffect(() => {
     const timer = setTimeout(() => {
-      positionToolbox();
       // 초기 버튼 위치 상태 설정
       getCurrentSide();
+      // 툴바 위치 설정
+      positionToolbar();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [positionToolbox, getCurrentSide]);
+  }, [getCurrentSide, positionToolbar, settings.floatingButtonVisible]);
+
+
 
   // 버튼이 숨겨져야 하는 경우 렌더링하지 않음
   if (!settings.floatingButtonVisible) {
@@ -606,12 +594,12 @@ const FloatingButton: React.FC = () => {
           ...buttonStyle
         }}
         onMouseEnter={() => {
-          if (!isDragging && !isLoading && !isToolboxActive) {
+          if (!isDragging && !isLoading) {
             handleHover(true);
           }
         }}
         onMouseLeave={() => {
-          if (!isDragging && !isLoading && !isToolboxActive) {
+          if (!isDragging && !isLoading) {
             handleHover(false);
           }
         }}
@@ -637,28 +625,65 @@ const FloatingButton: React.FC = () => {
         </button>
       </button>
 
-      {/* 스크랩 툴박스 */}
+      {/* Monica 스타일 툴바 */}
       <div
-        ref={toolboxRef}
-        id="tyquill-toolbox"
-        className={`tyquill-tool-item ${styles.toolbox}`}
+        ref={toolbarRef}
+        id="tyquill-toolbar"
+        className={styles.toolbar}
         style={{
-          border: `1px solid ${toolboxStyle.borderColor}`,
-          ...toolboxPosition,
-          ...toolboxStyle
+          opacity: 1,
+          pointerEvents: 'auto'
         }}
-        onMouseEnter={handleToolboxMouseEnter}
-        onMouseLeave={handleToolboxMouseLeave}
-        onClick={handleToolboxClick}
       >
-        <BsBook
-          size={18}
-          className={`bi bi-book ${styles.toolboxIcon}`}
-          aria-label="스크랩 툴박스"
-          tabIndex={0}
-          role="img"
-        />
+        <div className={styles.toolGroup}>
+          {toolGroups.map((group) => (
+            <div key={group.id} className={styles.wrapper}>
+              <div className={styles.expandActionTool}>
+                {group.tools.map((tool) => (
+                  <motion.div 
+                    key={tool.id} 
+                    className={styles.nodeWrapper}
+                    onClick={() => handleToolClick(tool)}
+                    title={tool.tooltip}
+                    animate={showSuccessAnimation && tool.id === 'scrap' ? {
+                      scale: [1, 1.2, 1],
+                      backgroundColor: ["#ffffff", "#10b981", "#ffffff"],
+                    } : {}}
+                    transition={{
+                      duration: 0.8,
+                      ease: "easeOut"
+                    }}
+                  >
+                    <motion.div 
+                      className={styles.actionMenuInner}
+                      animate={showSuccessAnimation && tool.id === 'scrap' ? {
+                        color: ["#666", "#ffffff", "#666"]
+                      } : {}}
+                      transition={{
+                        duration: 0.8,
+                        ease: "easeOut"
+                      }}
+                    >
+                      {showSuccessAnimation && tool.id === 'scrap' ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ duration: 0.3, delay: 0.2 }}
+                        >
+                          <IoMdCheckmark size={18} />
+                        </motion.div>
+                      ) : (
+                        tool.icon
+                      )}
+                    </motion.div>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
+
     </>
   );
 };
