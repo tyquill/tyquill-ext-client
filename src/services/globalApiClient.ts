@@ -62,7 +62,7 @@ export class GlobalApiClient {
   private async performTokenRefresh(): Promise<void> {
     try {
       await authService.refreshToken();
-      console.log('✅ Token refreshed successfully');
+      // console.log('✅ Token refreshed successfully');
     } catch (error) {
       // 갱신 실패시 로그아웃 처리
       await authService.logout();
@@ -95,7 +95,7 @@ export class GlobalApiClient {
         // 401 에러 시 토큰 갱신 후 재시도
         if (response.status === 401 && !skipAuth) {
           try {
-            console.log('🔄 401 error detected, refreshing token...');
+            // console.log('🔄 401 error detected, refreshing token...');
             const newToken = await this.refreshAccessToken();
             headers['Authorization'] = `Bearer ${newToken}`;
             
@@ -105,7 +105,7 @@ export class GlobalApiClient {
               throw new Error(`API Error: ${retryResponse.status} ${retryResponse.statusText}`);
             }
             
-            console.log('✅ Request retried successfully with new token');
+            // console.log('✅ Request retried successfully with new token');
             return await retryResponse.json();
           } catch (refreshError) {
             console.error('❌ Token refresh failed:', refreshError);

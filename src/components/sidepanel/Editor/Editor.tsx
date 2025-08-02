@@ -541,7 +541,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
             editor.state.selection.to
           );
           if (selectedText.trim()) {
-            console.log('AI 편집 요청:', selectedText);
+            // console.log('AI 편집 요청:', selectedText);
             // TODO: AI 편집 기능 구현
           }
         }}

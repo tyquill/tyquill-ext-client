@@ -163,13 +163,13 @@ const FloatingButton: React.FC = () => {
     
     const shouldHide = (isYouTubePage && (isYouTubeFullscreen || isYouTubeFullscreenActive)) || isGeneralFullscreen;
     
-    console.log('🔍 유튜브 전체화면 감지:', {
-      isYouTubePage,
-      isYouTubeFullscreen,
-      isYouTubeFullscreenActive,
-      isGeneralFullscreen,
-      shouldHide
-    });
+    // console.log('🔍 유튜브 전체화면 감지:', {
+    //   isYouTubePage,
+    //   isYouTubeFullscreen,
+    //   isYouTubeFullscreenActive,
+    //   isGeneralFullscreen,
+    //   shouldHide
+    // });
     
     setIsVisible(!shouldHide);
   }, []);
@@ -576,7 +576,7 @@ const FloatingButton: React.FC = () => {
         tyquillSettings: updatedSettings
       });
       
-      console.log('플로팅 버튼 숨김 설정 저장됨');
+      // console.log('플로팅 버튼 숨김 설정 저장됨');
     } catch (error) {
       console.error('플로팅 버튼 숨김 설정 실패:', error);
     }
