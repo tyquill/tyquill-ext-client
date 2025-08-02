@@ -68,3 +68,38 @@
   display: block;
   flex-shrink: 0;
 }
+
+.closeButton {
+  position: absolute;
+  top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease, left 0.3s ease, right 0.3s ease;
+  z-index: 1000001;
+  font-size: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.floatingButton:hover .closeButton {
+  opacity: 1;
+}
+
+.closeButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+}

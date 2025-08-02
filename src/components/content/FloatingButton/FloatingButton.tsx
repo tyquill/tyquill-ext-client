@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 import styles from './FloatingButton.module.css';
 import { BsBook } from 'react-icons/bs';
+import { IoClose } from 'react-icons/io5';
 
 // 타입 정의
 type ButtonStyle = {
@@ -66,6 +67,12 @@ const FloatingButton: React.FC = () => {
     floatingButtonVisible: true
   });
 
+  const [buttonSide, setButtonSide] = useState<'left' | 'right'>('right');
+  const [closeButtonPosition, setCloseButtonPosition] = useState({
+    left: 'auto',
+    right: '-6px'
+  });
+
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const hiddenButtonWidth = 40;
@@ -105,17 +112,44 @@ const FloatingButton: React.FC = () => {
       window.removeEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
     };
   }, []);
-  
 
-  // 현재 버튼 위치 확인
+  // 현재 버튼 위치 확인 및 상태 업데이트
   const getCurrentSide = useCallback((): 'left' | 'right' => {
     if (!buttonRef.current) return 'right';
     const computedStyle = getComputedStyle(buttonRef.current);
-    return computedStyle.right === 'auto' ||
+    const currentSide = computedStyle.right === 'auto' ||
       computedStyle.left === `-${hiddenButtonWidth}px`
       ? 'left'
       : 'right';
+    
+    // 상태 업데이트
+    setButtonSide(currentSide);
+    return currentSide;
   }, []);
+
+  // 닫기 버튼 위치 업데이트
+  const updateCloseButtonPosition = useCallback(() => {
+    setCloseButtonPosition({
+      left: buttonSide === 'left' ? 'auto' : '-6px',
+      right: buttonSide === 'left' ? '-6px' : 'auto'
+    });
+  }, [buttonSide]);
+
+  // 버튼 위치 변경 시 닫기 버튼 위치 업데이트
+  useEffect(() => {
+    updateCloseButtonPosition();
+  }, [buttonSide, updateCloseButtonPosition]);
+
+  // 설정 변경 시 hover 상태 리셋
+  useEffect(() => {
+    if (settings.floatingButtonVisible) {
+      // 플로팅 버튼이 다시 표시될 때 hover 상태 리셋
+      setButtonPosition(prev => ({
+        ...prev,
+        transform: prev.top === '50%' ? 'translateY(-50%)' : 'none'
+      }));
+    }
+  }, [settings.floatingButtonVisible]);
 
   // 툴박스 위치 계산 (버튼의 실제 보이는 위치 기준, hover 효과 제외)
   const positionToolbox = useCallback(() => {
@@ -303,6 +337,8 @@ const FloatingButton: React.FC = () => {
           pointerEvents: 'auto'
         }));
         positionToolbox();
+        // 버튼 위치 상태 업데이트
+        getCurrentSide();
       }, 300);
     } else if (!hasMoved) {
       // 단순 클릭인 경우 - 툴박스가 숨겨지지 않았으므로 아무것도 하지 않음
@@ -464,6 +500,28 @@ const FloatingButton: React.FC = () => {
     handleScrap();
   }, [handleScrap]);
 
+  // 닫기 버튼 클릭 핸들러
+  const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      // 설정을 false로 변경
+      const currentSettings = await chrome.storage.sync.get(['tyquillSettings']);
+      const updatedSettings = {
+        ...currentSettings.tyquillSettings,
+        floatingButtonVisible: false
+      };
+      
+      await chrome.storage.sync.set({
+        tyquillSettings: updatedSettings
+      });
+      
+      console.log('플로팅 버튼 숨김 설정 저장됨');
+    } catch (error) {
+      console.error('플로팅 버튼 숨김 설정 실패:', error);
+    }
+  }, []);
+
   // 뷰포트 변화 감지
   const debouncePositionUpdate = useCallback((() => {
     let timeoutId: number;
@@ -524,10 +582,12 @@ const FloatingButton: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       positionToolbox();
+      // 초기 버튼 위치 상태 설정
+      getCurrentSide();
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [positionToolbox]);
+  }, [positionToolbox, getCurrentSide]);
 
   // 버튼이 숨겨져야 하는 경우 렌더링하지 않음
   if (!settings.floatingButtonVisible) {
@@ -564,7 +624,17 @@ const FloatingButton: React.FC = () => {
           className={styles.logoImage}
           draggable={false}
         />
-        {/* 텍스트 제거 - 버튼 최소 너비로 hover 효과 보장 */}
+        
+        {/* 닫기 버튼 - 호버 시에만 표시 */}
+        <button
+          className={styles.closeButton}
+          style={closeButtonPosition}
+          onClick={handleCloseButtonClick}
+          aria-label="플로팅 버튼 숨기기"
+          title="플로팅 버튼 숨기기"
+        >
+          <IoClose size={12} />
+        </button>
       </button>
 
       {/* 스크랩 툴박스 */}
