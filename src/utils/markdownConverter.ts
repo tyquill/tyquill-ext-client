@@ -209,6 +209,63 @@ export const markdownToHtml = (markdown: string): string => {
     .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     // 줄바꿈
     .replace(/\n/g, '<br>');
-}; 
+};
+
+/**
+ * 마크다운을 플레인 텍스트로 변환하고 미리보기용으로 자르기
+ * @param markdownContent 마크다운 문자열
+ * @param maxLength 최대 길이 (기본값: 150)
+ * @returns 플레인 텍스트 미리보기
+ */
+export const markdownToPlainTextPreview = (markdownContent: string, maxLength: number = 150): string => {
+  if (!markdownContent) return '';
+
+  // 마크다운 문법 제거
+  let plainText = markdownContent
+    // 헤더 제거 (# ## ### 등)
+    .replace(/^#{1,6}\s+(.*)$/gm, '$1')
+    // 볼드 제거 (**text** or __text__)
+    .replace(/\*\*(.*?)\*\*/g, '$1')
+    .replace(/__(.*?)__/g, '$1')
+    // 이탤릭 제거 (*text* or _text_)
+    .replace(/\*(.*?)\*/g, '$1')
+    .replace(/_(.*?)_/g, '$1')
+    // 취소선 제거 (~~text~~)
+    .replace(/~~(.*?)~~/g, '$1')
+    // 링크 제거 [text](url)
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // 이미지 제거 ![alt](url)
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
+    // 코드 블록 제거 ```code```
+    .replace(/```[\s\S]*?```/g, '')
+    // 인라인 코드 제거 `code`
+    .replace(/`([^`]+)`/g, '$1')
+    // 인용문 제거 > text
+    .replace(/^>\s+(.*)$/gm, '$1')
+    // 리스트 마커 제거 - * +
+    .replace(/^[-*+]\s+(.*)$/gm, '$1')
+    // 번호 리스트 제거 1. text
+    .replace(/^\d+\.\s+(.*)$/gm, '$1')
+    // 수평선 제거 --- or ***
+    .replace(/^[-*]{3,}$/gm, '')
+    // 여러 개의 연속된 공백을 하나로
+    .replace(/\s+/g, ' ')
+    // 여러 개의 연속된 줄바꿈을 하나로
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+
+  // 길이 제한
+  if (plainText.length > maxLength) {
+    // 단어 단위로 자르기 (더 자연스러운 절단)
+    const truncated = plainText.substring(0, maxLength);
+    const lastSpaceIndex = truncated.lastIndexOf(' ');
+    if (lastSpaceIndex > maxLength * 0.8) {
+      return truncated.substring(0, lastSpaceIndex) + '...';
+    }
+    return truncated + '...';
+  }
+
+  return plainText;
+};
 
  

@@ -20,6 +20,13 @@ declare namespace chrome {
           sendResponse: (response?: any) => void
         ) => void
       ) => void;
+      removeListener: (
+        callback: (
+          request: any,
+          sender: MessageSender,
+          sendResponse: (response?: any) => void
+        ) => void
+      ) => void;
     };
   }
 

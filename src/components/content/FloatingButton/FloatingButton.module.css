@@ -8,6 +8,7 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
   background-color: white;
   box-shadow: 0 3.2px 12px 0 rgba(0, 0, 0, 0.08), 0 5px 25px 0 rgba(0, 0, 0, 0.04);
+  transition: none;
 }
 
 .floatingButton.dragging {
@@ -17,7 +18,7 @@
 
 .floatingButton:not(.dragging) {
   cursor: grab;
-  transition: right 0.3s ease, left 0.3s ease, transform 0.2s ease-in-out, border-radius 0.3s ease, width 0.3s ease, height 0.3s ease, padding 0.3s ease;
+  transition: right 0.3s ease, left 0.3s ease, border-radius 0.3s ease, width 0.3s ease, height 0.3s ease, padding 0.3s ease;
 }
 
 .floatingButton.moved {
@@ -35,36 +36,139 @@
   pointer-events: none;
 }
 
-.toolbox {
+/* 단축키 표시 */
+.shortcut {
+  font-size: 11px;
+  color: #666;
+  font-weight: 500;
+  margin-left: 4px;
+  opacity: 0.8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.toolbar {
   position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   z-index: 999999;
+  width: auto;
+  min-width: 36px;
+}
+
+.closeButton {
+  position: absolute;
+  top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background-color 0.2s ease, left 0.3s ease, right 0.3s ease;
+  z-index: 1000001;
+  font-size: 0;
+  line-height: 1;
+  padding: 0;
+}
+
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.8);
+}
+
+.floatingButton:hover .closeButton {
+  opacity: 1;
+}
+
+.closeButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+
+
+/* Monica 스타일 툴바 컴포넌트들 */
+.wrapper {
+  display: flex;
+  justify-content: end;
+  margin-bottom: 4px;
+}
+
+.wrapper:last-child {
+  margin-bottom: 0;
+}
+
+.expandActionTool {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nodeWrapper {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  min-width: 36px;
-  min-height: 36px;
-  box-sizing: border-box;
   border-radius: 50%;
-  transition: background-color 0.2s ease, transform 0.2s ease, top 0.3s ease, left 0.3s ease, right 0.3s ease;
-  user-select: none;
-  padding: 8px;
-  box-shadow: 0 3.2px 12px 0 rgba(0, 0, 0, 0.08), 0 5px 25px 0 rgba(0, 0, 0, 0.04);
-  visibility: visible;
-  margin: 0;
-  font-size: 0;
-  line-height: 1;
-  text-align: center;
-  vertical-align: baseline;
-  outline: none;
-  text-decoration: none;
-  font-family: inherit;
-  font-weight: normal;
-  font-style: normal;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
-.toolboxIcon {
-  display: block;
-  flex-shrink: 0;
+.nodeWrapper:hover {
+  background: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
+
+.actionMenuInner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #666;
+}
+
+.nodeWrapper:hover .actionMenuInner {
+  color: #333;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .expandedToolbar {
+    min-width: 260px;
+    max-width: 280px;
+    padding: 12px;
+  }
+  
+  .toolButton {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+  
+  .siteTitle {
+    font-size: 12px;
+  }
+}
+

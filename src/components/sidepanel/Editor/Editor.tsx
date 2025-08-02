@@ -532,6 +532,8 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
         <RiSubtractLine size={14} />
       </button>
       <div style={{ width: '1px', height: '20px', backgroundColor: '#e0e0e0', margin: '0 4px' }}></div>
+      {/* AI 편집 기능 추가 예정 */}
+      {/*
       <button
         onClick={() => {
           const selectedText = editor.state.doc.textBetween(
@@ -560,7 +562,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
       >
         <TbMoodPuzzled size={14} />
         <span style={{ marginLeft: '4px' }}>AI</span>
-      </button>
+      </button> */}
     </div>
   );
 };

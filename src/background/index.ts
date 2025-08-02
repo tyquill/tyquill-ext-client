@@ -176,5 +176,135 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
   }
 }
 
+// 플로팅 버튼 표시 상태 관리
+let isFloatingButtonVisible = true;
+
+// 설정 로드
+const loadSettings = async () => {
+  try {
+    const result = await chrome.storage.sync.get(['tyquillSettings']);
+    if (result.tyquillSettings?.floatingButtonVisible !== undefined) {
+      isFloatingButtonVisible = result.tyquillSettings.floatingButtonVisible;
+    }
+  } catch (error) {
+    console.error('설정 로드 실패:', error);
+  }
+};
+
+// 설정 변경 감지
+chrome.storage.onChanged.addListener((changes) => {
+  if (changes.tyquillSettings?.newValue?.floatingButtonVisible !== undefined) {
+    isFloatingButtonVisible = changes.tyquillSettings.newValue.floatingButtonVisible;
+    
+    // Context Menu 업데이트
+    createContextMenus();
+    
+    console.log('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
+  }
+});
+
+// Context Menu 생성
+const createContextMenus = () => {
+  // 기존 메뉴 제거
+  chrome.contextMenus.removeAll();
+  
+  // Tyquill 메뉴 생성
+  chrome.contextMenus.create({
+    id: 'tyquill',
+    title: 'Tyquill',
+    contexts: ['all']
+  });
+  
+  // 플로팅 버튼 표시/숨김 서브메뉴
+  chrome.contextMenus.create({
+    id: 'toggleFloatingButton',
+    parentId: 'tyquill',
+    title: isFloatingButtonVisible ? '👁️ 버튼 숨기기' : '👁️‍🗨️ 버튼 표시하기',
+    contexts: ['all']
+  });
+  
+  // 구분선
+  chrome.contextMenus.create({
+    id: 'separator1',
+    parentId: 'tyquill',
+    type: 'separator',
+    contexts: ['all']
+  });
+  
+  // 스크랩 메뉴
+  chrome.contextMenus.create({
+    id: 'scrapCurrentPage',
+    parentId: 'tyquill',
+    title: '📋 이 페이지 스크랩',
+    contexts: ['all']
+  });
+};
+
+// Context Menu 클릭 처리
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  if (!tab?.id) return;
+  
+  switch (info.menuItemId) {
+    case 'toggleFloatingButton':
+      try {
+        const newValue = !isFloatingButtonVisible;
+        
+        // 기존 설정을 유지하면서 업데이트
+        const currentSettings = await chrome.storage.sync.get(['tyquillSettings']);
+        const updatedSettings = {
+          ...currentSettings.tyquillSettings,
+          floatingButtonVisible: newValue
+        };
+        
+        await chrome.storage.sync.set({
+          tyquillSettings: updatedSettings
+        });
+        
+        isFloatingButtonVisible = newValue;
+        
+        // 모든 탭에 설정 변경 알림
+        const allTabs = await chrome.tabs.query({});
+        for (const currentTab of allTabs) {
+          if (currentTab.id) {
+            try {
+              await chrome.tabs.sendMessage(currentTab.id, {
+                type: 'SETTINGS_CHANGED',
+                settings: { floatingButtonVisible: newValue }
+              });
+            } catch (error) {
+              // Content script가 로드되지 않은 탭은 무시
+            }
+          }
+        }
+        
+        // Context Menu 업데이트
+        createContextMenus();
+        
+        // console.log('플로팅 버튼 설정 변경됨:', newValue);
+      } catch (error) {
+        console.error('플로팅 버튼 설정 변경 실패:', error);
+      }
+      break;
+      
+    case 'scrapCurrentPage':
+      try {
+        await handleClipAndScrapCurrentPage({ tab });
+      } catch (error) {
+        console.error('스크랩 실패:', error);
+      }
+      break;
+  }
+});
+
+chrome.runtime.onInstalled.addListener(async () => {
+  // 초기 설정 로드
+  await loadSettings();
+  
+  // Context Menu 생성
+  createContextMenus();
+  
+  // console.log('Tyquill Extension installed with context menus');
+});
+
 
 export {}; 

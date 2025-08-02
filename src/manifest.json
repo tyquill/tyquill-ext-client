@@ -1,13 +1,14 @@
 {
   "manifest_version": 3,
   "name": "Tyquill",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다.",
   "permissions": [
     "storage", 
     "sidePanel", 
     "activeTab", 
-    "scripting"
+    "scripting",
+    "contextMenus"
   ],
   "host_permissions": [
     "https://maily.so/*",
@@ -41,5 +42,6 @@
       "matches": ["<all_urls>"],
       "js": ["content/index.js"]
     }
-  ]
+  ],
+  "options_page": "options.html"
 } 
