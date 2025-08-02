@@ -129,7 +129,7 @@ const ScrapPage: React.FC = () => {
       // 공통 헬퍼를 통해 스크랩 처리
       const scrapResponse = await clipAndScrapCurrentPage();
 
-      console.log('✅ 스크랩 완료:', scrapResponse);
+      // console.log('✅ 스크랩 완료:', scrapResponse);
       setClipStatus('success');
       showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
       

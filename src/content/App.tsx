@@ -8,10 +8,10 @@ const App: React.FC = () => {
   // Background Script로부터의 메시지 처리
   useEffect(() => {
     const handleMessage = (request: any, sender: any, sendResponse: any) => {
-      console.log('Content Script 메시지 수신:', request);
+      // console.log('Content Script 메시지 수신:', request);
       
       if (request.type === 'SETTINGS_CHANGED') {
-        console.log('설정 변경 감지:', request.settings);
+        // console.log('설정 변경 감지:', request.settings);
         
         // 설정 변경 시 CustomEvent를 통해 FloatingButton에 직접 알림
         window.dispatchEvent(new CustomEvent('tyquill-settings-changed', {

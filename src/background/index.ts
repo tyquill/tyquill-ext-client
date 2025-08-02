@@ -199,7 +199,7 @@ chrome.storage.onChanged.addListener((changes) => {
     // Context Menu 업데이트
     createContextMenus();
     
-    console.log('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
+    // console.log('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
   }
 });
 
