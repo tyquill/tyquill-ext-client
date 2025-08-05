@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 import styles from './FloatingButton.module.css';
@@ -6,6 +5,7 @@ import { BsBook } from 'react-icons/bs';
 import { IoClose } from 'react-icons/io5';
 import { IoMdCheckmark } from 'react-icons/io';
 import { motion } from 'framer-motion';
+import Tooltip from '../../common/Tooltip'; // Tooltip 컴포넌트 import
 
 // 타입 정의
 type ButtonStyle = {
@@ -53,6 +53,7 @@ const FloatingButton: React.FC = () => {
   const [hasMoved, setHasMoved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false); // 사이드패널 상태 추가
   
   const [buttonPosition, setButtonPosition] = useState({
     top: '50%',
@@ -95,9 +96,30 @@ const FloatingButton: React.FC = () => {
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
   const hiddenButtonWidth = 40;
 
+  // 사이드패널 상태 가져오기
+  const getSidePanelState = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getSidePanelState' });
+      return response?.isOpen || false;
+    } catch (error) {
+      console.error('❌ Content: Failed to get side panel state:', error);
+      return false;
+    }
+  }, []);
 
+  // 사이드패널 상태 폴링
+  useEffect(() => {
+    const checkSidePanelStatus = async () => {
+      const isOpen = await getSidePanelState();
+      setIsSidePanelOpen(isOpen);
+    };
 
-  // 툴 그룹 정의는 handleScrap 함수 정의 후에 이동
+    checkSidePanelStatus(); // 초기 확인
+    const interval = setInterval(checkSidePanelStatus, 1000); // 1초마다 확인
+
+    return () => clearInterval(interval);
+  }, [getSidePanelState]);
+
 
   // 설정 로드 및 변경 감지
   useEffect(() => {
@@ -179,7 +201,7 @@ const FloatingButton: React.FC = () => {
     if (!buttonRef.current) return 'right';
     const computedStyle = getComputedStyle(buttonRef.current);
     const currentSide = computedStyle.right === 'auto' ||
-      computedStyle.left === `-${hiddenButtonWidth}px`
+      computedStyle.left.startsWith('-')
       ? 'left'
       : 'right';
     
@@ -246,33 +268,13 @@ const FloatingButton: React.FC = () => {
     const yTransform = buttonPosition.top === '50%' || buttonPosition.transform?.includes('translateY(-50%)') ? 'translateY(-50%)' : '';
     
     if (currentSide === 'left') {
-      if (isEntering) {
-        const transforms = [yTransform, `translateX(${hiddenButtonWidth}px)`, 'scale(1.02)'].filter(Boolean);
-        setButtonPosition(prev => ({
-          ...prev,
-          transform: transforms.join(' ')
-        }));
-      } else {
-        const transforms = [yTransform, 'scale(1)'].filter(Boolean);
-        setButtonPosition(prev => ({
-          ...prev,
-          transform: transforms.join(' ')
-        }));
-      }
+      const xTransform = isEntering ? `translateX(${hiddenButtonWidth}px)` : '';
+      const scale = isEntering ? 'scale(1.02)' : 'scale(1)';
+      setButtonPosition(prev => ({ ...prev, transform: [yTransform, xTransform, scale].filter(Boolean).join(' ') }));
     } else {
-      if (isEntering) {
-        const transforms = [yTransform, `translateX(-${hiddenButtonWidth}px)`, 'scale(1.02)'].filter(Boolean);
-        setButtonPosition(prev => ({
-          ...prev,
-          transform: transforms.join(' ')
-        }));
-      } else {
-        const transforms = [yTransform, 'scale(1)'].filter(Boolean);
-        setButtonPosition(prev => ({
-          ...prev,
-          transform: transforms.join(' ')
-        }));
-      }
+      const xTransform = isEntering ? `translateX(-${hiddenButtonWidth}px)` : '';
+      const scale = isEntering ? 'scale(1.02)' : 'scale(1)';
+      setButtonPosition(prev => ({ ...prev, transform: [yTransform, xTransform, scale].filter(Boolean).join(' ') }));
     }
   }, [buttonPosition.top, buttonPosition.transform, getCurrentSide]);
 
@@ -359,9 +361,7 @@ const FloatingButton: React.FC = () => {
       // 실제 드래그가 발생한 경우
       setHasMoved(false); // 드래그 완료 후 hasMoved 리셋
       const rect = buttonRef.current.getBoundingClientRect();
-      const buttonCenterX = rect.left + rect.width / 2;
-      const isLeftSide = buttonCenterX < window.innerWidth / 2;
-
+      const isLeftSide = (rect.left + rect.width / 2) < window.innerWidth / 2;
       const currentTop = rect.top;
 
       setButtonStyle({
@@ -388,195 +388,73 @@ const FloatingButton: React.FC = () => {
           toolbarRef.current.style.opacity = '1';
           toolbarRef.current.style.pointerEvents = 'auto';
           toolbarRef.current.style.visibility = 'visible';
-          
-          // 버튼 위치 상태 업데이트 후 툴바 위치 업데이트
-          if (buttonRef.current) {
-            const buttonRect = buttonRef.current.getBoundingClientRect();
-            
-            // 버튼의 실제 위치를 기반으로 오른쪽/왼쪽 판단
-            const buttonCenterX = buttonRect.left + buttonRect.width / 2;
-            const isRightSide = buttonCenterX > window.innerWidth / 2;
-            
-            const toolbarTop = buttonRect.top - 44;
-            
-            // CSS left/right 속성으로 툴바 위치 설정
-            if (isRightSide) {
-              // 오른쪽에 있을 때는 right: 0; left: auto;
-              toolbarRef.current.style.right = '0';
-              toolbarRef.current.style.left = 'auto';
-            } else {
-              // 왼쪽에 있을 때는 left: 0; right: auto;
-              toolbarRef.current.style.left = '0';
-              toolbarRef.current.style.right = 'auto';
-            }
-            
-            toolbarRef.current.style.top = `${toolbarTop}px`;
-          }
+          positionToolbar();
         }
       }, 300);
-    } else if (!hasMoved) {
-      // 단순 클릭인 경우 - 툴박스가 숨겨지지 않았으므로 아무것도 하지 않음
-      // 툴박스는 이미 보이는 상태를 유지
     }
-  }, [isDragging, hasMoved]);
+  }, [isDragging, hasMoved, positionToolbar]);
 
-  // 사이드패널 관련 함수들
-  const getSidePanelState = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'getSidePanelState',
-      });
-
-      if (response?.success) {
-        return response.isOpen;
-      } else {
-        console.error('❌ Content: Failed to get side panel state:', response?.error);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Content: Failed to send message to background:', error);
-      return false;
-    }
+  // 사이드패널 열기/닫기
+  const openSidePanel = useCallback(async () => {
+    await chrome.runtime.sendMessage({ action: 'openSidePanel' });
+    setIsSidePanelOpen(true);
   }, []);
 
-  const openSidePanel = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'openSidePanel',
-      });
-
-      if (response?.success) {
-        return true;
-      } else {
-        console.error('❌ Content: Failed to open side panel:', response?.error);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Content: Failed to send message to background:', error);
-      return false;
-    }
-  }, []);
-
-  const closeSidePanel = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await chrome.runtime.sendMessage({
-        action: 'closeSidePanel',
-      });
-
-      if (response?.success) {
-        return true;
-      } else {
-        console.error('❌ Content: Failed to close side panel:', response?.error);
-        return false;
-      }
-    } catch (error) {
-      console.error('❌ Content: Failed to send message to background:', error);
-      return false;
-    }
+  const closeSidePanel = useCallback(async () => {
+    await chrome.runtime.sendMessage({ action: 'closeSidePanel' });
+    setIsSidePanelOpen(false);
   }, []);
 
   // 스크랩 처리
   const handleScrap = useCallback(async () => {
     if (isLoading) return;
+    setIsLoading(true);
+    setToolbarStyle(prev => ({ ...prev, opacity: 0.7, pointerEvents: 'none', cursor: 'wait' }));
 
     try {
-      setIsLoading(true);
-      setToolbarStyle(prev => ({
-        ...prev,
-        opacity: 0.7,
-        pointerEvents: 'none',
-        cursor: 'wait'
-      }));
-
       await clipAndScrapCurrentPage();
 
       // 성공 애니메이션 표시
       setShowSuccessAnimation(true);
-      
-      // 성공 상태
-      setToolbarStyle(prev => ({
-        ...prev,
-        backgroundColor: '#10b981',
-        color: 'white',
-        borderColor: '#10b981'
-      }));
+      setToolbarStyle(prev => ({ ...prev, backgroundColor: '#10b981', color: 'white', borderColor: '#10b981' }));
     } catch (error) {
-      // 에러 상태
-      setToolbarStyle(prev => ({
-        ...prev,
-        backgroundColor: '#ef4444',
-        color: 'white',
-        borderColor: '#ef4444'
-      }));
+      setToolbarStyle(prev => ({ ...prev, backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }));
       console.error('❌ 스크랩 실패:', error);
     } finally {
       setIsLoading(false);
-
-      // 3초 후 원래 상태로 복원
       setTimeout(() => {
         setToolbarStyle({
-          backgroundColor: 'white',
-          color: '#333',
-          borderColor: 'rgba(0, 0, 0, 0.1)',
-          opacity: 1,
-          pointerEvents: 'auto',
-          cursor: 'pointer'
+          backgroundColor: 'white', color: '#333', borderColor: 'rgba(0, 0, 0, 0.1)',
+          opacity: 1, pointerEvents: 'auto', cursor: 'pointer'
         });
         setShowSuccessAnimation(false);
       }, 3000);
     }
   }, [isLoading]);
 
-  // 툴 그룹 정의 (handleScrap 함수 정의 후)
-  const toolGroups: ToolGroup[] = [
-    {
-      id: 'main',
-      position: 'top',
-      tools: [
-        {
-          id: 'scrap',
-          icon: <BsBook size={18} />,
-          label: '스크랩',
-          action: handleScrap,
-          shortcut: '⌘S',
-          tooltip: '현재 페이지를 스크랩합니다'
-        }
-      ]
-    }
-  ];
+  // 툴 그룹 정의
+  const toolGroups: ToolGroup[] = [{
+    id: 'main', position: 'top',
+    tools: [{
+      id: 'scrap', icon: <BsBook size={18} />, label: '스크랩', action: handleScrap,
+      shortcut: '⌘S', tooltip: '현재 페이지 스크랩하기'
+    }]
+  }];
 
-  // 메인 버튼 클릭 핸들러
+  // 메인 버튼 클릭
   const handleButtonClick = useCallback(async () => {
     if (hasMoved || isDragging) return;
+    isSidePanelOpen ? await closeSidePanel() : await openSidePanel();
+  }, [hasMoved, isDragging, isSidePanelOpen, openSidePanel, closeSidePanel]);
 
-    const currentState = await getSidePanelState();
-    
-    if (!currentState) {
-      await openSidePanel();
-    } else {
-      await closeSidePanel();
-    }
-  }, [hasMoved, isDragging, getSidePanelState, openSidePanel, closeSidePanel]);
-
-
-
-  // 닫기 버튼 클릭 핸들러
+  // 닫기 버튼 클릭
   const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
-    
     try {
-      // 설정을 false로 변경
-      const currentSettings = await chrome.storage.sync.get(['tyquillSettings']);
-      const updatedSettings = {
-        ...currentSettings.tyquillSettings,
-        floatingButtonVisible: false
-      };
-      
+      const { tyquillSettings } = await chrome.storage.sync.get('tyquillSettings');
       await chrome.storage.sync.set({
-        tyquillSettings: updatedSettings
+        tyquillSettings: { ...tyquillSettings, floatingButtonVisible: false }
       });
-      
-      // console.log('플로팅 버튼 숨김 설정 저장됨');
     } catch (error) {
       console.error('플로팅 버튼 숨김 설정 실패:', error);
     }
@@ -612,42 +490,22 @@ const FloatingButton: React.FC = () => {
       // 툴바 위치 설정
       positionToolbar();
     }, 100);
-
     return () => clearTimeout(timer);
   }, [getCurrentSide, positionToolbar, settings.floatingButtonVisible]);
 
   // 전체화면 상태 감지
   useEffect(() => {
-    const handleFullscreenChange = () => {
-      checkYouTubeFullscreen();
-    };
-
-    // 초기 상태 확인
-    checkYouTubeFullscreen();
-
-    // 전체화면 변경 이벤트 리스너
+    const handleFullscreenChange = () => checkYouTubeFullscreen();
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    // ... (other fullscreen listeners)
+    const observer = new MutationObserver(() => checkYouTubeFullscreen());
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'aria-pressed'] });
 
-    // 유튜브 전체화면 버튼 클릭 감지
-    const observer = new MutationObserver(() => {
-      checkYouTubeFullscreen();
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['class', 'aria-pressed']
-    });
+    checkYouTubeFullscreen();
 
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      // ... (other fullscreen listeners)
       observer.disconnect();
     };
   }, [checkYouTubeFullscreen]);
@@ -659,25 +517,13 @@ const FloatingButton: React.FC = () => {
 
   return (
     <>
-      {/* 메인 플로팅 버튼 */}
       <button
         ref={buttonRef}
         id="tyquill-floating-button"
         className={`${styles.floatingButton} ${isDragging ? styles.dragging : ''} ${hasMoved ? styles.moved : ''}`}
-        style={{
-          ...buttonPosition,
-          ...buttonStyle
-        }}
-        onMouseEnter={() => {
-          if (!isDragging && !isLoading) {
-            handleHover(true);
-          }
-        }}
-        onMouseLeave={() => {
-          if (!isDragging && !isLoading) {
-            handleHover(false);
-          }
-        }}
+        style={{ ...buttonPosition, ...buttonStyle }}
+        onMouseEnter={() => !isDragging && !isLoading && handleHover(true)}
+        onMouseLeave={() => !isDragging && !isLoading && handleHover(false)}
         onMouseDown={handleMouseDown}
         onClick={handleButtonClick}
       >
@@ -688,13 +534,11 @@ const FloatingButton: React.FC = () => {
           draggable={false}
         />
         
-        {/* 닫기 버튼 - 호버 시에만 표시 */}
         <button
           className={styles.closeButton}
           style={closeButtonPosition}
           onClick={handleCloseButtonClick}
           aria-label="플로팅 버튼 숨기기"
-          title="플로팅 버튼 숨기기"
         >
           <IoClose size={12} />
         </button>
@@ -705,60 +549,43 @@ const FloatingButton: React.FC = () => {
         ref={toolbarRef}
         id="tyquill-toolbar"
         className={styles.toolbar}
-        style={{
-          opacity: 1,
-          pointerEvents: 'auto'
-        }}
+        style={{ opacity: 1, pointerEvents: 'auto' }}
       >
         <div className={styles.toolGroup}>
           {toolGroups.map((group) => (
             <div key={group.id} className={styles.wrapper}>
               <div className={styles.expandActionTool}>
                 {group.tools.map((tool) => (
-                  <motion.div 
-                    key={tool.id} 
-                    className={styles.nodeWrapper}
-                    onClick={() => handleToolClick(tool)}
-                    title={tool.tooltip}
-                    animate={showSuccessAnimation && tool.id === 'scrap' ? {
-                      scale: [1, 1.2, 1],
-                      backgroundColor: ["#ffffff", "#10b981", "#ffffff"],
-                    } : {}}
-                    transition={{
-                      duration: 0.8,
-                      ease: "easeOut"
-                    }}
-                  >
+                   <Tooltip key={tool.id} content={tool.tooltip || ''} side={buttonSide === 'left' ? 'right' : 'left'}>
                     <motion.div 
-                      className={styles.actionMenuInner}
+                      className={styles.nodeWrapper}
+                      onClick={() => handleToolClick(tool)}
                       animate={showSuccessAnimation && tool.id === 'scrap' ? {
-                        color: ["#666", "#ffffff", "#666"]
+                        scale: [1, 1.2, 1], backgroundColor: ["#ffffff", "#10b981", "#ffffff"],
                       } : {}}
-                      transition={{
-                        duration: 0.8,
-                        ease: "easeOut"
-                      }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
                     >
-                      {showSuccessAnimation && tool.id === 'scrap' ? (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          transition={{ duration: 0.3, delay: 0.2 }}
-                        >
-                          <IoMdCheckmark size={18} />
-                        </motion.div>
-                      ) : (
-                        tool.icon
-                      )}
+                      <motion.div 
+                        className={styles.actionMenuInner}
+                        animate={showSuccessAnimation && tool.id === 'scrap' ? {
+                          color: ["#666", "#ffffff", "#666"]
+                        } : {}}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                      >
+                        {showSuccessAnimation && tool.id === 'scrap' ? (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.3, delay: 0.2 }}>
+                            <IoMdCheckmark size={18} />
+                          </motion.div>
+                        ) : ( tool.icon )}
+                      </motion.div>
                     </motion.div>
-                  </motion.div>
+                  </Tooltip>
                 ))}
               </div>
             </div>
           ))}
         </div>
       </div>
-
     </>
   );
 };

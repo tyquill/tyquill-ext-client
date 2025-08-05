@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
+import Tooltip from '../../components/common/Tooltip';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -411,9 +412,11 @@ const ScrapPage: React.FC = () => {
           <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitle}>
             {scrap.title}
           </a>
-          <button onClick={onDelete} className={styles.deleteButton}>
-            <IoTrash />
-          </button>
+          <Tooltip content="삭제" side='bottom'>
+            <button onClick={onDelete} className={styles.deleteButton}>
+              <IoTrash />
+            </button>
+          </Tooltip>
         </div>
         <div className={styles.contentDescription}>
           {markdownToPlainTextPreview(scrap.content)}
@@ -534,14 +537,16 @@ const ScrapPage: React.FC = () => {
             onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
           />
           {isAuthenticated && (
-            <button
-              className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              title="스크랩 목록 새로고침"
-            >
-              <IoRefresh size={16} />
-            </button>
+            <Tooltip content="스크랩 목록 새로고침" side='bottom'>
+              <button
+                className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                title="스크랩 목록 새로고침"
+                >
+                <IoRefresh size={16} />
+              </button>
+            </Tooltip>
           )}
         </div>
       </div>
