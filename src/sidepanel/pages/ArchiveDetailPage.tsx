@@ -14,6 +14,7 @@ import { CharacterCount } from '@tiptap/extension-character-count'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
+import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -258,7 +259,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               currentArchive?.title || article.title
             )}
           </h1>
-
         </div>
       </div>
 
@@ -273,17 +273,23 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
             <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
               {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
-              <ExportButton 
-                title={currentArchive?.title || article.title}
-                content={currentArchive?.content || article.content}
-              />
-              <CopyButton 
-                title={currentArchive?.title || article.title}
-                content={currentArchive?.content || article.content}
-              />
-              <button className={detailStyles.primaryActionButton} onClick={handleEdit} title="초안 수정하기">
-                <IoCreate size={20} />
-              </button>
+              <Tooltip content="maily로 내보내기" side='top'>
+                <ExportButton 
+                  title={currentArchive?.title || article.title}
+                  content={currentArchive?.content || article.content}
+                />
+              </Tooltip>
+              <Tooltip content="클립보드 복사" side='top'>
+                <CopyButton 
+                  title={currentArchive?.title || article.title}
+                  content={currentArchive?.content || article.content}
+                  />
+                </Tooltip>
+              <Tooltip content="초안 수정하기">
+                <button className={detailStyles.primaryActionButton} onClick={handleEdit}>
+                  <IoCreate size={20} />
+                </button>
+              </Tooltip>
             </div>
             <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
               {article.archives && article.archives.length > 0 && (
@@ -309,25 +315,26 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             </div>
           </div>
         ) : (
-          // 수정 페이지: 두 줄 레이아웃 (저장/취소 위, 버전 아래)
           <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
             <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
-              <button 
-                className={detailStyles.editPrimaryButton}
-                onClick={handleSave}
-                disabled={saving}
-                title={saving ? '저장 중...' : '저장'}
-              >
-                <IoCheckmark size={18} />
-              </button>
-              <button 
-                className={detailStyles.editSecondaryButton}
-                onClick={handleCancel}
-                disabled={saving}
-                title="취소"
-              >
-                <IoClose size={18} />
-              </button>
+              <Tooltip content={saving ? '저장 중...' : '저장'}>
+                <button 
+                  className={detailStyles.editPrimaryButton}
+                  onClick={handleSave}
+                  disabled={saving}
+                >
+                  <IoCheckmark size={18} />
+                </button>
+              </Tooltip>
+              <Tooltip content="취소">
+                <button 
+                  className={detailStyles.editSecondaryButton}
+                  onClick={handleCancel}
+                  disabled={saving}
+                >
+                  <IoClose size={18} />
+                </button>
+              </Tooltip>
             </div>
             <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
               {article.archives && article.archives.length > 0 && (
@@ -456,4 +463,4 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   );
 };
 
-export default ArchiveDetailPage; 
+export default ArchiveDetailPage;
