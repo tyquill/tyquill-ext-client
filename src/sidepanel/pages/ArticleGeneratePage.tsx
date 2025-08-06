@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState, useMemo } from 'react';
-import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoRemove } from 'react-icons/io5';
+import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
@@ -12,9 +12,13 @@ import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import { FaWandMagicSparkles } from "react-icons/fa6";
+import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
+import { PageType } from '../../types/pages';
+import Tooltip from '../../components/common/Tooltip';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
+  onNavigate: (page: PageType) => void;
   currentPage?: string;
   onRefreshArchiveList?: () => void;
 }
@@ -42,6 +46,8 @@ interface ArticleGenerateState {
   sectionIdCounter: number;
   isAnalyzing: boolean;
   isAnalysisConfirmModalOpen: boolean;
+  selectedWritingStyleId: number | null; // writingStyleUrl -> selectedWritingStyleId
+  isAnalyzingStyle: boolean;
 }
 
 type DraftAction =
@@ -68,7 +74,9 @@ type DraftAction =
   | { type: 'ADD_TEMPLATE_SECTION'; payload: { parentId?: string; title: string } }
   | { type: 'REMOVE_TEMPLATE_SECTION'; payload: string }
   | { type: 'CLEAR_TEMPLATE' }
-  | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' };
+  | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' }
+  | { type: 'SET_WRITING_STYLE_ID'; payload: number | null } // SET_WRITING_STYLE_URL -> SET_WRITING_STYLE_ID
+  | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 
@@ -92,6 +100,8 @@ const getInitialState = (): ArticleGenerateState => {
         sectionIdCounter: parsedState.sectionIdCounter || 0,
         isAnalyzing: false,
         isAnalysisConfirmModalOpen: false,
+        selectedWritingStyleId: parsedState.selectedWritingStyleId || null, // writingStyleUrl -> selectedWritingStyleId
+        isAnalyzingStyle: false,
       };
       
       // console.log('✅ Restored state with template:', restoredState.templateStructure);
@@ -117,6 +127,8 @@ const getInitialState = (): ArticleGenerateState => {
     sectionIdCounter: 0,
     isAnalyzing: false,
     isAnalysisConfirmModalOpen: false,
+    selectedWritingStyleId: null,
+    isAnalyzingStyle: false,
   };
 };
 
@@ -269,6 +281,10 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
       return { ...state, templateStructure: null };
     case 'TOGGLE_ANALYSIS_CONFIRM_MODAL':
       return { ...state, isAnalysisConfirmModalOpen: !state.isAnalysisConfirmModalOpen };
+    case 'SET_WRITING_STYLE_ID':
+      return { ...state, selectedWritingStyleId: action.payload };
+    case 'SET_ANALYZING_STYLE':
+      return { ...state, isAnalyzingStyle: action.payload };
     default:
       return state;
   }
@@ -276,12 +292,27 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
 
 const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ 
   onNavigateToDetail, 
+  onNavigate,
   currentPage,
   onRefreshArchiveList 
 }) => {
   const { showSuccess, showError, showInfo } = useToastHelpers();
   const [state, dispatch] = useReducer(draftReducer, getInitialState());
+  const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
   
+  useEffect(() => {
+    const fetchStyles = async () => {
+      try {
+        const styles = await writingStyleService.getWritingStyles();
+        setWritingStyles(styles);
+      } catch (error) {
+        console.error('Failed to fetch writing styles:', error);
+        showError('저장된 문체 목록을 불러오는데 실패했습니다.');
+      }
+    };
+    fetchStyles();
+  }, []);
+
   // 디버깅: 템플릿 구조 상태 변화 추적
   useEffect(() => {
     // console.log('📊 Current template structure:', state.templateStructure);
@@ -300,6 +331,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       // 템플릿 관련 상태들도 저장
       templateStructure: state.templateStructure,
       sectionIdCounter: state.sectionIdCounter,
+      selectedWritingStyleId: state.selectedWritingStyleId,
     };
     
     try {
@@ -315,7 +347,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     state.selectedScraps, 
     state.selectedTags,
     state.templateStructure,
-    state.sectionIdCounter
+    state.sectionIdCounter,
+    state.selectedWritingStyleId
   ]);
 
   React.useEffect(() => {
@@ -518,6 +551,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         })),
         generationParams: state.handle || undefined,
         articleStructureTemplate: templateWithoutIds,
+        writingStyleId: state.selectedWritingStyleId ?? undefined,
       };
 
       articleService.generateArticle(generateData)
@@ -541,6 +575,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
       dispatch({ type: 'SET_HANDLE', payload: '' });
+      dispatch({ type: 'SET_WRITING_STYLE_ID', payload: null });
       dispatch({ type: 'CLEAR_SCRAPS' });
       dispatch({ type: 'CLEAR_TEMPLATE' });
       
@@ -658,39 +693,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               rows={1}
             />
           </div>
-          {/* <div className={styles.formGroup}>
-            <label htmlFor="handle" className={styles.formLabel}>
-              maily 핸들
-            </label>
-            <input
-              id="handle"
-              type="text"
-              className={styles.formInput}
-              value={state.handle}
-              onChange={(e) => dispatch({ type: 'SET_HANDLE', payload: e.target.value })}
-              placeholder="예: josh"
-            />
-          </div> */}
-
-          {/* <div className={styles.formGroup}>
-            <label htmlFor="template" className={styles.formLabel}>
-              템플릿 선택 <span style={{ color: '#999', fontSize: '0.9em' }}>(개발 중)</span>
-            </label>
-            <select
-              id="template"
-              className={styles.formSelect}
-              value={state.selectedTemplate}
-              onChange={(e) => dispatch({ type: 'SET_TEMPLATE', payload: e.target.value })}
-              disabled={true}
-              style={{ opacity: 0.6 }}
-            >
-              {mockTemplates.map(template => (
-                <option key={template.id} value={template.title}>
-                  {template.title}
-                </option>
-              ))}
-            </select>
-          </div> */}
 
           {/* 섹션 구성 */}
           <div className={styles.referenceSection}>
@@ -809,6 +811,37 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 </button>
               </div>
             )}
+          </div>
+
+          {/* 문체 선택 섹션 */}
+          <div className={articleStyles.referenceSection}>
+            <h3 className={articleStyles.referenceSectionTitle}>문체 선택</h3>
+            <div className={styles.formGroup}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <select
+                  id="writing-style-select"
+                  className={styles.formSelect}
+                  value={state.selectedWritingStyleId ?? ''}
+                  onChange={(e) => dispatch({ type: 'SET_WRITING_STYLE_ID', payload: e.target.value ? Number(e.target.value) : null })}
+                >
+                  <option value="">문체 선택 안함</option>
+                  {writingStyles.map((style) => (
+                    <option key={style.id} value={style.id}>
+                      {style.name}
+                    </option>
+                  ))}
+                </select>
+                <Tooltip content="새 문체 추가">
+                  <button
+                    onClick={() => onNavigate('style-management')}
+                    className={articleStyles.sectionButton}
+                    style={{ flexShrink: 0 }}
+                  >
+                    <IoAdd size={16} />
+                  </button>
+                </Tooltip>
+              </div>
+            </div>
           </div>
 
           {/* 참고 자료 */}

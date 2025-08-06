@@ -36,6 +36,27 @@ export async function clipAndScrapCurrentPage(): Promise<any> {
   });
 }
 
+/**
+ * 문체 관리를 위한 현재 페이지 클리핑 함수
+ * - 스크랩 API를 호출하지 않고 클리핑만 수행
+ * - StyleManagementPage에서 사용
+ */
+export async function clipCurrentPageForStyle(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { action: 'clipCurrentPageForStyle' },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else if (response.success) {
+          resolve(response.data);
+        } else {
+          reject(new Error(response.error || 'Unknown error'));
+        }
+      }
+    );
+  });
+}
 
 /**
  * 초기 스크랩 상태

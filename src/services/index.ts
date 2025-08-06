@@ -42,3 +42,9 @@ export type {
     UpdateTagDto,
     TagResponse
 } from './tagService';
+
+// Writing Style Service
+export { WritingStyleService, writingStyleService } from './writingStyleService';
+export type {
+    WritingStyle
+} from './writingStyleService';

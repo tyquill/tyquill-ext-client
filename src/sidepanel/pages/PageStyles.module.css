@@ -19,14 +19,13 @@
 .pageContainer {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  overflow: hidden;
+  height: 100vh;
   background-color: #ffffff;
 }
 
 .page {
   padding: 16px 2vw;
-  height: 100%;
+  flex: 1;
   overflow-y: auto;
   background-color: #ffffff;
 }

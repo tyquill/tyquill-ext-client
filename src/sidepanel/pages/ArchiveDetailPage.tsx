@@ -239,226 +239,228 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.detailHeader}>
-        <button className={styles.backButton} onClick={onBack}>
-          <IoArrowBack size={20} />
-        </button>
-        <div style={{ flex: 1 }}>
-          <h1 className={styles.detailTitle}>
-            {isEditing ? (
-              <input
-                type="text"
-                value={editTitle}
-                style={{width: '100%'}}
-                onChange={(e) => setEditTitle(e.target.value)}
-                className={styles.editTitleInput}
-                placeholder="제목을 입력하세요"
-              />
-            ) : (
-              currentArchive?.title || article.title
-            )}
-          </h1>
-        </div>
-      </div>
-
-      <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '16px'}}>
-        <span>글자 수: {characterCount.characters}</span>
-        <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
-      </div>
-
-      <div className={styles.actionButtons}>
-        {!isEditing ? (
-          // 미리보기 페이지: 두 줄 레이아웃
-          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-            <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
-              {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
-              <Tooltip content="maily로 내보내기" side='top'>
-                <ExportButton 
-                  title={currentArchive?.title || article.title}
-                  content={currentArchive?.content || article.content}
+    <div className={styles.pageContainer}>
+      <div className={styles.page}>
+        <div className={styles.detailHeader}>
+          <button className={styles.backButton} onClick={onBack}>
+            <IoArrowBack size={20} />
+          </button>
+          <div style={{ flex: 1 }}>
+            <h1 className={styles.detailTitle}>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editTitle}
+                  style={{width: '100%'}}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className={styles.editTitleInput}
+                  placeholder="제목을 입력하세요"
                 />
-              </Tooltip>
-              <Tooltip content="클립보드 복사" side='top'>
-                <CopyButton 
-                  title={currentArchive?.title || article.title}
-                  content={currentArchive?.content || article.content}
+              ) : (
+                currentArchive?.title || article.title
+              )}
+            </h1>
+          </div>
+        </div>
+
+        <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '16px'}}>
+          <span>글자 수: {characterCount.characters}</span>
+          <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
+        </div>
+
+        <div className={styles.actionButtons}>
+          {!isEditing ? (
+            // 미리보기 페이지: 두 줄 레이아웃
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
+                {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
+                <Tooltip content="maily로 내보내기" side='top'>
+                  <ExportButton 
+                    title={currentArchive?.title || article.title}
+                    content={currentArchive?.content || article.content}
                   />
                 </Tooltip>
-              <Tooltip content="초안 수정하기">
-                <button className={detailStyles.primaryActionButton} onClick={handleEdit}>
-                  <IoCreate size={20} />
-                </button>
-              </Tooltip>
+                <Tooltip content="클립보드 복사" side='top'>
+                  <CopyButton 
+                    title={currentArchive?.title || article.title}
+                    content={currentArchive?.content || article.content}
+                    />
+                  </Tooltip>
+                <Tooltip content="초안 수정하기">
+                  <button className={detailStyles.primaryActionButton} onClick={handleEdit}>
+                    <IoCreate size={20} />
+                  </button>
+                </Tooltip>
+              </div>
+              <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
+                {article.archives && article.archives.length > 0 && (
+                  <div className={styles.versionSelector}>
+                    <label htmlFor="version-select" className={styles.versionLabel}>
+                      버전:
+                    </label>
+                    <select
+                      id="version-select"
+                      value={selectedVersionNumber || ''}
+                      onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                      className={styles.versionSelect}
+                      disabled={isEditing}
+                    >
+                      {article.archives.map(archive => (
+                        <option key={archive.versionNumber} value={archive.versionNumber}>
+                          {archive.versionNumber}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
             </div>
-            <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
-              {article.archives && article.archives.length > 0 && (
-                <div className={styles.versionSelector}>
-                  <label htmlFor="version-select" className={styles.versionLabel}>
-                    버전:
-                  </label>
-                  <select
-                    id="version-select"
-                    value={selectedVersionNumber || ''}
-                    onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                    className={styles.versionSelect}
-                    disabled={isEditing}
+          ) : (
+            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
+              <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
+                <Tooltip content={saving ? '저장 중...' : '저장'}>
+                  <button 
+                    className={detailStyles.editPrimaryButton}
+                    onClick={handleSave}
+                    disabled={saving}
                   >
-                    {article.archives.map(archive => (
-                      <option key={archive.versionNumber} value={archive.versionNumber}>
-                        {archive.versionNumber}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    <IoCheckmark size={18} />
+                  </button>
+                </Tooltip>
+                <Tooltip content="취소">
+                  <button 
+                    className={detailStyles.editSecondaryButton}
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    <IoClose size={18} />
+                  </button>
+                </Tooltip>
+              </div>
+              <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
+                {article.archives && article.archives.length > 0 && (
+                  <div className={styles.versionSelector}>
+                    <label htmlFor="version-select" className={styles.versionLabel}>
+                      버전:
+                    </label>
+                    <select
+                      id="version-select"
+                      value={selectedVersionNumber || ''}
+                      onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
+                      className={styles.versionSelect}
+                      disabled={isEditing}
+                    >
+                      {article.archives.map(archive => (
+                        <option key={archive.versionNumber} value={archive.versionNumber}>
+                          {archive.versionNumber}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className={styles.detailContent}>
+          <div className={styles.previewContainer}>
+            {/* <div className={styles.previewHeader}>
+              <h2 className={styles.sectionTitle}>
+                {isEditing ? '편집' : '미리보기'}
+              </h2>
+            </div> */}
+            
+            <div className={styles.previewContent}>
+              {isEditing ? (
+                <ErrorBoundary>
+                    <EditorWrapper
+                    key={`editor-${article.articleId}-${isEditing}`}
+                    content={markdownToHtml(editContent)}
+                    onChange={setEditContent}
+                    placeholder="내용을 입력하세요..."
+                    readOnly={false}
+                  />
+                </ErrorBoundary>
+              ) : (
+                <MarkdownRenderer 
+                  content={currentArchive?.content || article.content || ''}
+                  className={styles.contentDisplay}
+                />
               )}
             </div>
           </div>
-        ) : (
-          <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-            <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
-              <Tooltip content={saving ? '저장 중...' : '저장'}>
-                <button 
-                  className={detailStyles.editPrimaryButton}
-                  onClick={handleSave}
-                  disabled={saving}
-                >
-                  <IoCheckmark size={18} />
-                </button>
-              </Tooltip>
-              <Tooltip content="취소">
-                <button 
-                  className={detailStyles.editSecondaryButton}
-                  onClick={handleCancel}
-                  disabled={saving}
-                >
-                  <IoClose size={18} />
-                </button>
-              </Tooltip>
+        </div>
+
+        {/* Width 조절 툴팁 */}
+        {showWidthTip && (
+          <div
+            style={{
+              position: 'fixed',
+              bottom: '20px',
+              right: '20px',
+              backgroundColor: 'rgba(26, 26, 26, 0.9)',
+              color: 'white',
+              padding: '10px',
+              borderRadius: '8px',
+              boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+              zIndex: 10000,
+              width: '300px',
+              fontSize: '14px',
+              lineHeight: '1.5',
+              border: '1px solid rgba(51, 51, 51, 0.8)',
+              backdropFilter: 'blur(10px)',
+              opacity: tipVisible ? 1 : 0,
+              transform: tipVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              pointerEvents: tipVisible ? 'auto' : 'none'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+              <div style={{ fontWeight: '600', fontSize: '15px' }}>💡 글을 보기 불편하시다면?</div>
+              <button
+                onClick={handleCloseTip}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#999',
+                  cursor: 'pointer',
+                  padding: '0',
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+              >
+                <IoClose size={16} />
+              </button>
             </div>
-            <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
-              {article.archives && article.archives.length > 0 && (
-                <div className={styles.versionSelector}>
-                  <label htmlFor="version-select" className={styles.versionLabel}>
-                    버전:
-                  </label>
-                  <select
-                    id="version-select"
-                    value={selectedVersionNumber || ''}
-                    onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                    className={styles.versionSelect}
-                    disabled={isEditing}
-                  >
-                    {article.archives.map(archive => (
-                      <option key={archive.versionNumber} value={archive.versionNumber}>
-                        {archive.versionNumber}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            
+              <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
+                <strong>확장 프로그램 왼쪽 경계를 드래그</strong>해서 
+                <br />
+                사이드바 너비를 조절할 수 있습니다.
+              </div>
+              
+              <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ccc' }}>
+                  <input
+                    type="checkbox"
+                    checked={dontShowAgain}
+                    onChange={(e) => {
+                      setDontShowAgain(e.target.checked);
+                      if (e.target.checked) {
+                        // 체크박스가 체크되면 자동으로 툴팁 닫기
+                        handleCloseTip();
+                      }
+                    }}
+                    style={{ margin: 0 }}
+                  />
+                  다시 보지 않기
+                </label>
+              </div>
           </div>
         )}
       </div>
-
-      <div className={styles.detailContent}>
-        <div className={styles.previewContainer}>
-          {/* <div className={styles.previewHeader}>
-            <h2 className={styles.sectionTitle}>
-              {isEditing ? '편집' : '미리보기'}
-            </h2>
-          </div> */}
-          
-          <div className={styles.previewContent}>
-            {isEditing ? (
-              <ErrorBoundary>
-                  <EditorWrapper
-                  key={`editor-${article.articleId}-${isEditing}`}
-                  content={markdownToHtml(editContent)}
-                  onChange={setEditContent}
-                  placeholder="내용을 입력하세요..."
-                  readOnly={false}
-                />
-              </ErrorBoundary>
-            ) : (
-              <MarkdownRenderer 
-                content={currentArchive?.content || article.content || ''}
-                className={styles.contentDisplay}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Width 조절 툴팁 */}
-      {showWidthTip && (
-        <div
-          style={{
-            position: 'fixed',
-            bottom: '20px',
-            right: '20px',
-            backgroundColor: 'rgba(26, 26, 26, 0.9)',
-            color: 'white',
-            padding: '10px',
-            borderRadius: '8px',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
-            zIndex: 10000,
-            width: '300px',
-            fontSize: '14px',
-            lineHeight: '1.5',
-            border: '1px solid rgba(51, 51, 51, 0.8)',
-            backdropFilter: 'blur(10px)',
-            opacity: tipVisible ? 1 : 0,
-            transform: tipVisible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.95)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            pointerEvents: tipVisible ? 'auto' : 'none'
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-            <div style={{ fontWeight: '600', fontSize: '15px' }}>💡 글을 보기 불편하시다면?</div>
-            <button
-              onClick={handleCloseTip}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#999',
-                cursor: 'pointer',
-                padding: '0',
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center'
-              }}
-            >
-              <IoClose size={16} />
-            </button>
-          </div>
-          
-            <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
-              <strong>확장 프로그램 왼쪽 경계를 드래그</strong>해서 
-              <br />
-              사이드바 너비를 조절할 수 있습니다.
-            </div>
-            
-            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ccc' }}>
-                <input
-                  type="checkbox"
-                  checked={dontShowAgain}
-                  onChange={(e) => {
-                    setDontShowAgain(e.target.checked);
-                    if (e.target.checked) {
-                      // 체크박스가 체크되면 자동으로 툴팁 닫기
-                      handleCloseTip();
-                    }
-                  }}
-                  style={{ margin: 0 }}
-                />
-                다시 보지 않기
-              </label>
-            </div>
-        </div>
-      )}
     </div>
   );
 };

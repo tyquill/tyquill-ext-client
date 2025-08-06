@@ -33,6 +33,7 @@ export interface GenerateArticleDto {
     scrapWithOptionalComment?: ScrapWithOptionalComment[];
     generationParams?: string;
     articleStructureTemplate?: TemplateSection[];
+    writingStyleId?: number; // writingStyleReferenceUrl에서 변경
 }
 
 /**
