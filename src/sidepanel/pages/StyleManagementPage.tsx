@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IoTrash, IoClipboard, IoAdd, IoCreate, IoRefresh, IoCheckmark, IoClose } from 'react-icons/io5';
+import { IoTrash, IoClipboard, IoAdd, IoCreate, IoRefresh, IoCheckmark, IoClose, IoInformationCircleOutline } from 'react-icons/io5';
 import { writingStyleService, WritingStyle, ScrapedExample } from '../../services/writingStyleService';
 import { useToastHelpers } from '../../hooks/useToast';
 import { clipCurrentPageForStyle } from '../../utils/scrapHelper';
@@ -131,7 +131,8 @@ const StyleManagementPage: React.FC = () => {
         <header className={styles.header}>
           <h1 className={styles.pageTitle}>문체 관리</h1>
           <p className={styles.pageDescription}>
-            좋아하는 글의 문체를 스크랩하고 저장하여 나만의 문체 라이브러리를 만들어보세요.
+            문체는 글의 어조와 표현 방식을 의미해요. 좋아하는 글에서 예시를 스크랩해 문체를 만들어두면,
+            이후 글 생성에 해당 문체를 손쉽게 적용할 수 있습니다.
           </p>
         </header>
         
@@ -200,25 +201,27 @@ const StyleManagementPage: React.FC = () => {
                   </label>
                   <div style={{display: 'flex', gap: '8px'}}>
                     {scrapedExamples.length < 5 && (
-                      <button
-                      type="button"
-                      onClick={handleScrapeCurrentPage}
-                      className={styles.addMoreButton}
-                          disabled={isScraping}
-                        >
-                          {isScraping ? (
-                            <>
-                              <div className={styles.spinner}></div>
-                              스크랩 중...
-                            </>
-                          ) : (
-                            <>
-                              <IoClipboard size={14} />
-                              예시 추가
-                            </>
-                          )}
-                        </button>
-                    )}
+                      <Tooltip content="현재 열려있는 탭의 본문 텍스트를 클리핑해 예시로 추가합니다. 로그인/보안 페이지 등 일부 사이트에서는 동작하지 않을 수 있어요.">
+                        <button
+                        type="button"
+                        onClick={handleScrapeCurrentPage}
+                        className={styles.addMoreButton}
+                            disabled={isScraping}
+                          >
+                            {isScraping ? (
+                              <>
+                                <div className={styles.spinner}></div>
+                                스크랩 중...
+                              </>
+                            ) : (
+                              <>
+                                <IoClipboard size={14} />
+                                현재 페이지 예시로 추가
+                              </>
+                            )}
+                          </button>
+                      </Tooltip>
+                  )}
                     {scrapedExamples.length > 0 && (
                       <button
                         type="button"
@@ -229,6 +232,9 @@ const StyleManagementPage: React.FC = () => {
                       </button>
                     )}
                   </div>
+                </div>
+                <div className={styles.examplesHelp}>
+                  현재 페이지의 기사/글 본문을 가져와 예시로 저장합니다. URL도 함께 저장됩니다. 일부 로그인/보안 페이지에서는 동작하지 않을 수 있어요.
                 </div>
                 
                 {scrapedExamples.length === 0 ? (
@@ -264,15 +270,22 @@ const StyleManagementPage: React.FC = () => {
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleGroup}>
               <h2 className={styles.sectionTitle}>저장된 문체</h2>
-              <Tooltip content="문체 목록 새로고침" side='bottom'>
-                <button 
-                  className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                >
-                  <IoRefresh size={16} />
-                </button>
-              </Tooltip>
+              <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                <Tooltip content="이 섹션에서 저장된 문체를 확인하고 관리할 수 있어요.">
+                  <button type="button" className={styles.infoIconButton} aria-label="섹션 안내">
+                    <IoInformationCircleOutline size={16} />
+                  </button>
+                </Tooltip>
+                <Tooltip content="문체 목록 새로고침" side='bottom'>
+                  <button 
+                    className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
+                    onClick={handleRefresh}
+                    disabled={isRefreshing}
+                    >
+                    <IoRefresh size={16} />
+                  </button>
+                </Tooltip>
+              </div>
             </div>
           </div>
 
