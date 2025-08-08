@@ -39,6 +39,20 @@ chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.Messa
     // Return true to indicate we will respond asynchronously
     return true;
   }
+
+  if (request.action === 'clipCurrentPageForStyle') {
+    handleClipCurrentPageForStyle(sender)
+      .then(response => {
+        sendResponse({ success: true, data: response });
+      })
+      .catch(error => {
+        console.error('❌ Background clip for style error:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+    
+    // Return true to indicate we will respond asynchronously
+    return true;
+  }
   
   if (request.action === 'openSidePanel') {
     handleOpenSidePanel(sender)
@@ -172,6 +186,68 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
     
   } catch (error) {
     console.error('❌ Background: Clip and scrap failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * 문체 관리를 위한 현재 페이지 클리핑 처리 (Background Script에서 실행)
+ * - 스크랩 API를 호출하지 않고 클리핑만 수행
+ */
+async function handleClipCurrentPageForStyle(sender: chrome.runtime.MessageSender) {
+  try {
+    // 현재 활성 탭 정보 가져오기
+    let tabId = sender.tab?.id;
+    
+    // Sidepanel에서 요청하는 경우 sender.tab이 없으므로 활성 탭을 쿼리
+    if (!tabId) {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tabId = activeTab?.id;
+    }
+    
+    if (!tabId) {
+      throw new Error('No active tab found');
+    }
+
+    const tab = await chrome.tabs.get(tabId);
+    
+    // URL 체크 - 제한된 페이지에서는 스크랩 불가
+    if (tab.url?.startsWith('chrome://') || 
+        tab.url?.startsWith('chrome-extension://') ||
+        tab.url?.startsWith('edge://') ||
+        tab.url?.startsWith('about:')) {
+      throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+    }
+
+    // Content Script가 로드되었는지 확인
+    try {
+      await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+    } catch (pingError) {
+      // Content script 수동 주입 시도
+      await chrome.scripting.executeScript({
+        target: { tabId: tabId },
+        files: ['contentScript/index.js']
+      });
+      
+      // 잠시 대기 후 재시도
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    // Content Script로 클리핑 요청
+    const response = await chrome.tabs.sendMessage(tabId, {
+      type: 'CLIP_PAGE',
+      options: { includeMetadata: true }
+    });
+
+    if (!response.success) {
+      throw new Error(response.error || 'Clipping failed');
+    }
+
+    // 클리핑 결과만 반환 (스크랩 API 호출하지 않음)
+    return response.data;
+    
+  } catch (error) {
+    console.error('❌ Background: Clip for style failed:', error);
     throw error;
   }
 }

@@ -1,13 +1,14 @@
 import React, { useEffect } from 'react';
 import { useContentScript } from './hooks/useContentScript';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
+import { WebClipper } from '../utils/webClipper';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
 
   // Background Script로부터의 메시지 처리
   useEffect(() => {
-    const handleMessage = (request: any, sender: any, sendResponse: any) => {
+    const handleMessage = async (request: any, sender: any, sendResponse: any) => {
       // console.log('Content Script 메시지 수신:', request);
       
       if (request.type === 'SETTINGS_CHANGED') {
@@ -22,6 +23,24 @@ const App: React.FC = () => {
         if (sendResponse) {
           sendResponse({ success: true });
         }
+      }
+
+      // 스크랩 요청 처리
+      if (request.action === 'scrapePage') {
+        try {
+          const clipper = new WebClipper(request.options || {});
+          const result = await clipper.clipPage();
+          
+          if (sendResponse) {
+            sendResponse(result);
+          }
+        } catch (error) {
+          console.error('스크랩 실패:', error);
+          if (sendResponse) {
+            sendResponse({ error: error instanceof Error ? error.message : 'Unknown error' });
+          }
+        }
+        return true; // 비동기 응답을 위해 true 반환
       }
     };
 

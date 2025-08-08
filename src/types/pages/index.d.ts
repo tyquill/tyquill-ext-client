@@ -7,5 +7,6 @@
  * @property {'draft'} draft - Page for managing draft content
  * @property {'archive'} archive - Page displaying list of archived drafts
  * @property {'archive-detail'} archive-detail - Detailed view of an archived draft with version history
+ * @property {'style-management'} style-management - Page for managing writing styles
  */
-export type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail';
+export type PageType = 'landing' | 'scrap' | 'template' | 'draft' | 'archive' | 'archive-detail' | 'style-management';

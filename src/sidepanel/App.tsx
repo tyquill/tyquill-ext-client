@@ -8,6 +8,7 @@ import TemplatePage from './pages/TemplatePage';
 import ArticleGeneratePage from './pages/ArticleGeneratePage';
 import ArchivePage from './pages/ArchivePage';
 import ArchiveDetailPage from './pages/ArchiveDetailPage';
+import StyleManagementPage from './pages/StyleManagementPage';
 import styles from './App.module.css';
 import { PageType } from '../types/pages';
 
@@ -93,6 +94,7 @@ const App: React.FC = () => {
             {currentPage.type === 'draft' && (
               <ArticleGeneratePage 
                 onNavigateToDetail={handleNavigateToDetail}
+                onNavigate={handleMenuClick}
               />
             )}
             {currentPage.type === 'archive' && (
@@ -103,6 +105,7 @@ const App: React.FC = () => {
             {currentPage.type === 'archive-detail' && currentPage.draftId && (
               <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
             )}
+            {currentPage.type === 'style-management' && <StyleManagementPage />} 
           </div>
           <Sidebar activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
         </div>
@@ -111,4 +114,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;

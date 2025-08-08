@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClipboard, IoSparkles, IoArchive, IoLogOut, IoSettings } from 'react-icons/io5';
+import { RiFileUserLine } from 'react-icons/ri';
 import { IconType } from 'react-icons';
 import { useAuth } from '../../../hooks/useAuth';
 import styles from './Header.module.css';
@@ -230,7 +231,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
   const menuItems: MenuItem[] = [
     { key: 'scrap', label: '스크랩', icon: IoClipboard },
     { key: 'draft', label: '초안생성', icon: IoSparkles },
-    { key: 'archive', label: '보관함', icon: IoArchive }
+    { key: 'archive', label: '보관함', icon: IoArchive },
+    { key: 'style-management', label: '문체 관리', icon: RiFileUserLine },
   ];
 
   const handleSettingsClick = () => {
