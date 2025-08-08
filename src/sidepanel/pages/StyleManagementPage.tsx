@@ -127,14 +127,16 @@ const StyleManagementPage: React.FC = () => {
 
   return (
     <div className={pageStyles.pageContainer}>
-      <div className={styles.page}>
-        <header className={styles.header}>
-          <h1 className={styles.pageTitle}>문체 관리</h1>
-          <p className={styles.pageDescription}>
+      <div className={pageStyles.page}>
+        <div className={pageStyles.pageHeader}>
+          <div className={pageStyles.headerControls}>
+            <h1 className={pageStyles.pageTitle}>문체 관리</h1>
+          </div>
+          <p className={pageStyles.pageSubtitle}>
             문체는 글의 어조와 표현 방식을 의미해요. 좋아하는 글에서 예시를 스크랩해 문체를 만들어두면,
             이후 글 생성에 해당 문체를 손쉽게 적용할 수 있습니다.
           </p>
-        </header>
+        </div>
         
         {!showCreateForm && (
           <button
@@ -276,15 +278,15 @@ const StyleManagementPage: React.FC = () => {
                     <IoInformationCircleOutline size={16} />
                   </button>
                 </Tooltip>
-                <Tooltip content="문체 목록 새로고침" side='bottom'>
-                  <button 
-                    className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
-                    onClick={handleRefresh}
-                    disabled={isRefreshing}
-                    >
-                    <IoRefresh size={16} />
-                  </button>
-                </Tooltip>
+              <Tooltip content="문체 목록 새로고침" side='bottom'>
+                <button 
+                  className={`${pageStyles.refreshButton} ${isRefreshing ? pageStyles.loading : ''}`}
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                >
+                  <IoRefresh size={16} />
+                </button>
+              </Tooltip>
               </div>
             </div>
           </div>

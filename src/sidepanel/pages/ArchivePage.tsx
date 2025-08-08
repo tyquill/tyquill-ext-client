@@ -79,7 +79,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>보관함</h1>
+          <div className={styles.headerControls}>
+            <h1 className={styles.pageTitle}>보관함</h1>
+            <Tooltip content="보관함 새로고침" side='bottom'>
+              <button 
+                className={styles.refreshButton}
+                onClick={loadArticles}
+                disabled={loading}
+                >
+                <IoRefresh size={18} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
         <div className={styles.loadingContainer}>로딩 중...</div>
       </div>
@@ -90,7 +101,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>보관함</h1>
+          <div className={styles.headerControls}>
+            <h1 className={styles.pageTitle}>보관함</h1>
+            <Tooltip content="보관함 새로고침" side='bottom'>
+              <button 
+                className={styles.refreshButton}
+                onClick={loadArticles}
+                disabled={loading}
+                >
+                <IoRefresh size={18} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
         <div className={styles.errorContainer}>오류: {error}</div>
       </div>

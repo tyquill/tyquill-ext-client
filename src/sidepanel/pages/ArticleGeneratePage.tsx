@@ -650,7 +650,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     <div className={styles.pageContainer}>
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
+          <div className={styles.headerControls}>
+            <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
+          </div>
         </div>
         
         <div className={articleStyles.scrollableContent}>
