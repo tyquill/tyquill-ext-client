@@ -79,6 +79,7 @@ type DraftAction =
   | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
+const DEFAULT_MODAL_TOP_OFFSET = 160;
 
 const getInitialState = (): ArticleGenerateState => {
   try {
@@ -300,7 +301,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const [state, dispatch] = useReducer(draftReducer, getInitialState());
   const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
   const headerRef = useRef<HTMLDivElement | null>(null);
-  const [scrapModalTop, setScrapModalTop] = useState<number>(160);
+  const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
   
   useEffect(() => {
@@ -395,10 +396,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           setScrapModalTop(Math.max(0, Math.round(rect.bottom)));
           return;
         }
-      } catch (_) {
-        // ignore
+      } catch (error) {
+        console.error('Failed to update scrap modal top offset:', error);
       }
-      setScrapModalTop(160);
+      setScrapModalTop(DEFAULT_MODAL_TOP_OFFSET);
     };
 
     updateTopOffset();
