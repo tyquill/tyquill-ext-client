@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { IoTrash, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
+import Tooltip from '../../components/common/Tooltip';
 
 interface ArchivePageProps {
   onDraftClick: (draftId: string) => void;
@@ -78,7 +79,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>보관함</h1>
+          <div className={styles.headerControls}>
+            <h1 className={styles.pageTitle}>보관함</h1>
+            <Tooltip content="보관함 새로고침" side='bottom'>
+              <button 
+                className={styles.refreshButton}
+                onClick={loadArticles}
+                disabled={loading}
+                >
+                <IoRefresh size={18} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
         <div className={styles.loadingContainer}>로딩 중...</div>
       </div>
@@ -89,7 +101,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     return (
       <div className={styles.page}>
         <div className={styles.pageHeader}>
-          <h1 className={styles.pageTitle}>보관함</h1>
+          <div className={styles.headerControls}>
+            <h1 className={styles.pageTitle}>보관함</h1>
+            <Tooltip content="보관함 새로고침" side='bottom'>
+              <button 
+                className={styles.refreshButton}
+                onClick={loadArticles}
+                disabled={loading}
+                >
+                <IoRefresh size={18} />
+              </button>
+            </Tooltip>
+          </div>
         </div>
         <div className={styles.errorContainer}>오류: {error}</div>
       </div>
@@ -101,13 +124,15 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       <div className={styles.pageHeader}>
         <div className={styles.headerControls}>
           <h1 className={styles.pageTitle}>보관함</h1>
-          <button 
-            className={styles.refreshButton}
-            onClick={loadArticles}
-            disabled={loading}
-          >
-            <IoRefresh size={18} />
-          </button>
+          <Tooltip content="보관함 새로고침" side='bottom'>
+            <button 
+              className={styles.refreshButton}
+              onClick={loadArticles}
+              disabled={loading}
+              >
+              <IoRefresh size={18} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
@@ -155,16 +180,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                   </div>
                 </div>
                 <div className={styles.archiveActions}>
-                  <button
-                    className={styles.actionButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(article.articleId);
-                    }}
-                    title="삭제"
-                  >
-                    <IoTrash size={18} />
-                  </button>
+                  <Tooltip content="삭제">
+                    <button
+                      className={styles.actionButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(article.articleId);
+                      }}
+                      title="삭제"
+                      >
+                      <IoTrash size={18} />
+                    </button>
+                  </Tooltip>
                 </div>
               </div>
               <div className={styles.archivePreview}>

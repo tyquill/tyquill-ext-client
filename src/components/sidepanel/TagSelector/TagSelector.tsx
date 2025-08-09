@@ -75,7 +75,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
         <div className={styles.selectedTags}>
           {selectedTags.map(tag => (
             <span key={tag} className={styles.selectedTag}>
-              #{tag}
+              {tag}
               <button onClick={(e) => handleTagRemove(tag, e)}>
                 <IoClose size={14} />
               </button>

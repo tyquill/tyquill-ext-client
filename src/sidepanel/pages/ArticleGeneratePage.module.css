@@ -48,15 +48,17 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
+  height: 44px;
+  padding: 0 12px;
   border: 1px solid #e2e8f0;
-  border-radius: 6px;
+  border-radius: 8px;
   background-color: #ffffff;
   color: #374151;
   cursor: pointer;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.2s;
+  box-sizing: border-box;
 }
 
 .sectionButton:hover {
@@ -519,6 +521,7 @@
   align-items: center;
   padding: 16px;
   box-sizing: border-box;
+  z-index: 1100;
 }
 
 .analysisModal {
@@ -556,6 +559,7 @@
   align-items: flex-start;
   padding: 16px;
   box-sizing: border-box;
+  z-index: 1100; /* Fixed button container is z-index: 10 */
 }
 
 .scrapModal {
