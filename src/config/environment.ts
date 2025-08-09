@@ -20,8 +20,8 @@ const development: Environment = {
 
 const production: Environment = {
   production: true,
-  serverUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com',
-  apiUrl: 'https://yvpd29knkq.ap-northeast-1.awsapprunner.com/api',
+  serverUrl: 'https://api.tyquill.ai',
+  apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 
