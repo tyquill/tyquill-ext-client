@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState, useMemo } from 'react';
+import React, { useEffect, useReducer, useState, useMemo, useRef } from 'react';
 import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
@@ -79,6 +79,7 @@ type DraftAction =
   | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
+const DEFAULT_MODAL_TOP_OFFSET = 160;
 
 const getInitialState = (): ArticleGenerateState => {
   try {
@@ -299,6 +300,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const { showSuccess, showError, showInfo } = useToastHelpers();
   const [state, dispatch] = useReducer(draftReducer, getInitialState());
   const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
+  const headerRef = useRef<HTMLDivElement | null>(null);
+  const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
+  const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -378,6 +382,30 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAllTags, state.isScrapModalOpen]);
+
+  // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
+  useEffect(() => {
+    if (!state.isScrapModalOpen) return;
+
+    const updateTopOffset = () => {
+      try {
+        const headerElement = headerRef.current;
+        if (headerElement) {
+          const rect = headerElement.getBoundingClientRect();
+          // 헤더의 화면 기준 하단 좌표를 사용하여 오버레이 top 설정
+          setScrapModalTop(Math.max(0, Math.round(rect.bottom)));
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to update scrap modal top offset:', error);
+      }
+      setScrapModalTop(DEFAULT_MODAL_TOP_OFFSET);
+    };
+
+    updateTopOffset();
+    window.addEventListener('resize', updateTopOffset);
+    return () => window.removeEventListener('resize', updateTopOffset);
+  }, [state.isScrapModalOpen]);
 
   const handleScrapSelect = (scrap: ScrapResponse) => {
     const isSelected = state.selectedScraps.find(s => s.scrapId === scrap.scrapId);
@@ -649,7 +677,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   return (
     <div className={styles.pageContainer}>
       <div className={styles.page}>
-        <div className={styles.pageHeader}>
+        <div className={styles.pageHeader} ref={headerRef}>
           <div className={styles.headerControls}>
             <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
           </div>
@@ -1006,13 +1034,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         {state.isScrapModalOpen && (
           <div 
             className={articleStyles.modalOverlay}
+            style={{ top: scrapModalTop, right: SIDE_RAIL_WIDTH }}
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
               }
             }}
           >
-            <div className={articleStyles.scrapModal}>
+            <div
+              className={articleStyles.scrapModal}
+              style={{ maxHeight: `calc(100vh - ${scrapModalTop + 32}px)` }}
+            >
               <div className={articleStyles.modalHeader}>
                 <h2 className={articleStyles.modalTitle}>스크랩 선택</h2>
                 <button 
@@ -1030,7 +1062,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 onTagRemove={(tag) => dispatch({ type: 'REMOVE_TAG', payload: tag })}
               />
 
-              <div className={articleStyles.modalContent}>
+              <div
+                className={articleStyles.modalContent}
+                style={{ maxHeight: `calc(100vh - ${scrapModalTop + 172}px)` }}
+              >
                 {filteredScraps.map((scrap: ScrapResponse) => (
                   <div
                     key={scrap.scrapId}
