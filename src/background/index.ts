@@ -382,5 +382,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   // console.log('Tyquill Extension installed with context menus');
 });
 
+chrome.runtime.setUninstallURL('https://tally.so/r/3EOeqN');
 
 export {}; 
