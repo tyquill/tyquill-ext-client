@@ -142,7 +142,7 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
       // Content script 수동 주입 시도
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
-        files: ['contentScript/index.js']
+        files: ['content/index.js']
       });
       
       // 잠시 대기 후 재시도
@@ -226,7 +226,7 @@ async function handleClipCurrentPageForStyle(sender: chrome.runtime.MessageSende
       // Content script 수동 주입 시도
       await chrome.scripting.executeScript({
         target: { tabId: tabId },
-        files: ['contentScript/index.js']
+        files: ['content/index.js']
       });
       
       // 잠시 대기 후 재시도
