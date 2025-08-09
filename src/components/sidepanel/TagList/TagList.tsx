@@ -56,7 +56,7 @@ export const TagList: React.FC<TagListProps> = ({
     <div className={`${styles.tagContainer} ${className}`} ref={containerRef}>
       {visibleTags.map((tag, index) => (
         <span key={index} className={styles.tag} title={tag}>
-          #{truncateTag(tag)}
+          {truncateTag(tag)}
           {showRemoveButton && onTagRemove && (
             <button
               className={styles.tagRemoveButton}
@@ -87,7 +87,7 @@ export const TagList: React.FC<TagListProps> = ({
           <div className={styles.tagList}>
             {tags.map((tag, index) => (
               <span key={index} className={styles.tag} title={tag}>
-                #{truncateTag(tag, 20)}
+                {truncateTag(tag, 20)}
                 {showRemoveButton && onTagRemove && (
                   <button
                     className={styles.tagRemoveButton}
