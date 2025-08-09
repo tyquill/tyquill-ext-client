@@ -453,7 +453,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         // Content script 수동 주입 시도
         await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          files: ['contentScript/index.js']
+          files: ['content/index.js']
         });
         
         // 잠시 대기 후 재시도
