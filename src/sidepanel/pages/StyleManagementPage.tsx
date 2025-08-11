@@ -254,7 +254,6 @@ const StyleManagementPage: React.FC = () => {
                           type="button"
                           className={styles.removeExampleButton}
                           onClick={() => setScrapedExamples(scrapedExamples.filter((_, i) => i !== index))}
-                          title="예시 삭제"
                         >
                           <IoTrash size={14} />
                         </button>
@@ -305,7 +304,6 @@ const StyleManagementPage: React.FC = () => {
                     <button
                       onClick={() => handleDeleteStyle(style.id)}
                       className={styles.deleteButton}
-                      title="삭제"
                     >
                       <IoTrash size={16} />
                     </button>

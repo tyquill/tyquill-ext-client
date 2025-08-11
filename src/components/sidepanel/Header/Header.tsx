@@ -119,7 +119,6 @@ const Header: React.FC<HeaderProps> = () => {
           ref={avatarRef}
           className={styles.avatarContainer}
           whileHover={{ scale: 1.05 }}
-          title={user?.email || 'User menu'}
         >
           {authState?.user?.avatarUrl ? (
             <img 
@@ -311,7 +310,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
         whileHover="hover"
         whileTap="tap"
         onClick={handleSettingsClick}
-        title="설정"
       >
         <motion.span 
           className={styles.menuIcon}

@@ -62,10 +62,10 @@ const TemplatePage: React.FC = () => {
                 </div>
               </div>
               <div className={styles.templateActions}>
-                <button className={styles.actionButton} title="수정">
+                <button className={styles.actionButton}>
                   <IoCreate size={16} />
                 </button>
-                <button className={styles.actionButton} title="삭제">
+                <button className={styles.actionButton}>
                   <IoTrash size={16} />
                 </button>
               </div>
@@ -159,10 +159,10 @@ const TemplatePage: React.FC = () => {
                 </div>
               </div>
               <div className={styles.templateActions}>
-                <button className={styles.actionButton} title="수정">
+                <button className={styles.actionButton}>
                   <IoCreate size={16} />
                 </button>
-                <button className={styles.actionButton} title="삭제">
+                <button className={styles.actionButton}>
                   <IoTrash size={16} />
                 </button>
               </div>

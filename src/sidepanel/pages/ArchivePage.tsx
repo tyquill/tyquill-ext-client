@@ -187,7 +187,6 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                         e.stopPropagation();
                         handleDelete(article.articleId);
                       }}
-                      title="삭제"
                       >
                       <IoTrash size={18} />
                     </button>

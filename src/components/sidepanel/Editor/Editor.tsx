@@ -515,7 +515,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
         <option value="h5">H5</option>
         <option value="h6">H6</option>
       </select>
-      <button
+        <button
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
         style={{ 
           padding: '4px 8px', 
@@ -527,7 +527,6 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           alignItems: 'center',
           justifyContent: 'center'
         }}
-        title="구분선 추가"
       >
         <RiSubtractLine size={14} />
       </button>
@@ -558,7 +557,6 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           fontSize: '12px',
           fontWeight: '500'
         }}
-        title="AI로 편집"
       >
         <TbMoodPuzzled size={14} />
         <span style={{ marginLeft: '4px' }}>AI</span>

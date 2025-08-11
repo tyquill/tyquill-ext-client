@@ -737,11 +737,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   섹션 추가
                 </button>
                 
-                <button 
+                  <button 
                   onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
                   disabled={state.isAnalyzing}
                   className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
-                  title="현재 페이지를 분석하여 자동으로 섹션 구성을 생성합니다"
                 >
                   <FaWandMagicSparkles size={14} />
                   {state.isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
@@ -801,9 +800,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         {/* 액션 버튼들 */}
                         <div className={articleStyles.sectionActions}>
                           {!isChild && (
-                            <div
+                          <div
                               onClick={() => addSection(id)}
-                              title="하위 섹션 추가"
                               className={articleStyles.addChildButton}
                             >
                               <IoAdd size={15} />
@@ -812,7 +810,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                           
                           <div
                             onClick={() => removeSection(id)}
-                            title="섹션 삭제"
                             className={articleStyles.removeButton}
                           >
                             <IoTrash size={15} />

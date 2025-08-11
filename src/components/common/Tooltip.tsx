@@ -9,7 +9,7 @@ interface TooltipProps {
   side?: 'top' | 'right' | 'bottom' | 'left';
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ children, content, delay = 300, side = 'top' }) => {
+const Tooltip: React.FC<TooltipProps> = ({ children, content, delay = 0, side = 'top' }) => {
   const [isOpen, setIsOpen] = useState(false);
   let timeoutId: NodeJS.Timeout;
 
