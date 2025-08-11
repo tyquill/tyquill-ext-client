@@ -800,20 +800,24 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         {/* 액션 버튼들 */}
                         <div className={articleStyles.sectionActions}>
                           {!isChild && (
-                          <div
-                              onClick={() => addSection(id)}
-                              className={articleStyles.addChildButton}
-                            >
-                              <IoAdd size={15} />
-                            </div>
+                            <Tooltip content="하위 섹션 추가">
+                              <div
+                                onClick={() => addSection(id)}
+                                className={articleStyles.addChildButton}
+                              >
+                                <IoAdd size={15} />
+                              </div>
+                            </Tooltip>
                           )}
                           
-                          <div
-                            onClick={() => removeSection(id)}
-                            className={articleStyles.removeButton}
-                          >
-                            <IoTrash size={15} />
-                          </div>
+                          <Tooltip content="섹션 삭제">
+                            <div
+                              onClick={() => removeSection(id)}
+                              className={articleStyles.removeButton}
+                            >
+                              <IoTrash size={15} />
+                            </div>
+                          </Tooltip>
                         </div>
                       </div>
                       
