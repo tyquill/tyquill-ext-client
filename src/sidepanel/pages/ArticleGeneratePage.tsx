@@ -304,6 +304,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
+  const [generationElapsedSec, setGenerationElapsedSec] = useState<number>(0);
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
   const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
   
@@ -431,6 +432,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     window.addEventListener('resize', updateTopOffset);
     return () => window.removeEventListener('resize', updateTopOffset);
   }, [state.isScrapModalOpen]);
+
+  // 초안 생성 경과 시간 타이머
+  useEffect(() => {
+    if (!state.isGenerating) {
+      setGenerationElapsedSec(0);
+      return;
+    }
+    const intervalId = setInterval(() => {
+      setGenerationElapsedSec((s) => s + 1);
+    }, 1000);
+    return () => clearInterval(intervalId);
+  }, [state.isGenerating]);
 
   const handleScrapSelect = (scrap: ScrapResponse) => {
     const isSelected = state.selectedScraps.find(s => s.scrapId === scrap.scrapId);
@@ -607,23 +620,28 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         writingStyleId: state.selectedWritingStyleId ?? undefined,
       };
 
-      articleService.generateArticle(generateData)
-        .then(result => {
-          showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
-          if (currentPage === 'archive' && onRefreshArchiveList) {
-            onRefreshArchiveList();
-          }
-        })
-        .catch(error => {
-          showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
-        });
-
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
-      showInfo('초안 생성 요청 전송', '초안 생성 요청을 보냈습니다. (예상 대기 시간: 2분)');
-      
-      setTimeout(() => {
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
-      }, 2000);
+      const startedAt = Date.now();
+      try {
+        const result = await articleService.generateArticle(generateData);
+        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
+        showInfo('초안 생성 요청 전송', '초안 생성 요청을 보냈습니다. (예상 대기 시간: 2분)');
+        showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+        if (currentPage === 'archive' && onRefreshArchiveList) {
+          onRefreshArchiveList();
+        }
+      } catch (error: any) {
+        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
+        showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
+      } finally {
+        const elapsedMs = Date.now() - startedAt;
+        const minDisplayMs = 800;
+        if (elapsedMs < minDisplayMs) {
+          await new Promise(resolve => setTimeout(resolve, minDisplayMs - elapsedMs));
+        }
+        setTimeout(() => {
+          dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+        }, 2000);
+      }
 
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
@@ -1078,6 +1096,27 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       분석 시작
                     </button>
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 초안 생성 중 모달 (비활성 오버레이) */}
+        {state.isGenerating && (
+          <div className={articleStyles.analysisModalOverlay} onClick={(e) => e.stopPropagation()}>
+            <div className={articleStyles.analysisModal}>
+              <div className={articleStyles.modalHeader}>
+                <h2 className={articleStyles.modalTitle}>초안 생성 중</h2>
+              </div>
+              <div className={articleStyles.analysisModalContent}>
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 600 }}>초안 생성 요청을 처리 중입니다</h3>
+                  <p style={{ margin: '0 0 8px 0', color: '#666' }}>예상 소요 시간: 약 2분</p>
+                  <p style={{ margin: 0, color: '#666' }}>
+                    경과 시간: {Math.floor(generationElapsedSec / 60)}분 {generationElapsedSec % 60}초
+                  </p>
+                  <p style={{ margin: '8px 0 0 0', color: '#999', fontSize: '12px' }}>생성이 완료되면 이 창은 자동으로 닫힙니다.</p>
                 </div>
               </div>
             </div>
