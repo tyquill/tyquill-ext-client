@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState, useMemo, useRef } from 'react';
-import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash } from 'react-icons/io5';
+import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
@@ -15,6 +15,7 @@ import { FaWandMagicSparkles } from "react-icons/fa6";
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
+import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -303,6 +304,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
+  const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
+  const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -322,6 +325,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     // console.log('📊 Current template structure:', state.templateStructure);
   }, [state.templateStructure]);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
+  const styleDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Save state to localStorage whenever relevant state changes (템플릿 포함)
   useEffect(() => {
@@ -383,6 +387,27 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAllTags, state.isScrapModalOpen]);
 
+  // 문체 선택 드롭다운 바깥 클릭/ESC 시 닫기 (ScrapPage TagSelector 패턴 참고)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        styleDropdownButtonRef.current &&
+        !styleDropdownButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsStyleDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsStyleDropdownOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+   
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
   useEffect(() => {
     if (!state.isScrapModalOpen) return;
@@ -849,19 +874,46 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <h3 className={articleStyles.referenceSectionTitle}>문체 선택</h3>
             <div className={styles.formGroup}>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <select
-                  id="writing-style-select"
-                  className={styles.formSelect}
-                  value={state.selectedWritingStyleId ?? ''}
-                  onChange={(e) => dispatch({ type: 'SET_WRITING_STYLE_ID', payload: e.target.value ? Number(e.target.value) : null })}
-                >
-                  <option value="">문체 선택 안함</option>
-                  {writingStyles.map((style) => (
-                    <option key={style.id} value={style.id}>
-                      {style.name}
-                    </option>
-                  ))}
-                </select>
+                <div className={tagSelectorStyles.tagFilterContainer} style={{ marginRight: 0, flexGrow: 1 }}>
+                  <button
+                    ref={styleDropdownButtonRef}
+                    className={tagSelectorStyles.tagFilterButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsStyleDropdownOpen((prev) => !prev);
+                    }}
+                  >
+                    {state.selectedWritingStyleId
+                      ? (writingStyles.find((ws) => ws.id === state.selectedWritingStyleId)?.name || '문체 선택')
+                      : '기본 뉴스레터 문체'}
+                    {isStyleDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                  </button>
+                  <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
+                    <div
+                      className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch({ type: 'SET_WRITING_STYLE_ID', payload: null });
+                        setIsStyleDropdownOpen(false);
+                      }}
+                    >
+                      기본 뉴스레터 문체
+                    </div>
+                    {writingStyles.map((ws) => (
+                      <div
+                        key={ws.id}
+                        className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dispatch({ type: 'SET_WRITING_STYLE_ID', payload: ws.id });
+                          setIsStyleDropdownOpen(false);
+                        }}
+                      >
+                        {ws.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <Tooltip content="새 문체 추가">
                   <button
                     onClick={() => onNavigate('style-management')}
