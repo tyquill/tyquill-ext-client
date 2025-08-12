@@ -16,6 +16,7 @@ import { writingStyleService, WritingStyle } from '../../services/writingStyleSe
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
+import ProgressBar from '../../components/sidepanel/ProgressBar/ProgressBar';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -304,7 +305,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
-  const [generationElapsedSec, setGenerationElapsedSec] = useState<number>(0);
+
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
   const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
   
@@ -432,18 +433,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     window.addEventListener('resize', updateTopOffset);
     return () => window.removeEventListener('resize', updateTopOffset);
   }, [state.isScrapModalOpen]);
-
-  // 초안 생성 경과 시간 타이머
-  useEffect(() => {
-    if (!state.isGenerating) {
-      setGenerationElapsedSec(0);
-      return;
-    }
-    const intervalId = setInterval(() => {
-      setGenerationElapsedSec((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(intervalId);
-  }, [state.isGenerating]);
 
   const handleScrapSelect = (scrap: ScrapResponse) => {
     const isSelected = state.selectedScraps.find(s => s.scrapId === scrap.scrapId);
@@ -621,14 +610,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       };
 
       const startedAt = Date.now();
+      let wasSuccess = false;
       try {
         const result = await articleService.generateArticle(generateData);
         dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
-        showInfo('초안 생성 요청 전송', '초안 생성 요청을 보냈습니다. (예상 대기 시간: 2분)');
         showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
         if (currentPage === 'archive' && onRefreshArchiveList) {
           onRefreshArchiveList();
         }
+        wasSuccess = true;
       } catch (error: any) {
         dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
         showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
@@ -638,9 +628,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         if (elapsedMs < minDisplayMs) {
           await new Promise(resolve => setTimeout(resolve, minDisplayMs - elapsedMs));
         }
-        setTimeout(() => {
-          dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
-        }, 2000);
+        // 성공 시에는 모달 유지 (사용자가 버튼으로 이동/닫기 선택)
+        if (!wasSuccess) {
+          setTimeout(() => {
+            dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+            dispatch({ type: 'SET_GENERATING', payload: false });
+          }, 2000);
+        }
       }
 
       dispatch({ type: 'SET_SUBJECT', payload: '' });
@@ -665,7 +659,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
       }, 3000);
     } finally {
-      dispatch({ type: 'SET_GENERATING', payload: false });
+      // 성공인 경우에는 모달을 유지하므로 여기서 닫지 않음
+      // 실패/오류 케이스는 위 finally 블록에서 처리
     }
   };
 
@@ -715,6 +710,28 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     } catch (error) {
       return dateString;
     }
+  };
+
+  // 예상 시간 계산 함수
+  const calculateEstimatedTime = () => {
+    let estimatedTime = 94; // 기본 94초
+    
+    // 스크랩 활용: +23초 (개수 상관없이)
+    if (state.selectedScraps.length > 0) {
+      estimatedTime += 23;
+    }
+    
+    // 커스텀 문체 활용: +33초
+    if (state.selectedWritingStyleId !== null) {
+      estimatedTime += 32;
+    }
+    
+    // 섹션 구성 활용: +24초
+    if (state.templateStructure !== null) {
+      estimatedTime += 25;
+    }
+    
+    return estimatedTime;
   };
 
   return (
@@ -1111,13 +1128,48 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               </div>
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <h3 style={{ margin: '0 0 12px 0', fontSize: '18px', fontWeight: 600 }}>초안 생성 요청을 처리 중입니다</h3>
-                  <p style={{ margin: '0 0 8px 0', color: '#666' }}>예상 소요 시간: 약 2분</p>
-                  <p style={{ margin: 0, color: '#666' }}>
-                    경과 시간: {Math.floor(generationElapsedSec / 60)}분 {generationElapsedSec % 60}초
-                  </p>
-                  <p style={{ margin: '8px 0 0 0', color: '#999', fontSize: '12px' }}>생성이 완료되면 이 창은 자동으로 닫힙니다.</p>
+                  <DiscoBallScene />
+                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
+                    {state.generationStatus === 'success' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                  </h3>
+                  <ProgressBar 
+                    estimatedTimeSeconds={calculateEstimatedTime()}
+                    isCompleted={state.generationStatus === 'success'}
+                  />
                 </div>
+                {state.generationStatus === 'success' && (
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
+                    <button
+                      onClick={() => onNavigate('archive')}
+                      style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      보관함으로 이동
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: 'SET_GENERATING', payload: false })}
+                      style={{
+                        padding: '10px 20px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '6px',
+                        background: 'white',
+                        color: '#666',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
