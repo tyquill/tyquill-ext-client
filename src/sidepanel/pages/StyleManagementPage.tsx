@@ -202,7 +202,7 @@ const StyleManagementPage: React.FC = () => {
                   </label>
                   <div style={{display: 'flex', gap: '8px'}}>
                     {scrapedExamples.length < 5 && (
-                      <Tooltip content="현재 열려있는 탭의 본문 텍스트를 클리핑해 예시로 추가합니다. 로그인/보안 페이지 등 일부 사이트에서는 동작하지 않을 수 있어요.">
+                      <Tooltip content="현재 페이지 내용을 스크랩해 문체 예시로 추가합니다.">
                         <button
                         type="button"
                         onClick={handleScrapeCurrentPage}
@@ -235,7 +235,7 @@ const StyleManagementPage: React.FC = () => {
                   </div>
                 </div>
                 <div className={styles.examplesHelp}>
-                  현재 페이지의 기사/글 본문을 가져와 예시로 저장합니다. URL도 함께 저장됩니다. 일부 로그인/보안 페이지에서는 동작하지 않을 수 있어요.
+                  chrome:// 등 일부 페이지에서는 동작하지 않을 수 있습니다.
                 </div>
                 
                 {scrapedExamples.length === 0 ? (
