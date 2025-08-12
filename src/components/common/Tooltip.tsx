@@ -11,7 +11,7 @@ interface TooltipProps {
 
 const Tooltip: React.FC<TooltipProps> = ({ children, content, delay = 0, side = 'top' }) => {
   const [isOpen, setIsOpen] = useState(false);
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
 
   const handleMouseEnter = () => {
     timeoutId = setTimeout(() => {
