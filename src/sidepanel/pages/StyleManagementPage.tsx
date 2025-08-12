@@ -133,8 +133,7 @@ const StyleManagementPage: React.FC = () => {
             <h1 className={pageStyles.pageTitle}>문체 관리</h1>
           </div>
           <p className={pageStyles.pageSubtitle}>
-            문체는 글의 어조와 표현 방식을 의미해요. 좋아하는 글에서 예시를 스크랩해 문체를 만들어두면,
-            이후 글 생성에 해당 문체를 손쉽게 적용할 수 있습니다.
+            문체는 문장의 개성적 특색을 의미합니다. 기존에 작성한 글이나 마음에 드는 문체로 작성된 글을 스크랩해 미리 문체를 저장해두고, 초안을 생성할 때 이를 적용할 수 있습니다.
           </p>
         </div>
         
