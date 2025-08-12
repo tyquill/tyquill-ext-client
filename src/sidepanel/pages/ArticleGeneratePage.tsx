@@ -716,17 +716,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const calculateEstimatedTime = () => {
     let estimatedTime = 94; // 기본 94초
     
-    // 스크랩 활용: +23초 (개수 상관없이)
+    // 스크랩 활용: 기본 23초 + 개당 3초 추가 (26 + (n-1)*2)
     if (state.selectedScraps.length > 0) {
-      estimatedTime += 23;
+      estimatedTime += 26 + (state.selectedScraps.length - 1) * 2;
     }
     
-    // 커스텀 문체 활용: +33초
+    // 커스텀 문체 활용: +32초
     if (state.selectedWritingStyleId !== null) {
       estimatedTime += 32;
     }
     
-    // 섹션 구성 활용: +24초
+    // 섹션 구성 활용: +25초
     if (state.templateStructure !== null) {
       estimatedTime += 25;
     }
