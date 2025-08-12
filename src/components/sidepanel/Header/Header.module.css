@@ -9,6 +9,7 @@
   top: 0;
   z-index: 100;
   min-height: 56px;
+  height: 6vh;
 }
 
 .brandLogo {
