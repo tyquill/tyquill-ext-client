@@ -2294,6 +2294,9 @@ div.contentDisplay ol li {
 .refreshButton:hover {
   background-color: #f0f0f0;
   color: #333;
+}
+
+.refreshButton:hover svg {
   transform: rotate(30deg);
 }
 

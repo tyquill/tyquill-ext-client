@@ -812,10 +812,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <div className={articleStyles.emptyState}>
                 <RiAiGenerate size={24} className={articleStyles.emptyStateIcon} />
                 <p className={articleStyles.emptyStateTitle}>
-                  섹션별로 구성해서 더 체계적인 글을 써보세요
+                  섹션별로 구성해서 더 체계적인 글을 써 보세요.
                 </p>
                 <p className={articleStyles.emptyStateSubtitle}>
-                  "섹션 추가" 또는 "AI 분석"으로 시작해보세요
+                  "섹션 추가" 또는 "현재 페이지 분석"으로 시작해 보세요
                 </p>
               </div>
             )}
@@ -949,13 +949,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     ))}
                   </div>
                 </div>
-                <Tooltip content="새 문체 추가">
+                <Tooltip content="문체 관리 페이지로 이동">
                   <button
                     onClick={() => onNavigate('style-management')}
                     className={articleStyles.sectionButton}
                     style={{ flexShrink: 0 }}
                   >
                     <IoAdd size={16} />
+                    새로운 문체
                   </button>
                 </Tooltip>
               </div>
