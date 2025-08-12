@@ -736,14 +736,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.page}>
-        <div className={styles.pageHeader} ref={headerRef}>
-          <div className={styles.headerControls}>
-            <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
-          </div>
-        </div>
-        
+      <div className={`${styles.page} ${articleStyles.articleGeneratePageLayout}`}>
         <div className={articleStyles.scrollableContent}>
+          <div className={articleStyles.articlePageHeader} ref={headerRef}>
+            <div className={styles.headerControls}>
+              <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
+            </div>
+          </div>
+          
           <div className={styles.draftForm}>
           <div className={styles.formGroup}>
             <label htmlFor="subject" className={styles.formLabel}>
@@ -1004,7 +1004,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
           )}
           </div>
-          <div className={articleStyles.fixedButtonContainer}>
+        </div>
+
+        {/* Footer - 초안 생성 버튼 */}
+        <div className={articleStyles.fixedButtonContainer}>
           <button 
             className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
             onClick={handleGenerateArticle}
@@ -1027,20 +1030,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               </>
             )}
           </button>
-          </div>
         </div>
+      </div>
 
-        {/* AI 분석 컨펌 모달 */}
-        {state.isAnalysisConfirmModalOpen && (
-          <div 
-            className={articleStyles.analysisModalOverlay}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
-              }
-            }}
-          >
-            <div className={articleStyles.analysisModal}>
+      {/* AI 분석 컨펌 모달 */}
+      {state.isAnalysisConfirmModalOpen && (
+        <div 
+          className={articleStyles.analysisModalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+            }
+          }}
+        >
+          <div className={articleStyles.analysisModal}>
               <div className={articleStyles.modalHeader}>
                 <h2 className={articleStyles.modalTitle}>AI 페이지 분석</h2>
                 <button 
@@ -1234,7 +1237,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

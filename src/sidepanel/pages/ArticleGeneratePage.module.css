@@ -1,5 +1,20 @@
 /* ArticleGeneratePage 전용 스타일 */
 
+/* ArticleGeneratePage 레이아웃 */
+.articleGeneratePageLayout {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* 뷰포트 높이 사용 */
+  background-color: #ffffff;
+  padding: 0; /* .page 클래스의 패딩 오버라이드 */
+  overflow: hidden; /* 전체 페이지 스크롤 방지 */
+}
+
+/* ArticleGeneratePage 헤더 */
+.articlePageHeader {
+  margin-bottom: 28px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -328,7 +343,7 @@
   transition: all 0.2s ease;
   background-color: #f8fafc;
   resize: none;
-  min-height: 44px;
+  min-height: 50px;
   max-height: 250px;
   overflow-y: auto;
   line-height: 1.5;
@@ -450,27 +465,21 @@
 
 /* 스크롤 가능한 콘텐츠 영역 */
 .scrollableContent {
-  flex: 1;
   overflow-y: auto;
-  /* Proper bottom padding to prevent content being hidden behind fixed button */
-  padding-bottom: calc(56px + 48px); /* Button height (56px) + safe margin (48px) */
+  min-height: 0; /* flex item이 shrink될 수 있도록 */
+  height: calc(100vh - 155px); /* 전체 높이 - 헤더 크기 - 버튼 크기 */
+  padding: 16px 20px; /* 패딩 복원 */
 }
 
-/* 고정된 버튼 컨테이너 */
+/* 버튼 컨테이너 - footer */
 .fixedButtonContainer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 60px; /* Sidebar width (min-width: 60px) */
   background-color: #fff;
   padding: 16px 20px;
   margin: 0;
-  z-index: 10;
-  flex-shrink: 0;
   border-top: 1px solid #e0e0e0;
-  border-right: 1px solid #e0e0e0;
-  /* box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1); */
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
   box-sizing: border-box;
+  z-index: 10;
 }
 
 /* 기존 생성 버튼 컨테이너 (제거됨) */
