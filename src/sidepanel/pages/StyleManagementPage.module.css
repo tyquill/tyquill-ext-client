@@ -459,6 +459,10 @@
   color: #333333;
 }
 
+.refreshButton svg {
+  transition: transform 0.3s ease;
+}
+
 .refreshButton:hover svg {
   transform: rotate(30deg);
 }
