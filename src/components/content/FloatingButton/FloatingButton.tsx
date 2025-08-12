@@ -102,7 +102,12 @@ const FloatingButton: React.FC = () => {
       const response = await chrome.runtime.sendMessage({ action: 'getSidePanelState' });
       return response?.isOpen || false;
     } catch (error) {
-      console.error('❌ Content: Failed to get side panel state:', error);
+      // Extension context invalidated는 정상적인 상황이므로 조용히 처리
+      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
+        // console.log('Extension context invalidated - this is normal during extension reload');
+        return false;
+      }
+      console.warn('⚠️ Content: Failed to get side panel state:', error);
       return false;
     }
   }, []);
