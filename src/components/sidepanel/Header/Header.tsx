@@ -229,9 +229,9 @@ const menuItemVariants = {
 export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => {
   const menuItems: MenuItem[] = [
     { key: 'scrap', label: '스크랩', icon: IoClipboard },
-    { key: 'draft', label: '초안생성', icon: IoSparkles },
-    { key: 'archive', label: '보관함', icon: IoArchive },
     { key: 'style-management', label: '문체 관리', icon: RiFileUserLine },
+    { key: 'draft', label: '초안 생성', icon: IoSparkles },
+    { key: 'archive', label: '보관함', icon: IoArchive },
   ];
 
   const handleSettingsClick = () => {
