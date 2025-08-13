@@ -95,11 +95,15 @@ const Header: React.FC<HeaderProps> = () => {
     };
   }, []);
 
-  const handleMouseEnter = () => {
-    setIsMenuOpen(true);
+  const handleAvatarClick = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleMouseLeave = () => {
+  const handleSettingsClick = () => {
+    // Chrome extension options page 열기
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.openOptionsPage();
+    }
     setIsMenuOpen(false);
   };
 
@@ -110,15 +114,13 @@ const Header: React.FC<HeaderProps> = () => {
       </div>
       <div className={styles.spacer}></div>
       
-      <div 
-        className={styles.userSection}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+      <div className={styles.userSection}>
         <motion.div
           ref={avatarRef}
           className={styles.avatarContainer}
           whileHover={{ scale: 1.05 }}
+          onClick={handleAvatarClick}
+          style={{ cursor: 'pointer' }}
         >
           {authState?.user?.avatarUrl ? (
             <img 
@@ -169,6 +171,18 @@ const Header: React.FC<HeaderProps> = () => {
               </div>
               
               <div className={styles.menuDivider}></div>
+              
+              <motion.button
+                className={styles.menuItem}
+                onClick={handleSettingsClick}
+                whileHover={{ backgroundColor: '#f3f4f6' }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <span className={styles.menuItemIcon}>
+                  <IoSettings size={16} />
+                </span>
+                <span className={styles.menuItemText}>설정</span>
+              </motion.button>
               
               <motion.button
                 className={styles.menuItem}
