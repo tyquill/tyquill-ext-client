@@ -37,6 +37,18 @@ export interface GenerateArticleDto {
 }
 
 /**
+ * V2 API 아티클 생성 DTO
+ */
+export interface GenerateArticleV2Dto {
+    topic: string;
+    keyInsight: string;
+    scrapWithOptionalComment?: ScrapWithOptionalComment[];
+    generationParams?: string;
+    articleStructureTemplate?: TemplateSection[];
+    writingStyleId?: number;
+}
+
+/**
  * 아티클 업데이트 DTO
  */
 export interface UpdateArticleDto {
@@ -77,6 +89,27 @@ export interface GenerateArticleResponse {
     content: string;
     createdAt: string;
     userId: number;
+}
+
+/**
+ * V2 API 비동기 생성 응답
+ */
+export interface GenerateArticleV2Response {
+    articleId: number;
+    status: 'processing' | 'completed' | 'failed';
+    message: string;
+    createdAt: string;
+}
+
+/**
+ * V2 API 상태 확인 응답
+ */
+export interface ArticleStatusV2Response {
+    articleId: number;
+    status: 'processing' | 'completed' | 'failed';
+    title?: string;
+    content?: string;
+    createdAt: string;
 }
 
 /**
@@ -221,6 +254,80 @@ export class ArticleService {
             method: 'POST',
             body: JSON.stringify(analyzeData),
         });
+    }
+
+    // ========== V2 API (비동기 생성) ==========
+
+    /**
+     * V2: AI로 아티클 비동기 생성
+     * POST /api/v2/articles/generate
+     */
+    async generateArticleV2(generateData: GenerateArticleV2Dto): Promise<GenerateArticleV2Response> {
+        return this.apiRequest('/v2/articles/generate', {
+            method: 'POST',
+            body: JSON.stringify(generateData),
+        });
+    }
+
+    /**
+     * V2: 아티클 생성 상태 확인
+     * GET /api/v2/articles/:id/status
+     */
+    async getArticleStatusV2(articleId: number): Promise<ArticleStatusV2Response> {
+        return this.apiRequest(`/v2/articles/${articleId}/status`, {
+            method: 'GET',
+        });
+    }
+
+    /**
+     * V2: 현재 사용자의 아티클 목록 조회 (상태 정보 포함)
+     * GET /api/v2/articles
+     */
+    async getArticlesV2(): Promise<any[]> {
+        return this.apiRequest('/v2/articles', {
+            method: 'GET',
+        });
+    }
+
+    /**
+     * V2: 폴링을 통한 아티클 완성 대기
+     * @param articleId 대기할 아티클 ID
+     * @param maxAttempts 최대 시도 횟수 (기본: 30회)
+     * @param interval 폴링 간격 (기본: 5초)
+     * @returns 완성된 아티클 정보 또는 타임아웃/에러
+     */
+    async waitForArticleCompletion(
+        articleId: number, 
+        maxAttempts: number = 30, 
+        interval: number = 5000
+    ): Promise<ArticleStatusV2Response> {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const status = await this.getArticleStatusV2(articleId);
+                
+                console.log(`📊 Article ${articleId} status check ${attempt}/${maxAttempts}: ${status.status}`);
+
+                if (status.status === 'completed' || status.status === 'failed') {
+                    return status;
+                }
+
+                // 마지막 시도가 아니면 대기
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            } catch (error) {
+                console.error(`❌ Status check attempt ${attempt} failed:`, error);
+                
+                // 마지막 시도가 아니면 계속 시도
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                    continue;
+                }
+                throw error;
+            }
+        }
+
+        throw new Error(`Article generation timeout after ${maxAttempts} attempts`);
     }
 }
 
