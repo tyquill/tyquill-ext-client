@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { IoArrowBack, IoCreate, IoClose, IoCheckmark } from 'react-icons/io5';
+import React, { useState, useEffect, useRef } from 'react';
+import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
@@ -34,6 +34,8 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [showWidthTip, setShowWidthTip] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
+  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const versionDropdownRef = useRef<HTMLDivElement>(null);
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
@@ -225,6 +227,27 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }, 300);
   };
 
+  // 버전 드롭박스 토글
+  const toggleVersionDropdown = (event: React.MouseEvent) => {
+    event.stopPropagation();
+    setIsVersionDropdownOpen(prev => !prev);
+  };
+
+  // 바깥 클릭으로 드롭박스 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (versionDropdownRef.current && !versionDropdownRef.current.contains(event.target as Node)) {
+        setIsVersionDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+    };
+  }, []);
+
 
   if (loading) {
     return <div className={styles.loadingContainer}>로딩 중...</div>;
@@ -270,9 +293,40 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
         <div className={styles.actionButtons}>
           {!isEditing ? (
-            // 미리보기 페이지: 두 줄 레이아웃
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-              <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
+            // 미리보기 페이지: 한 줄 레이아웃 (왼쪽: 버전, 오른쪽: 액션 버튼들)
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              <div className={styles.versionControls}>
+                {article.archives && article.archives.length > 0 && (
+                  <div className={detailStyles.versionSelector} ref={versionDropdownRef}>
+                    <span className={detailStyles.versionLabel}>버전:</span>
+                    <button
+                      className={detailStyles.versionDropdownButton}
+                      onClick={toggleVersionDropdown}
+                      disabled={isEditing}
+                    >
+                      {selectedVersionNumber || ''}
+                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                    </button>
+                    
+                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
+                      {article.archives.map(archive => (
+                        <div
+                          key={archive.versionNumber}
+                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVersionSelect(archive.versionNumber);
+                            setIsVersionDropdownOpen(false);
+                          }}
+                        >
+                          {archive.versionNumber}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
                 <Tooltip content="maily로 내보내기" side='top'>
                   <ExportButton 
@@ -292,32 +346,42 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   </button>
                 </Tooltip>
               </div>
-              <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
+            </div>
+          ) : (
+            // 편집 페이지: 한 줄 레이아웃 (왼쪽: 버전, 오른쪽: 저장/취소 버튼들)
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+              <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
-                  <div className={styles.versionSelector}>
-                    <label htmlFor="version-select" className={styles.versionLabel}>
-                      버전:
-                    </label>
-                    <select
-                      id="version-select"
-                      value={selectedVersionNumber || ''}
-                      onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                      className={styles.versionSelect}
+                  <div className={detailStyles.versionSelector}>
+                    <span className={detailStyles.versionLabel}>버전:</span>
+                    <button
+                      className={detailStyles.versionDropdownButton}
+                      onClick={toggleVersionDropdown}
                       disabled={isEditing}
                     >
+                      {selectedVersionNumber || ''}
+                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                    </button>
+                    
+                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
                       {article.archives.map(archive => (
-                        <option key={archive.versionNumber} value={archive.versionNumber}>
+                        <div
+                          key={archive.versionNumber}
+                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleVersionSelect(archive.versionNumber);
+                            setIsVersionDropdownOpen(false);
+                          }}
+                        >
                           {archive.versionNumber}
-                        </option>
+                        </div>
                       ))}
-                    </select>
+                    </div>
                   </div>
                 )}
               </div>
-            </div>
-          ) : (
-            <div style={{display: 'flex', flexDirection: 'column', gap: '12px'}}>
-              <div className={styles.rightActionButtons} style={{display: 'flex', justifyContent: 'flex-end'}}>
+              <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 <Tooltip content={saving ? '저장 중...' : '저장'}>
                   <button 
                     className={detailStyles.editPrimaryButton}
@@ -336,28 +400,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     <IoClose size={18} />
                   </button>
                 </Tooltip>
-              </div>
-              <div className={styles.versionControls} style={{display: 'flex', justifyContent: 'flex-end'}}>
-                {article.archives && article.archives.length > 0 && (
-                  <div className={styles.versionSelector}>
-                    <label htmlFor="version-select" className={styles.versionLabel}>
-                      버전:
-                    </label>
-                    <select
-                      id="version-select"
-                      value={selectedVersionNumber || ''}
-                      onChange={(e) => handleVersionSelect(parseInt(e.target.value))}
-                      className={styles.versionSelect}
-                      disabled={isEditing}
-                    >
-                      {article.archives.map(archive => (
-                        <option key={archive.versionNumber} value={archive.versionNumber}>
-                          {archive.versionNumber}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
               </div>
             </div>
           )}

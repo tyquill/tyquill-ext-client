@@ -317,13 +317,14 @@
 
 .exampleCard {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 16px;
   background: #f8fafc;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   transition: all 0.2s ease;
+  min-height: 60px;
 }
 
 .exampleCard:hover {
@@ -333,13 +334,22 @@
 
 .exampleContent {
   flex: 1;
+  display: flex;
+  align-items: center;
 }
 
 .exampleTitle {
   font-size: 14px;
   font-weight: 600;
   color: #000000;
-  margin: 0 0 4px 0;
+  margin: 0;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
 .removeExampleButton {
@@ -457,6 +467,13 @@
 .refreshButton:hover {
   background-color: #f0f0f0;
   color: #333333;
+}
+
+.refreshButton svg {
+  transition: transform 0.3s ease;
+}
+
+.refreshButton:hover svg {
   transform: rotate(30deg);
 }
 

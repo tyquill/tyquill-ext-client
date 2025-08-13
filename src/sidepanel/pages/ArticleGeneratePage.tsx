@@ -1,5 +1,5 @@
 import React, { useEffect, useReducer, useState, useMemo, useRef } from 'react';
-import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash } from 'react-icons/io5';
+import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
@@ -15,6 +15,8 @@ import { FaWandMagicSparkles } from "react-icons/fa6";
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
+import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
+import ProgressBar from '../../components/sidepanel/ProgressBar/ProgressBar';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -48,6 +50,7 @@ interface ArticleGenerateState {
   isAnalysisConfirmModalOpen: boolean;
   selectedWritingStyleId: number | null; // writingStyleUrl -> selectedWritingStyleId
   isAnalyzingStyle: boolean;
+  initialEstimatedTime: number | null; // 처음 계산된 예상 시간 저장
 }
 
 type DraftAction =
@@ -76,7 +79,8 @@ type DraftAction =
   | { type: 'CLEAR_TEMPLATE' }
   | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' }
   | { type: 'SET_WRITING_STYLE_ID'; payload: number | null } // SET_WRITING_STYLE_URL -> SET_WRITING_STYLE_ID
-  | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
+  | { type: 'SET_ANALYZING_STYLE'; payload: boolean }
+  | { type: 'SET_INITIAL_ESTIMATED_TIME'; payload: number };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 const DEFAULT_MODAL_TOP_OFFSET = 160;
@@ -103,6 +107,7 @@ const getInitialState = (): ArticleGenerateState => {
         isAnalysisConfirmModalOpen: false,
         selectedWritingStyleId: parsedState.selectedWritingStyleId || null, // writingStyleUrl -> selectedWritingStyleId
         isAnalyzingStyle: false,
+        initialEstimatedTime: parsedState.initialEstimatedTime || null, // 초기 예상 시간도 복원
       };
       
       // console.log('✅ Restored state with template:', restoredState.templateStructure);
@@ -130,6 +135,7 @@ const getInitialState = (): ArticleGenerateState => {
     isAnalysisConfirmModalOpen: false,
     selectedWritingStyleId: null,
     isAnalyzingStyle: false,
+    initialEstimatedTime: null, // 처음에는 null
   };
 };
 
@@ -286,6 +292,8 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
       return { ...state, selectedWritingStyleId: action.payload };
     case 'SET_ANALYZING_STYLE':
       return { ...state, isAnalyzingStyle: action.payload };
+    case 'SET_INITIAL_ESTIMATED_TIME':
+      return { ...state, initialEstimatedTime: action.payload };
     default:
       return state;
   }
@@ -303,6 +311,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
+
+  const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
+  const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -322,6 +333,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     // console.log('📊 Current template structure:', state.templateStructure);
   }, [state.templateStructure]);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
+  const styleDropdownRef = useRef<HTMLDivElement | null>(null);
 
   // Save state to localStorage whenever relevant state changes (템플릿 포함)
   useEffect(() => {
@@ -383,6 +395,27 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     return () => document.removeEventListener('click', handleClickOutside);
   }, [showAllTags, state.isScrapModalOpen]);
 
+  // 문체 선택 드롭다운 바깥 클릭/ESC 시 닫기 (ScrapPage TagSelector 패턴 참고)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        styleDropdownButtonRef.current &&
+        !styleDropdownButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsStyleDropdownOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsStyleDropdownOpen(false);
+    };
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+   
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
   useEffect(() => {
     if (!state.isScrapModalOpen) return;
@@ -582,23 +615,33 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         writingStyleId: state.selectedWritingStyleId ?? undefined,
       };
 
-      articleService.generateArticle(generateData)
-        .then(result => {
-          showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
-          if (currentPage === 'archive' && onRefreshArchiveList) {
-            onRefreshArchiveList();
-          }
-        })
-        .catch(error => {
-          showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
-        });
-
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
-      showInfo('초안 생성 요청 전송', '초안 생성 요청을 보냈습니다. (예상 대기 시간: 2분)');
-      
-      setTimeout(() => {
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
-      }, 2000);
+      const startedAt = Date.now();
+      let wasSuccess = false;
+      try {
+        const result = await articleService.generateArticle(generateData);
+        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
+        showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+        if (currentPage === 'archive' && onRefreshArchiveList) {
+          onRefreshArchiveList();
+        }
+        wasSuccess = true;
+      } catch (error: any) {
+        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
+        showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
+      } finally {
+        const elapsedMs = Date.now() - startedAt;
+        const minDisplayMs = 800;
+        if (elapsedMs < minDisplayMs) {
+          await new Promise(resolve => setTimeout(resolve, minDisplayMs - elapsedMs));
+        }
+        // 성공 시에는 모달 유지 (사용자가 버튼으로 이동/닫기 선택)
+        if (!wasSuccess) {
+          setTimeout(() => {
+            dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+            dispatch({ type: 'SET_GENERATING', payload: false });
+          }, 2000);
+        }
+      }
 
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
@@ -622,7 +665,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
       }, 3000);
     } finally {
-      dispatch({ type: 'SET_GENERATING', payload: false });
+      // 성공인 경우에는 모달을 유지하므로 여기서 닫지 않음
+      // 실패/오류 케이스는 위 finally 블록에서 처리
     }
   };
 
@@ -674,16 +718,49 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }
   };
 
+  // 예상 시간 계산 함수
+  const calculateEstimatedTime = () => {
+    let currentEstimatedTime = 94; // 기본 94초
+    
+    // 스크랩 활용: 기본 23초 + 개당 3초 추가 (26 + (n-1)*2)
+    if (state.selectedScraps.length > 0) {
+      currentEstimatedTime += 26 + (state.selectedScraps.length - 1) * 2;
+    }
+    
+    // 커스텀 문체 활용: +32초
+    if (state.selectedWritingStyleId !== null) {
+      currentEstimatedTime += 32;
+    }
+    
+    // 섹션 구성 활용: +25초
+    if (state.templateStructure !== null) {
+      currentEstimatedTime += 25;
+    }
+    
+    // 초기 예상 시간이 설정되지 않았고, 현재 계산된 시간이 기본값보다 클 때 저장
+    if (state.initialEstimatedTime === null && currentEstimatedTime > 94) {
+      dispatch({ type: 'SET_INITIAL_ESTIMATED_TIME', payload: currentEstimatedTime });
+      return currentEstimatedTime;
+    }
+    
+    // 현재 상태가 기본값이고 초기 예상 시간이 저장되어 있으면 저장된 값 사용
+    if (currentEstimatedTime === 94 && state.initialEstimatedTime !== null) {
+      return state.initialEstimatedTime;
+    }
+    
+    return currentEstimatedTime;
+  };
+
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.page}>
-        <div className={styles.pageHeader} ref={headerRef}>
-          <div className={styles.headerControls}>
-            <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
-          </div>
-        </div>
-        
+      <div className={`${styles.page} ${articleStyles.articleGeneratePageLayout}`}>
         <div className={articleStyles.scrollableContent}>
+          <div className={articleStyles.articlePageHeader} ref={headerRef}>
+            <div className={styles.headerControls}>
+              <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
+            </div>
+          </div>
+          
           <div className={styles.draftForm}>
           <div className={styles.formGroup}>
             <label htmlFor="subject" className={styles.formLabel}>
@@ -737,11 +814,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   섹션 추가
                 </button>
                 
-                <button 
+                  <button 
                   onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
                   disabled={state.isAnalyzing}
                   className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
-                  title="현재 페이지를 분석하여 자동으로 섹션 구성을 생성합니다"
                 >
                   <FaWandMagicSparkles size={14} />
                   {state.isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
@@ -753,10 +829,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <div className={articleStyles.emptyState}>
                 <RiAiGenerate size={24} className={articleStyles.emptyStateIcon} />
                 <p className={articleStyles.emptyStateTitle}>
-                  섹션별로 구성해서 더 체계적인 글을 써보세요
+                  섹션별로 구성해서 더 체계적인 글을 써 보세요.
                 </p>
                 <p className={articleStyles.emptyStateSubtitle}>
-                  "섹션 추가" 또는 "AI 분석"으로 시작해보세요
+                  "섹션 추가" 또는 "현재 페이지 분석"으로 시작해 보세요
                 </p>
               </div>
             )}
@@ -801,22 +877,24 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         {/* 액션 버튼들 */}
                         <div className={articleStyles.sectionActions}>
                           {!isChild && (
-                            <div
-                              onClick={() => addSection(id)}
-                              title="하위 섹션 추가"
-                              className={articleStyles.addChildButton}
-                            >
-                              <IoAdd size={15} />
-                            </div>
+                            <Tooltip content="하위 섹션 추가">
+                              <div
+                                onClick={() => addSection(id)}
+                                className={articleStyles.addChildButton}
+                              >
+                                <IoAdd size={15} />
+                              </div>
+                            </Tooltip>
                           )}
                           
-                          <div
-                            onClick={() => removeSection(id)}
-                            title="섹션 삭제"
-                            className={articleStyles.removeButton}
-                          >
-                            <IoTrash size={15} />
-                          </div>
+                          <Tooltip content="섹션 삭제">
+                            <div
+                              onClick={() => removeSection(id)}
+                              className={articleStyles.removeButton}
+                            >
+                              <IoTrash size={15} />
+                            </div>
+                          </Tooltip>
                         </div>
                       </div>
                       
@@ -848,26 +926,54 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <h3 className={articleStyles.referenceSectionTitle}>문체 선택</h3>
             <div className={styles.formGroup}>
               <div style={{ display: 'flex', gap: '8px' }}>
-                <select
-                  id="writing-style-select"
-                  className={styles.formSelect}
-                  value={state.selectedWritingStyleId ?? ''}
-                  onChange={(e) => dispatch({ type: 'SET_WRITING_STYLE_ID', payload: e.target.value ? Number(e.target.value) : null })}
-                >
-                  <option value="">문체 선택 안함</option>
-                  {writingStyles.map((style) => (
-                    <option key={style.id} value={style.id}>
-                      {style.name}
-                    </option>
-                  ))}
-                </select>
-                <Tooltip content="새 문체 추가">
+                <div className={tagSelectorStyles.tagFilterContainer} style={{ marginRight: 0, flexGrow: 1 }}>
+                  <button
+                    ref={styleDropdownButtonRef}
+                    className={tagSelectorStyles.tagFilterButton}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsStyleDropdownOpen((prev) => !prev);
+                    }}
+                  >
+                    {state.selectedWritingStyleId
+                      ? (writingStyles.find((ws) => ws.id === state.selectedWritingStyleId)?.name || '문체 선택')
+                      : '기본 뉴스레터 문체'}
+                    {isStyleDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                  </button>
+                  <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
+                    <div
+                      className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        dispatch({ type: 'SET_WRITING_STYLE_ID', payload: null });
+                        setIsStyleDropdownOpen(false);
+                      }}
+                    >
+                      기본 뉴스레터 문체
+                    </div>
+                    {writingStyles.map((ws) => (
+                      <div
+                        key={ws.id}
+                        className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          dispatch({ type: 'SET_WRITING_STYLE_ID', payload: ws.id });
+                          setIsStyleDropdownOpen(false);
+                        }}
+                      >
+                        {ws.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <Tooltip content="문체 관리 페이지로 이동">
                   <button
                     onClick={() => onNavigate('style-management')}
                     className={articleStyles.sectionButton}
                     style={{ flexShrink: 0 }}
                   >
                     <IoAdd size={16} />
+                    새로운 문체
                   </button>
                 </Tooltip>
               </div>
@@ -915,7 +1021,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
           )}
           </div>
-          <div className={articleStyles.fixedButtonContainer}>
+        </div>
+
+        {/* Footer - 초안 생성 버튼 */}
+        <div className={articleStyles.fixedButtonContainer}>
           <button 
             className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
             onClick={handleGenerateArticle}
@@ -938,20 +1047,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               </>
             )}
           </button>
-          </div>
         </div>
+      </div>
 
-        {/* AI 분석 컨펌 모달 */}
-        {state.isAnalysisConfirmModalOpen && (
-          <div 
-            className={articleStyles.analysisModalOverlay}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
-              }
-            }}
-          >
-            <div className={articleStyles.analysisModal}>
+      {/* AI 분석 컨펌 모달 */}
+      {state.isAnalysisConfirmModalOpen && (
+        <div 
+          className={articleStyles.analysisModalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+            }
+          }}
+        >
+          <div className={articleStyles.analysisModal}>
               <div className={articleStyles.modalHeader}>
                 <h2 className={articleStyles.modalTitle}>AI 페이지 분석</h2>
                 <button 
@@ -1031,6 +1140,62 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           </div>
         )}
 
+        {/* 초안 생성 중 모달 (비활성 오버레이) */}
+        {state.isGenerating && (
+          <div className={articleStyles.analysisModalOverlay} onClick={(e) => e.stopPropagation()}>
+            <div className={articleStyles.analysisModal}>
+              <div className={articleStyles.modalHeader}>
+                <h2 className={articleStyles.modalTitle}>초안 생성 중</h2>
+              </div>
+              <div className={articleStyles.analysisModalContent}>
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <DiscoBallScene />
+                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
+                    {state.generationStatus === 'success' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                  </h3>
+                  <ProgressBar 
+                    estimatedTimeSeconds={calculateEstimatedTime()}
+                    isCompleted={state.generationStatus === 'success'}
+                  />
+                </div>
+                {state.generationStatus === 'success' && (
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
+                    <button
+                      onClick={() => onNavigate('archive')}
+                      style={{
+                        padding: '10px 20px',
+                        border: 'none',
+                        borderRadius: '6px',
+                        background: '#3b82f6',
+                        color: 'white',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    >
+                      보관함으로 이동
+                    </button>
+                    <button
+                      onClick={() => dispatch({ type: 'SET_GENERATING', payload: false })}
+                      style={{
+                        padding: '10px 20px',
+                        border: '1px solid #e0e0e0',
+                        borderRadius: '6px',
+                        background: 'white',
+                        color: '#666',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                      }}
+                    >
+                      닫기
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {state.isScrapModalOpen && (
           <div 
             className={articleStyles.modalOverlay}
@@ -1089,7 +1254,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
           </div>
         )}
-      </div>
     </div>
   );
 };

@@ -133,8 +133,7 @@ const StyleManagementPage: React.FC = () => {
             <h1 className={pageStyles.pageTitle}>문체 관리</h1>
           </div>
           <p className={pageStyles.pageSubtitle}>
-            문체는 글의 어조와 표현 방식을 의미해요. 좋아하는 글에서 예시를 스크랩해 문체를 만들어두면,
-            이후 글 생성에 해당 문체를 손쉽게 적용할 수 있습니다.
+            문체는 문장의 개성적 특색을 의미합니다. 기존에 작성한 글이나 마음에 드는 문체로 작성된 글을 스크랩해 미리 문체를 저장해두고, 초안을 생성할 때 이를 적용할 수 있습니다.
           </p>
         </div>
         
@@ -203,7 +202,7 @@ const StyleManagementPage: React.FC = () => {
                   </label>
                   <div style={{display: 'flex', gap: '8px'}}>
                     {scrapedExamples.length < 5 && (
-                      <Tooltip content="현재 열려있는 탭의 본문 텍스트를 클리핑해 예시로 추가합니다. 로그인/보안 페이지 등 일부 사이트에서는 동작하지 않을 수 있어요.">
+                      <Tooltip content="현재 페이지 내용을 스크랩해 문체 예시로 추가합니다.">
                         <button
                         type="button"
                         onClick={handleScrapeCurrentPage}
@@ -236,7 +235,7 @@ const StyleManagementPage: React.FC = () => {
                   </div>
                 </div>
                 <div className={styles.examplesHelp}>
-                  현재 페이지의 기사/글 본문을 가져와 예시로 저장합니다. URL도 함께 저장됩니다. 일부 로그인/보안 페이지에서는 동작하지 않을 수 있어요.
+                  chrome:// 등 일부 페이지에서는 동작하지 않을 수 있습니다.
                 </div>
                 
                 {scrapedExamples.length === 0 ? (
@@ -254,7 +253,6 @@ const StyleManagementPage: React.FC = () => {
                           type="button"
                           className={styles.removeExampleButton}
                           onClick={() => setScrapedExamples(scrapedExamples.filter((_, i) => i !== index))}
-                          title="예시 삭제"
                         >
                           <IoTrash size={14} />
                         </button>
@@ -305,7 +303,6 @@ const StyleManagementPage: React.FC = () => {
                     <button
                       onClick={() => handleDeleteStyle(style.id)}
                       className={styles.deleteButton}
-                      title="삭제"
                     >
                       <IoTrash size={16} />
                     </button>

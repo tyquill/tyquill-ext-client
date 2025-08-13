@@ -542,7 +542,6 @@ const ScrapPage: React.FC = () => {
                 className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                title="스크랩 목록 새로고침"
                 >
                 <IoRefresh size={16} />
               </button>

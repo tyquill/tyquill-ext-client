@@ -293,7 +293,6 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
     <button 
       className={styles.exportButton}
       onClick={handleExport}
-      title="maily.so로 내보내기"
     >
       <IoArrowUpCircle size={20} />
     </button>

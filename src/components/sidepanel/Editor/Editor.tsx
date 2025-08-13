@@ -527,7 +527,6 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           alignItems: 'center',
           justifyContent: 'center'
         }}
-        title="구분선 추가"
       >
         <RiSubtractLine size={14} />
       </button>
@@ -558,7 +557,6 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
           fontSize: '12px',
           fontWeight: '500'
         }}
-        title="AI로 편집"
       >
         <TbMoodPuzzled size={14} />
         <span style={{ marginLeft: '4px' }}>AI</span>

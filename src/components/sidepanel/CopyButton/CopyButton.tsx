@@ -94,7 +94,6 @@ const CopyButton: React.FC<CopyButtonProps> = ({ title, content }) => {
     <motion.button 
       className={styles.copyButton}
       onClick={handleCopy}
-      title="클립보드에 복사"
       disabled={isLoading}
       {...getAnimation({
         whileHover: animations.buttonHover,
