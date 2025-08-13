@@ -9,7 +9,7 @@ import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector'
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
-import { articleService, GenerateArticleDto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
+import { articleService, GenerateArticleDto, GenerateArticleV2Dto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
@@ -42,7 +42,7 @@ interface ArticleGenerateState {
   isTagDropdownOpen: boolean;
   isGenerating: boolean;
   generationError: string | null;
-  generationStatus: 'idle' | 'success' | 'error';
+  generationStatus: 'idle' | 'processing' | 'completed' | 'failed';
   // New state properties
   templateStructure: TemplateSection[] | null;
   sectionIdCounter: number;
@@ -68,7 +68,7 @@ type DraftAction =
   | { type: 'TOGGLE_TAG_DROPDOWN' }
   | { type: 'SET_GENERATING'; payload: boolean }
   | { type: 'SET_GENERATION_ERROR'; payload: string | null }
-  | { type: 'SET_GENERATION_STATUS'; payload: 'idle' | 'success' | 'error' }
+  | { type: 'SET_GENERATION_STATUS'; payload: 'idle' |'processing' | 'completed' | 'failed' }
   // New actions
   | { type: 'SET_ANALYZING'; payload: boolean }
   | { type: 'SET_TEMPLATE_STRUCTURE'; payload: TemplateSection[] | null }
@@ -602,8 +602,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       const templateWithoutIds = state.templateStructure ? removeIdsFromTemplate(state.templateStructure) : [];
 
-      // TODO: Update GenerateArticleDto to include template structure and ideas
-      const generateData: GenerateArticleDto = {
+      // V2 API를 사용한 비동기 생성
+      const generateData: GenerateArticleV2Dto = {
         topic: isTemplateMode ? (state.templateStructure?.[0]?.title || '섹션 기반 아티클') : state.topic,
         keyInsight: isTemplateMode ? JSON.stringify((state as any).structuredIdeas) : state.keyInsight,
         scrapWithOptionalComment: state.selectedScraps.map(scrap => ({
@@ -615,33 +615,41 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         writingStyleId: state.selectedWritingStyleId ?? undefined,
       };
 
-      const startedAt = Date.now();
-      let wasSuccess = false;
-      try {
-        const result = await articleService.generateArticle(generateData);
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
-        showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
-        if (currentPage === 'archive' && onRefreshArchiveList) {
-          onRefreshArchiveList();
-        }
-        wasSuccess = true;
-      } catch (error: any) {
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
-        showError('초안 생성 실패', error.message || '초안 생성 중 오류가 발생했습니다.');
-      } finally {
-        const elapsedMs = Date.now() - startedAt;
-        const minDisplayMs = 800;
-        if (elapsedMs < minDisplayMs) {
-          await new Promise(resolve => setTimeout(resolve, minDisplayMs - elapsedMs));
-        }
-        // 성공 시에는 모달 유지 (사용자가 버튼으로 이동/닫기 선택)
-        if (!wasSuccess) {
-          setTimeout(() => {
-            dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
-            dispatch({ type: 'SET_GENERATING', payload: false });
-          }, 2000);
-        }
-      }
+      // V2 API로 비동기 생성 시작
+      articleService.generateArticleV2(generateData)
+        .then(async (response) => {
+          // 즉시 요청 성공 메시지 표시
+          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.`);
+          
+          try {
+            // 백그라운드에서 완성 대기 (최대 30회, 5초 간격 = 2.5분)
+            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 30, 5000);
+            
+            if (completedArticle.status === 'completed') {
+              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'completed' });
+              // showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+              if (currentPage === 'archive' && onRefreshArchiveList) {
+                onRefreshArchiveList();
+              }
+            } else if (completedArticle.status === 'failed') {
+              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
+              // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
+            }
+          } catch (pollingError) {
+            // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
+            console.error('폴링 오류:', pollingError);
+            showError('상태 확인 실패', '생성 상태를 확인할 수 없습니다. 보관함을 직접 확인해주세요.');
+          }
+        })
+        .catch(error => {
+          showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
+        });
+
+      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'processing' });
+      
+      setTimeout(() => {
+        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+      }, 2000);
 
       dispatch({ type: 'SET_SUBJECT', payload: '' });
       dispatch({ type: 'SET_MESSAGE', payload: '' });
@@ -658,7 +666,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     } catch (error: any) {
       dispatch({ type: 'SET_GENERATION_ERROR', payload: error.message || '초안 생성에 실패했습니다.' });
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
+      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
       showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
       
       setTimeout(() => {
@@ -1030,12 +1038,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             onClick={handleGenerateArticle}
             disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
           >
-            {state.generationStatus === 'success' ? (
+            {state.generationStatus === 'completed' ? (
               <>
                 <IoCheckmark size={20} />
                 생성 요청 완료
               </>
-            ) : state.generationStatus === 'error' ? (
+            ) : state.generationStatus === 'failed' ? (
               <>
                 <IoClose size={20} />
                 실패
@@ -1151,14 +1159,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <DiscoBallScene />
                   <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
-                    {state.generationStatus === 'success' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                    {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
                   <ProgressBar 
                     estimatedTimeSeconds={calculateEstimatedTime()}
-                    isCompleted={state.generationStatus === 'success'}
+                    isCompleted={state.generationStatus === 'completed'}
                   />
                 </div>
-                {state.generationStatus === 'success' && (
+                {state.generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
                     <button
                       onClick={() => onNavigate('archive')}

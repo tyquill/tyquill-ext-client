@@ -164,7 +164,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                       minute: '2-digit',
                       hour12: false
                     }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5')}</span>
-                    {article.updatedAt !== article.createdAt && (
+                    {/* {article.updatedAt !== article.createdAt && (
                       <>
                         <span className={styles.dot} />
                         <span>{new Date(article.updatedAt).toLocaleString('ko-KR', {
@@ -176,7 +176,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                           hour12: false
                         }).replace(/(\d+)\. (\d+)\. (\d+)\.? (\d+):(\d+)/, '$1. $2. $3. $4:$5')}</span>
                       </>
-                    )}
+                    )} */}
                   </div>
                 </div>
                 <div className={styles.archiveActions}>
