@@ -515,7 +515,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
         <option value="h5">H5</option>
         <option value="h6">H6</option>
       </select>
-        <button
+      <button
         onClick={() => editor.chain().focus().setHorizontalRule().run()}
         style={{ 
           padding: '4px 8px', 
