@@ -42,7 +42,7 @@ interface ArticleGenerateState {
   isTagDropdownOpen: boolean;
   isGenerating: boolean;
   generationError: string | null;
-  generationStatus: 'idle' | 'success' | 'error';
+  generationStatus: 'idle' | 'processing' | 'completed' | 'failed';
   // New state properties
   templateStructure: TemplateSection[] | null;
   sectionIdCounter: number;
@@ -68,7 +68,7 @@ type DraftAction =
   | { type: 'TOGGLE_TAG_DROPDOWN' }
   | { type: 'SET_GENERATING'; payload: boolean }
   | { type: 'SET_GENERATION_ERROR'; payload: string | null }
-  | { type: 'SET_GENERATION_STATUS'; payload: 'idle' | 'success' | 'error' }
+  | { type: 'SET_GENERATION_STATUS'; payload: 'idle' |'processing' | 'completed' | 'failed' }
   // New actions
   | { type: 'SET_ANALYZING'; payload: boolean }
   | { type: 'SET_TEMPLATE_STRUCTURE'; payload: TemplateSection[] | null }
@@ -619,19 +619,21 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       articleService.generateArticleV2(generateData)
         .then(async (response) => {
           // 즉시 요청 성공 메시지 표시
-          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다. (ID: ${response.articleId})`);
+          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.`);
           
           try {
             // 백그라운드에서 완성 대기 (최대 30회, 5초 간격 = 2.5분)
             const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 30, 5000);
             
             if (completedArticle.status === 'completed') {
-              showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'completed' });
+              // showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
               if (currentPage === 'archive' && onRefreshArchiveList) {
                 onRefreshArchiveList();
               }
             } else if (completedArticle.status === 'failed') {
-              showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
+              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
+              // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
@@ -643,7 +645,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
         });
 
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'success' });
+      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'processing' });
       
       setTimeout(() => {
         dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
@@ -664,7 +666,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     } catch (error: any) {
       dispatch({ type: 'SET_GENERATION_ERROR', payload: error.message || '초안 생성에 실패했습니다.' });
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'error' });
+      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
       showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
       
       setTimeout(() => {
@@ -1036,12 +1038,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             onClick={handleGenerateArticle}
             disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
           >
-            {state.generationStatus === 'success' ? (
+            {state.generationStatus === 'completed' ? (
               <>
                 <IoCheckmark size={20} />
                 생성 요청 완료
               </>
-            ) : state.generationStatus === 'error' ? (
+            ) : state.generationStatus === 'failed' ? (
               <>
                 <IoClose size={20} />
                 실패
@@ -1157,14 +1159,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <DiscoBallScene />
                   <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
-                    {state.generationStatus === 'success' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                    {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
                   <ProgressBar 
                     estimatedTimeSeconds={calculateEstimatedTime()}
-                    isCompleted={state.generationStatus === 'success'}
+                    isCompleted={state.generationStatus === 'completed'}
                   />
                 </div>
-                {state.generationStatus === 'success' && (
+                {state.generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
                     <button
                       onClick={() => onNavigate('archive')}
