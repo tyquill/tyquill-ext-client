@@ -307,6 +307,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
   const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const generationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const generationStartTimeRef = useRef<number>(0);
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -408,6 +411,39 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // 초안 생성 중 경과 시간 타이머 (시작/종료는 isGenerating 기준으로만 제어)
+  useEffect(() => {
+    if (state.isGenerating) {
+      generationStartTimeRef.current = Date.now();
+      setElapsedSeconds(0);
+      generationTimerRef.current = setInterval(() => {
+        const secs = Math.floor((Date.now() - generationStartTimeRef.current) / 1000);
+        setElapsedSeconds(prev => (prev !== secs ? secs : prev));
+      }, 500);
+    }
+
+    return () => {
+      if (generationTimerRef.current) {
+        clearInterval(generationTimerRef.current);
+        generationTimerRef.current = null;
+      }
+    };
+  }, [state.isGenerating]);
+
+  // 완료 시 타이머 정지 (표시값 유지)
+  useEffect(() => {
+    if (state.generationStatus === 'completed' && generationTimerRef.current) {
+      clearInterval(generationTimerRef.current);
+      generationTimerRef.current = null;
+    }
+  }, [state.generationStatus]);
+
+  const formatElapsed = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}분 ${remainingSeconds}초`;
+  };
    
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
   useEffect(() => {
@@ -1120,9 +1156,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <DiscoBallScene />
-                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
+                  <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
                     {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
+                  {state.generationStatus !== 'completed' && (
+                    <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
+                      입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.
+                    </p>
+                  )}
+                  {state.isGenerating && state.generationStatus !== 'completed' && (
+                    <div className={articleStyles.loadingSpinner} />
+                  )}
+                  <div style={{ marginTop: 8, color: '#6b7280', fontSize: '13px' }}>
+                    경과 시간: {formatElapsed(elapsedSeconds)}
+                  </div>
                 </div>
                 {state.generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
