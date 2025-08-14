@@ -298,15 +298,13 @@ export class ArticleService {
      */
     async waitForArticleCompletion(
         articleId: number, 
-        maxAttempts: number = 30, 
+        maxAttempts: number = 50, 
         interval: number = 5000
     ): Promise<ArticleStatusV2Response> {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const status = await this.getArticleStatusV2(articleId);
                 
-                console.log(`📊 Article ${articleId} status check ${attempt}/${maxAttempts}: ${status.status}`);
-
                 if (status.status === 'completed' || status.status === 'failed') {
                     return status;
                 }

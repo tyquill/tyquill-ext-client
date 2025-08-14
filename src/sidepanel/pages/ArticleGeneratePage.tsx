@@ -651,8 +651,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.`);
           
           try {
-            // 백그라운드에서 완성 대기 (최대 30회, 5초 간격 = 2.5분)
-            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 30, 5000);
+            // 백그라운드에서 완성 대기 (최대 50회, 5초 간격 = 2.5분)
+            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 50, 5000);
             
             if (completedArticle.status === 'completed') {
               dispatch({ type: 'SET_GENERATION_STATUS', payload: 'completed' });
