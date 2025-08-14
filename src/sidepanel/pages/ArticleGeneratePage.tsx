@@ -16,7 +16,6 @@ import { writingStyleService, WritingStyle } from '../../services/writingStyleSe
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
-import ProgressBar from '../../components/sidepanel/ProgressBar/ProgressBar';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -50,7 +49,6 @@ interface ArticleGenerateState {
   isAnalysisConfirmModalOpen: boolean;
   selectedWritingStyleId: number | null; // writingStyleUrl -> selectedWritingStyleId
   isAnalyzingStyle: boolean;
-  initialEstimatedTime: number | null; // 처음 계산된 예상 시간 저장
 }
 
 type DraftAction =
@@ -79,8 +77,7 @@ type DraftAction =
   | { type: 'CLEAR_TEMPLATE' }
   | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' }
   | { type: 'SET_WRITING_STYLE_ID'; payload: number | null } // SET_WRITING_STYLE_URL -> SET_WRITING_STYLE_ID
-  | { type: 'SET_ANALYZING_STYLE'; payload: boolean }
-  | { type: 'SET_INITIAL_ESTIMATED_TIME'; payload: number };
+  | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 const DEFAULT_MODAL_TOP_OFFSET = 160;
@@ -107,7 +104,6 @@ const getInitialState = (): ArticleGenerateState => {
         isAnalysisConfirmModalOpen: false,
         selectedWritingStyleId: parsedState.selectedWritingStyleId || null, // writingStyleUrl -> selectedWritingStyleId
         isAnalyzingStyle: false,
-        initialEstimatedTime: parsedState.initialEstimatedTime || null, // 초기 예상 시간도 복원
       };
       
       // console.log('✅ Restored state with template:', restoredState.templateStructure);
@@ -135,7 +131,6 @@ const getInitialState = (): ArticleGenerateState => {
     isAnalysisConfirmModalOpen: false,
     selectedWritingStyleId: null,
     isAnalyzingStyle: false,
-    initialEstimatedTime: null, // 처음에는 null
   };
 };
 
@@ -292,8 +287,6 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
       return { ...state, selectedWritingStyleId: action.payload };
     case 'SET_ANALYZING_STYLE':
       return { ...state, isAnalyzingStyle: action.payload };
-    case 'SET_INITIAL_ESTIMATED_TIME':
-      return { ...state, initialEstimatedTime: action.payload };
     default:
       return state;
   }
@@ -726,38 +719,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }
   };
 
-  // 예상 시간 계산 함수
-  const calculateEstimatedTime = () => {
-    let currentEstimatedTime = 94; // 기본 94초
-    
-    // 스크랩 활용: 기본 23초 + 개당 3초 추가 (26 + (n-1)*2)
-    if (state.selectedScraps.length > 0) {
-      currentEstimatedTime += 26 + (state.selectedScraps.length - 1) * 2;
-    }
-    
-    // 커스텀 문체 활용: +32초
-    if (state.selectedWritingStyleId !== null) {
-      currentEstimatedTime += 32;
-    }
-    
-    // 섹션 구성 활용: +25초
-    if (state.templateStructure !== null) {
-      currentEstimatedTime += 25;
-    }
-    
-    // 초기 예상 시간이 설정되지 않았고, 현재 계산된 시간이 기본값보다 클 때 저장
-    if (state.initialEstimatedTime === null && currentEstimatedTime > 94) {
-      dispatch({ type: 'SET_INITIAL_ESTIMATED_TIME', payload: currentEstimatedTime });
-      return currentEstimatedTime;
-    }
-    
-    // 현재 상태가 기본값이고 초기 예상 시간이 저장되어 있으면 저장된 값 사용
-    if (currentEstimatedTime === 94 && state.initialEstimatedTime !== null) {
-      return state.initialEstimatedTime;
-    }
-    
-    return currentEstimatedTime;
-  };
+  // 예상 시간 UI 제거됨: 계산 로직 삭제
 
   return (
     <div className={styles.pageContainer}>
@@ -1161,10 +1123,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
                     {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
-                  <ProgressBar 
-                    estimatedTimeSeconds={calculateEstimatedTime()}
-                    isCompleted={state.generationStatus === 'completed'}
-                  />
                 </div>
                 {state.generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
