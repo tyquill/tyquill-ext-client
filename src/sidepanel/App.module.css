@@ -31,9 +31,14 @@ html, body {
   display: flex;
   flex: 1;
   overflow: hidden;
+  min-height: 0;
 }
 
 .appContent {
   flex: 1;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
 } 

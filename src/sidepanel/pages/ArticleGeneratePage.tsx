@@ -11,12 +11,12 @@ import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, GenerateArticleV2Dto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
+import Confetti from '../../components/sidepanel/Confetti/Confetti';
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
-import ProgressBar from '../../components/sidepanel/ProgressBar/ProgressBar';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -50,7 +50,6 @@ interface ArticleGenerateState {
   isAnalysisConfirmModalOpen: boolean;
   selectedWritingStyleId: number | null; // writingStyleUrl -> selectedWritingStyleId
   isAnalyzingStyle: boolean;
-  initialEstimatedTime: number | null; // 처음 계산된 예상 시간 저장
 }
 
 type DraftAction =
@@ -79,8 +78,7 @@ type DraftAction =
   | { type: 'CLEAR_TEMPLATE' }
   | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' }
   | { type: 'SET_WRITING_STYLE_ID'; payload: number | null } // SET_WRITING_STYLE_URL -> SET_WRITING_STYLE_ID
-  | { type: 'SET_ANALYZING_STYLE'; payload: boolean }
-  | { type: 'SET_INITIAL_ESTIMATED_TIME'; payload: number };
+  | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
 
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 const DEFAULT_MODAL_TOP_OFFSET = 160;
@@ -107,7 +105,6 @@ const getInitialState = (): ArticleGenerateState => {
         isAnalysisConfirmModalOpen: false,
         selectedWritingStyleId: parsedState.selectedWritingStyleId || null, // writingStyleUrl -> selectedWritingStyleId
         isAnalyzingStyle: false,
-        initialEstimatedTime: parsedState.initialEstimatedTime || null, // 초기 예상 시간도 복원
       };
       
       // console.log('✅ Restored state with template:', restoredState.templateStructure);
@@ -135,7 +132,6 @@ const getInitialState = (): ArticleGenerateState => {
     isAnalysisConfirmModalOpen: false,
     selectedWritingStyleId: null,
     isAnalyzingStyle: false,
-    initialEstimatedTime: null, // 처음에는 null
   };
 };
 
@@ -292,8 +288,6 @@ function draftReducer(state: ArticleGenerateState, action: DraftAction): Article
       return { ...state, selectedWritingStyleId: action.payload };
     case 'SET_ANALYZING_STYLE':
       return { ...state, isAnalyzingStyle: action.payload };
-    case 'SET_INITIAL_ESTIMATED_TIME':
-      return { ...state, initialEstimatedTime: action.payload };
     default:
       return state;
   }
@@ -314,6 +308,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
   const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
+  const generationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const generationStartTimeRef = useRef<number>(0);
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -415,6 +412,39 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  // 초안 생성 중 경과 시간 타이머 (시작/종료는 isGenerating 기준으로만 제어)
+  useEffect(() => {
+    if (state.isGenerating) {
+      generationStartTimeRef.current = Date.now();
+      setElapsedSeconds(0);
+      generationTimerRef.current = setInterval(() => {
+        const secs = Math.floor((Date.now() - generationStartTimeRef.current) / 1000);
+        setElapsedSeconds(prev => (prev !== secs ? secs : prev));
+      }, 50);
+    }
+
+    return () => {
+      if (generationTimerRef.current) {
+        clearInterval(generationTimerRef.current);
+        generationTimerRef.current = null;
+      }
+    };
+  }, [state.isGenerating]);
+
+  // 완료 시 타이머 정지 (표시값 유지)
+  useEffect(() => {
+    if (state.generationStatus === 'completed' && generationTimerRef.current) {
+      clearInterval(generationTimerRef.current);
+      generationTimerRef.current = null;
+    }
+  }, [state.generationStatus]);
+
+  const formatElapsed = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}분 ${remainingSeconds}초`;
+  };
    
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
   useEffect(() => {
@@ -622,8 +652,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.`);
           
           try {
-            // 백그라운드에서 완성 대기 (최대 30회, 5초 간격 = 2.5분)
-            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 30, 5000);
+            // 백그라운드에서 완성 대기 (최대 50회, 5초 간격 = 2.5분)
+            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 50, 5000);
             
             if (completedArticle.status === 'completed') {
               dispatch({ type: 'SET_GENERATION_STATUS', payload: 'completed' });
@@ -726,38 +756,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }
   };
 
-  // 예상 시간 계산 함수
-  const calculateEstimatedTime = () => {
-    let currentEstimatedTime = 94; // 기본 94초
-    
-    // 스크랩 활용: 기본 23초 + 개당 3초 추가 (26 + (n-1)*2)
-    if (state.selectedScraps.length > 0) {
-      currentEstimatedTime += 26 + (state.selectedScraps.length - 1) * 2;
-    }
-    
-    // 커스텀 문체 활용: +32초
-    if (state.selectedWritingStyleId !== null) {
-      currentEstimatedTime += 32;
-    }
-    
-    // 섹션 구성 활용: +25초
-    if (state.templateStructure !== null) {
-      currentEstimatedTime += 25;
-    }
-    
-    // 초기 예상 시간이 설정되지 않았고, 현재 계산된 시간이 기본값보다 클 때 저장
-    if (state.initialEstimatedTime === null && currentEstimatedTime > 94) {
-      dispatch({ type: 'SET_INITIAL_ESTIMATED_TIME', payload: currentEstimatedTime });
-      return currentEstimatedTime;
-    }
-    
-    // 현재 상태가 기본값이고 초기 예상 시간이 저장되어 있으면 저장된 값 사용
-    if (currentEstimatedTime === 94 && state.initialEstimatedTime !== null) {
-      return state.initialEstimatedTime;
-    }
-    
-    return currentEstimatedTime;
-  };
+  // 예상 시간 UI 제거됨: 계산 로직 삭제
 
   return (
     <div className={styles.pageContainer}>
@@ -1156,15 +1155,47 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <h2 className={articleStyles.modalTitle}>초안 생성 중</h2>
               </div>
               <div className={articleStyles.analysisModalContent}>
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <DiscoBallScene />
-                  <h3 style={{ margin: '0 0 20px 0', fontSize: '18px', fontWeight: 600 }}>
+                <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
+                  {state.generationStatus === 'completed' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        background: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        marginBottom: 8
+                      }}>
+                        <IoCheckmark size={28} />
+                      </div>
+                      <Confetti
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          height: 140,
+                          zIndex: 2,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={articleStyles.loadingSpinner} />
+                  )}
+                  <h3 style={{ margin: '12px 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
                     {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
-                  <ProgressBar 
-                    estimatedTimeSeconds={calculateEstimatedTime()}
-                    isCompleted={state.generationStatus === 'completed'}
-                  />
+                  {state.generationStatus !== 'completed' && (
+                    <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
+                      입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.
+                    </p>
+                  )}
+                  <div style={{ marginTop: 8, color: '#6b7280', fontSize: '13px' }}>
+                    경과 시간: {formatElapsed(elapsedSeconds)}
+                  </div>
                 </div>
                 {state.generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
