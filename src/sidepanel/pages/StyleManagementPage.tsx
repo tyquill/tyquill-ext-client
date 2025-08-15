@@ -16,6 +16,7 @@ const StyleManagementPage: React.FC = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const { showSuccess, showError } = useToastHelpers();
 
   useEffect(() => {
@@ -39,7 +40,8 @@ const StyleManagementPage: React.FC = () => {
     
     try {
       setIsRefreshing(true);
-      await fetchStyles();
+      const updatedStyles = await writingStyleService.getWritingStyles();
+      setStylesList(updatedStyles);
       showSuccess('새로고침 완료', '문체 목록이 업데이트되었습니다.');
     } catch (error) {
       showError('새로고침 실패', '문체 목록 새로고침에 실패했습니다.');
@@ -88,12 +90,13 @@ const StyleManagementPage: React.FC = () => {
     }
     try {
       setSaving(true);
-      await writingStyleService.addWritingStyle(newStyleName, scrapedExamples);
+      const newStyle = await writingStyleService.addWritingStyle(newStyleName, scrapedExamples);
       showSuccess('새로운 문체가 추가되었습니다.');
       setNewStyleName('');
       setScrapedExamples([]);
       setShowCreateForm(false);
-      fetchStyles();
+      // 로컬 상태 업데이트로 즉시 반영
+      setStylesList(prev => [newStyle, ...prev]);
     } catch (error) {
       showError('문체 추가에 실패했습니다.');
     } finally {
@@ -104,11 +107,24 @@ const StyleManagementPage: React.FC = () => {
   const handleDeleteStyle = async (id: number) => {
     if (window.confirm('정말로 이 문체를 삭제하시겠습니까?')) {
       try {
+        // 삭제 중 상태 설정
+        setDeletingIds(prev => new Set(prev).add(id));
+        
+        // 백엔드에서 실제 삭제
         await writingStyleService.deleteWritingStyle(id);
+        
+        // 성공 시 로컬 상태에서 제거
+        setStylesList(prev => prev.filter(style => style.id !== id));
         showSuccess('문체가 삭제되었습니다.');
-        fetchStyles();
       } catch (error) {
         showError('문체 삭제에 실패했습니다.');
+      } finally {
+        // 삭제 중 상태 해제
+        setDeletingIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
       }
     }
   };
@@ -301,10 +317,20 @@ const StyleManagementPage: React.FC = () => {
                   <div className={styles.styleCardHeader}>
                     <h3 className={styles.styleCardTitle}>{style.name}</h3>
                     <button
-                      onClick={() => handleDeleteStyle(style.id)}
-                      className={styles.deleteButton}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteStyle(style.id);
+                      }}
+                      className={`${styles.deleteButton} ${deletingIds.has(style.id) ? styles.deleting : ''}`}
+                      aria-label="문체 삭제"
+                      type="button"
+                      disabled={deletingIds.has(style.id)}
                     >
-                      <IoTrash size={16} />
+                      {deletingIds.has(style.id) ? (
+                        <div className={styles.spinner}></div>
+                      ) : (
+                        <IoTrash size={16} />
+                      )}
                     </button>
                   </div>
                   
