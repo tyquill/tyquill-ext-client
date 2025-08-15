@@ -11,6 +11,7 @@ import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
 import { articleService, GenerateArticleDto, GenerateArticleV2Dto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
+import Confetti from '../../components/sidepanel/Confetti/Confetti';
 import { FaWandMagicSparkles } from "react-icons/fa6";
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import { PageType } from '../../types/pages';
@@ -1154,18 +1155,43 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <h2 className={articleStyles.modalTitle}>초안 생성 중</h2>
               </div>
               <div className={articleStyles.analysisModalContent}>
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                  <DiscoBallScene />
-                  <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
+                <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
+                  {state.generationStatus === 'completed' ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                      <div style={{
+                        width: 56,
+                        height: 56,
+                        borderRadius: '50%',
+                        background: '#10b981',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        marginBottom: 8
+                      }}>
+                        <IoCheckmark size={28} />
+                      </div>
+                      <Confetti
+                        style={{
+                          position: 'absolute',
+                          left: 0,
+                          right: 0,
+                          top: 0,
+                          height: 140,
+                          zIndex: 2,
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className={articleStyles.loadingSpinner} />
+                  )}
+                  <h3 style={{ margin: '12px 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
                     {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
                   {state.generationStatus !== 'completed' && (
                     <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
                       입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.
                     </p>
-                  )}
-                  {state.isGenerating && state.generationStatus !== 'completed' && (
-                    <div className={articleStyles.loadingSpinner} />
                   )}
                   <div style={{ marginTop: 8, color: '#6b7280', fontSize: '13px' }}>
                     경과 시간: {formatElapsed(elapsedSeconds)}
