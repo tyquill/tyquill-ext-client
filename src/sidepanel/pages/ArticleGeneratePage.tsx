@@ -421,7 +421,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       generationTimerRef.current = setInterval(() => {
         const secs = Math.floor((Date.now() - generationStartTimeRef.current) / 1000);
         setElapsedSeconds(prev => (prev !== secs ? secs : prev));
-      }, 500);
+      }, 50);
     }
 
     return () => {
