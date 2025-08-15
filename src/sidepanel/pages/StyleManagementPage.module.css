@@ -548,6 +548,7 @@
   align-items: center;
   padding: 20px 20px 16px 20px;
   border-bottom: 1px solid #e0e0e0;
+  position: relative;
 }
 
 .styleCardTitle {
@@ -568,12 +569,39 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 10;
+  min-width: 32px;
+  min-height: 32px;
+  outline: none;
 }
 
 .deleteButton:hover {
   background: #fee2e2;
   border-color: #fca5a5;
   transform: scale(1.05);
+}
+
+.deleteButton:focus {
+  outline: 2px solid #dc2626;
+  outline-offset: 2px;
+}
+
+.deleteButton:active {
+  transform: scale(0.95);
+}
+
+.deleteButton.deleting {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+.deleteButton.deleting:hover {
+  transform: none;
+  background: #f3f4f6;
+  border-color: #d1d5db;
 }
 
 .styleCardContent {
@@ -703,8 +731,8 @@
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top: 2px solid white;
+  border: 2px solid rgba(220, 38, 38, 0.3);
+  border-top: 2px solid #dc2626;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
