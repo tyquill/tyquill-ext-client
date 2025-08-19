@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { browser } from 'wxt/browser';
+import type { Browser } from 'wxt/browser';
 import { ToastProvider } from '../hooks/useToast';
 import LandingPage from './pages/LandingPage';
 import Header, { Sidebar } from '../components/sidepanel/Header/Header';
 import ScrapPage from './pages/ScrapPage';
-import TemplatePage from './pages/TemplatePage';
+
 import ArticleGeneratePage from './pages/ArticleGeneratePage';
 import ArchivePage from './pages/ArchivePage';
 import ArchiveDetailPage from './pages/ArchiveDetailPage';
@@ -52,18 +54,18 @@ const App: React.FC = () => {
 
   // 사이드패널 닫기 메시지 리스너
   useEffect(() => {
-    const messageListener = (request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+    const messageListener = (request: any, sender: Browser.runtime.MessageSender, sendResponse: (response?: any) => void) => {
       if (request.action === 'closeSidePanel') {
         window.close();
         sendResponse({ success: true });
       }
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
 
     // 사이드패널이 닫힐 때 background에 알리기
     const handleBeforeUnload = () => {
-      chrome.runtime.sendMessage({ action: 'sidePanelClosed' });
+      browser.runtime.sendMessage({ action: 'sidePanelClosed' });
     };
 
     window.addEventListener('beforeunload', handleBeforeUnload);
@@ -90,7 +92,7 @@ const App: React.FC = () => {
         <div className={styles.appMain}>
           <div className={styles.appContent}>
             {currentPage.type === 'scrap' && <ScrapPage />}
-            {/* {currentPage.type === 'template' && <TemplatePage />} */}
+
             {currentPage.type === 'draft' && (
               <ArticleGeneratePage 
                 onNavigateToDetail={handleNavigateToDetail}

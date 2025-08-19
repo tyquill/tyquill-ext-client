@@ -4,12 +4,11 @@ import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
 import articleStyles from './ArticleGeneratePage.module.css';
-import { Scrap, mockTemplates } from '../../mock/data';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
-import { articleService, GenerateArticleDto, GenerateArticleV2Dto, ScrapWithOptionalComment, TemplateSection } from '../../services/articleService';
+import { articleService, GenerateArticleV2Dto, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import Confetti from '../../components/sidepanel/Confetti/Confetti';
 import { FaWandMagicSparkles } from "react-icons/fa6";
@@ -17,6 +16,7 @@ import { writingStyleService, WritingStyle } from '../../services/writingStyleSe
 import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
+import { browser } from 'wxt/browser';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -495,7 +495,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       dispatch({ type: 'SET_ANALYZING', payload: true });
       
       // 현재 활성 탭 정보 가져오기
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       
       if (!tab?.id) {
         throw new Error('활성 탭을 찾을 수 없습니다.');
@@ -511,10 +511,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       // Content Script가 로드되었는지 확인
       try {
-        await chrome.tabs.sendMessage(tab.id, { type: 'PING' });
+        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
       } catch (pingError) {
         // Content script 수동 주입 시도
-        await chrome.scripting.executeScript({
+        await browser.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['content/index.js']
         });
@@ -526,7 +526,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       showInfo('페이지 분석 중...', '현재 페이지의 구조를 분석하여 템플릿을 생성하고 있습니다.');
 
       // 페이지 콘텐츠 스크랩
-      const response = await chrome.tabs.sendMessage(tab.id, {
+      const response = await browser.tabs.sendMessage(tab.id, {
         type: 'CLIP_PAGE',
         options: { includeMetadata: false }
       });

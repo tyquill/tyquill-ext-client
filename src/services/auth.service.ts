@@ -6,6 +6,8 @@
  */
 
 import { getServerUrl, getApiUrl, getOAuthCallbackUrl, logEnvironmentInfo } from '../config/environment';
+import { browser } from 'wxt/browser';
+import type { Browser } from 'wxt/browser';
 
 export interface User {
   id: string;
@@ -63,7 +65,7 @@ class AuthService {
     const authCode = await this.waitForAuthCode(authTab);
     
     // 4. 탭 닫기
-    chrome.tabs.remove(authTab.id!);
+    browser.tabs.remove(authTab.id!);
     
     return authCode;
   }
@@ -86,11 +88,11 @@ class AuthService {
   /**
    * OAuth 탭 열기
    */
-  private async openOAuthTab(url: string): Promise<chrome.tabs.Tab> {
+  private async openOAuthTab(url: string): Promise<Browser.tabs.Tab> {
     return new Promise((resolve, reject) => {
-      chrome.tabs.create({ url }, (tab) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
+      browser.tabs.create({ url }, (tab) => {
+        if (browser.runtime.lastError) {
+          reject(new Error(browser.runtime.lastError.message));
           return;
         }
         if (!tab) {
@@ -105,14 +107,14 @@ class AuthService {
   /**
    * 인증 코드 대기 및 추출
    */
-  private async waitForAuthCode(tab: chrome.tabs.Tab): Promise<string> {
+  private async waitForAuthCode(tab: Browser.tabs.Tab): Promise<string> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         cleanup();
         reject(new Error('OAuth timeout'));
       }, 300000); // 5분 타임아웃
 
-      const onUpdated = (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      const onUpdated = (tabId: number, changeInfo: any) => {
         if (tabId === tab.id && changeInfo.url) {
           const url = new URL(changeInfo.url);
           
@@ -146,12 +148,12 @@ class AuthService {
 
       const cleanup = () => {
         clearTimeout(timeout);
-        chrome.tabs.onUpdated.removeListener(onUpdated);
-        chrome.tabs.onRemoved.removeListener(onRemoved);
+        browser.tabs.onUpdated.removeListener(onUpdated);
+        browser.tabs.onRemoved.removeListener(onRemoved);
       };
 
-      chrome.tabs.onUpdated.addListener(onUpdated);
-      chrome.tabs.onRemoved.addListener(onRemoved);
+      browser.tabs.onUpdated.addListener(onUpdated);
+      browser.tabs.onRemoved.addListener(onRemoved);
     });
   }
 
@@ -333,7 +335,7 @@ class AuthService {
    */
   async restoreAuthState(): Promise<boolean> {
     try {
-      const result = await chrome.storage.local.get(['authState']);
+      const result = await browser.storage.local.get(['authState']);
       if (result.authState) {
         this.authState = result.authState;
         this.notifyStateChange();
@@ -357,14 +359,14 @@ class AuthService {
    * 로컬 스토리지에 인증 상태 저장
    */
   private async saveAuthState(): Promise<void> {
-    await chrome.storage.local.set({ authState: this.authState });
+    await browser.storage.local.set({ authState: this.authState });
   }
 
   /**
    * 로컬 스토리지에서 인증 상태 제거
    */
   private async clearAuthState(): Promise<void> {
-    await chrome.storage.local.remove(['authState']);
+    await browser.storage.local.remove(['authState']);
   }
 
   /**

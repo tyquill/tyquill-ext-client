@@ -9,6 +9,7 @@ import {
   ScrapStatus,
   ScrapState
 } from '../types/scrapTypes';
+import { browser } from 'wxt/browser';
 
 // 타입 재export (편의를 위해)
 export type { ScrapStatus, ScrapState };
@@ -21,11 +22,11 @@ export type { ScrapStatus, ScrapState };
  */
 export async function clipAndScrapCurrentPage(): Promise<any> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { action: 'clipAndScrapCurrentPage' },
       (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
+        if (browser.runtime.lastError) {
+          reject(new Error(browser.runtime.lastError.message));
         } else if (response.success) {
           resolve(response.data);
         } else {
@@ -43,11 +44,11 @@ export async function clipAndScrapCurrentPage(): Promise<any> {
  */
 export async function clipCurrentPageForStyle(): Promise<any> {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
+    browser.runtime.sendMessage(
       { action: 'clipCurrentPageForStyle' },
       (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
+        if (browser.runtime.lastError) {
+          reject(new Error(browser.runtime.lastError.message));
         } else if (response.success) {
           resolve(response.data);
         } else {

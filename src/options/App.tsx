@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IoInformationCircle, IoSettingsSharp } from 'react-icons/io5';
+import { browser } from 'wxt/browser';
 import styles from './App.module.css';
 import GeneralTab from '../components/options/GeneralTab';
 import AboutTab from '../components/options/AboutTab';
@@ -27,7 +28,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const result = await chrome.storage.sync.get(['tyquillSettings']);
+        const result = await browser.storage.sync.get(['tyquillSettings']);
         if (result.tyquillSettings) {
           setSettings(prev => ({ ...prev, ...result.tyquillSettings }));
         }
@@ -44,7 +45,7 @@ const App: React.FC = () => {
     try {
       const updatedSettings = { ...settings, ...newSettings };
       setSettings(updatedSettings);
-      await chrome.storage.sync.set({ tyquillSettings: updatedSettings });
+      await browser.storage.sync.set({ tyquillSettings: updatedSettings });
     } catch (error) {
       console.error('설정 저장 실패:', error);
     }

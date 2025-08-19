@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useContentScript } from './hooks/useContentScript';
+import { browser } from 'wxt/browser';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 import { WebClipper } from '../utils/webClipper';
 
@@ -44,12 +45,12 @@ const App: React.FC = () => {
       }
     };
 
-    chrome.runtime.onMessage.addListener(handleMessage);
+    browser.runtime.onMessage.addListener(handleMessage);
 
     // Chrome Extension API에서는 removeListener가 지원되지 않으므로
     // cleanup 함수는 비워둠 (컴포넌트 언마운트 시 자동으로 정리됨)
     return () => {
-      // chrome.runtime.onMessage.removeListener(handleMessage); // 이 메서드는 존재하지 않음
+      // browser.runtime.onMessage.removeListener(handleMessage); // 이 메서드는 존재하지 않음
     };
   }, []);
 

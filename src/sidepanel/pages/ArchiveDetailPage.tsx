@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
@@ -39,7 +40,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
-    chrome.storage.local.get('tyquill-width-tip-dismissed', (result) => {
+    browser.storage.local.get('tyquill-width-tip-dismissed', (result) => {
       const hasSeenWidthTip = result['tyquill-width-tip-dismissed'];
       if (!hasSeenWidthTip) {
         setShowWidthTip(true);
@@ -221,7 +222,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   const handleCloseTip = () => {
     setTipVisible(false);
-    chrome.storage.local.set({ 'tyquill-width-tip-dismissed': 'true' });
+    browser.storage.local.set({ 'tyquill-width-tip-dismissed': 'true' });
     setTimeout(() => {
       setShowWidthTip(false);
     }, 300);

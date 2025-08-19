@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../../options/App.module.css';
+import { browser } from 'wxt/browser';
 
 const AboutTab: React.FC = () => {
   const [version, setVersion] = useState<string>('');
@@ -8,8 +9,8 @@ const AboutTab: React.FC = () => {
     const getManifestVersion = () => {
       try {
         // Chrome Extension API를 통해 manifest 정보 가져오기
-        if (chrome.runtime && chrome.runtime.getManifest) {
-          const manifest = chrome.runtime.getManifest();
+        if (browser.runtime && browser.runtime.getManifest) {
+          const manifest = browser.runtime.getManifest();
           setVersion(manifest.version);
         }
       } catch (error) {

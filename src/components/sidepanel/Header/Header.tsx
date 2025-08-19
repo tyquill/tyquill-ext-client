@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { browser } from 'wxt/browser';
 import { IoClipboard, IoSparkles, IoArchive, IoLogOut, IoSettings } from 'react-icons/io5';
 import { RiFileUserLine } from 'react-icons/ri';
 import { IconType } from 'react-icons';
@@ -61,11 +62,11 @@ const Header: React.FC<HeaderProps> = () => {
     return colors[Math.abs(hash) % colors.length];
   };
 
-  // Load auth state from chrome storage
+  // Load auth state from browser storage
   useEffect(() => {
     const loadAuthState = () => {
-      if (typeof chrome !== 'undefined' && chrome.storage) {
-        chrome.storage.local.get(['authState'], (result) => {
+      if (typeof browser !== 'undefined' && browser.storage) {
+        browser.storage.local.get(['authState'], (result) => {
           if (result.authState) {
             setAuthState(result.authState);
           }
@@ -101,8 +102,8 @@ const Header: React.FC<HeaderProps> = () => {
 
   const handleSettingsClick = () => {
     // Chrome extension options page 열기
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.openOptionsPage();
+    if (typeof browser !== 'undefined' && browser.runtime) {
+      browser.runtime.openOptionsPage();
     }
     setIsMenuOpen(false);
   };
@@ -250,8 +251,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
 
   const handleSettingsClick = () => {
     // Chrome extension options page 열기
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.openOptionsPage();
+    if (typeof browser !== 'undefined' && browser.runtime) {
+      browser.runtime.openOptionsPage();
     }
   };
 

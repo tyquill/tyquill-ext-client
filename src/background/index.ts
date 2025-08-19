@@ -1,27 +1,29 @@
 // Background Service Worker for Tyquill Extension
 import { scrapService } from '../services/scrapService';
+import { browser } from 'wxt/browser';
+import type { Browser } from 'wxt/browser';
 
 // 사이드패널 상태 (전역)
 let isSidePanelOpen = false;
 
-chrome.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener(() => {
   // console.log('Tyquill Extension installed');
 });
 
 // Handle extension icon click to open side panel
-chrome.action.onClicked.addListener(async (tab) => {
+browser.action.onClicked.addListener(async (tab) => {
   // console.log('Extension icon clicked');
   
   // Open side panel
   try {
-    await chrome.sidePanel.open({ tabId: tab.id });
+    await browser.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
     // console.log('Side panel opened');
   } catch (error) {
     // console.error('Failed to open side panel:', error);
   }
 });
 
-chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void) => {
+browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.MessageSender, sendResponse: (response?: any) => void) => {
   // Handle messages from content script or popup
   // console.log('Message received:', request);
   
@@ -93,10 +95,10 @@ chrome.runtime.onMessage.addListener((request: any, sender: chrome.runtime.Messa
 /**
  * 사이드패널 열기 처리
  */
-async function handleOpenSidePanel(sender: chrome.runtime.MessageSender) {
+async function handleOpenSidePanel(sender: Browser.runtime.MessageSender) {
   try {
     if (sender.tab?.id) {
-      await chrome.sidePanel.open({ tabId: sender.tab.id });
+      await browser.sidePanel.open({ tabId: sender.tab.id });
     } else {
       throw new Error('No tab ID available');
     }
@@ -110,14 +112,14 @@ async function handleOpenSidePanel(sender: chrome.runtime.MessageSender) {
 /**
  * 현재 페이지 클리핑 및 스크랩 처리 (Background Script에서 실행)
  */
-async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSender) {
+async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSender) {
   try {
     // 현재 활성 탭 정보 가져오기
     let tabId = sender.tab?.id;
     
     // Sidepanel에서 요청하는 경우 sender.tab이 없으므로 활성 탭을 쿼리
     if (!tabId) {
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
       tabId = activeTab?.id;
     }
     
@@ -125,22 +127,22 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
       throw new Error('No active tab found');
     }
 
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await browser.tabs.get(tabId);
     
     // URL 체크 - 제한된 페이지에서는 스크랩 불가
-    if (tab.url?.startsWith('chrome://') || 
-        tab.url?.startsWith('chrome-extension://') ||
+    if (tab.url?.startsWith('browser://') || 
+        tab.url?.startsWith('browser-extension://') ||
         tab.url?.startsWith('edge://') ||
         tab.url?.startsWith('about:')) {
-      throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+      throw new Error('이 페이지에서는 스크랩할 수 없습니다. (browser://, extension:// 등 제한된 페이지)');
     }
 
     // Content Script가 로드되었는지 확인
     try {
-      await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+      await browser.tabs.sendMessage(tabId, { type: 'PING' });
     } catch (pingError) {
       // Content script 수동 주입 시도
-      await chrome.scripting.executeScript({
+      await browser.scripting.executeScript({
         target: { tabId: tabId },
         files: ['content/index.js']
       });
@@ -150,7 +152,7 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
     }
 
     // Content Script로 클리핑 요청
-    const response = await chrome.tabs.sendMessage(tabId, {
+    const response = await browser.tabs.sendMessage(tabId, {
       type: 'CLIP_PAGE',
       options: { includeMetadata: true }
     });
@@ -174,7 +176,7 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
     
     // 성공 시 sidepanel에 새로고침 알림
     try {
-      chrome.runtime.sendMessage({
+      browser.runtime.sendMessage({
         action: 'scrapCreated',
         data: result
       });
@@ -194,14 +196,14 @@ async function handleClipAndScrapCurrentPage(sender: chrome.runtime.MessageSende
  * 문체 관리를 위한 현재 페이지 클리핑 처리 (Background Script에서 실행)
  * - 스크랩 API를 호출하지 않고 클리핑만 수행
  */
-async function handleClipCurrentPageForStyle(sender: chrome.runtime.MessageSender) {
+async function handleClipCurrentPageForStyle(sender: Browser.runtime.MessageSender) {
   try {
     // 현재 활성 탭 정보 가져오기
     let tabId = sender.tab?.id;
     
     // Sidepanel에서 요청하는 경우 sender.tab이 없으므로 활성 탭을 쿼리
     if (!tabId) {
-      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
       tabId = activeTab?.id;
     }
     
@@ -209,22 +211,22 @@ async function handleClipCurrentPageForStyle(sender: chrome.runtime.MessageSende
       throw new Error('No active tab found');
     }
 
-    const tab = await chrome.tabs.get(tabId);
+    const tab = await browser.tabs.get(tabId);
     
     // URL 체크 - 제한된 페이지에서는 스크랩 불가
-    if (tab.url?.startsWith('chrome://') || 
-        tab.url?.startsWith('chrome-extension://') ||
+    if (tab.url?.startsWith('browser://') || 
+        tab.url?.startsWith('browser-extension://') ||
         tab.url?.startsWith('edge://') ||
         tab.url?.startsWith('about:')) {
-      throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+      throw new Error('이 페이지에서는 스크랩할 수 없습니다. (browser://, extension:// 등 제한된 페이지)');
     }
 
     // Content Script가 로드되었는지 확인
     try {
-      await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+      await browser.tabs.sendMessage(tabId, { type: 'PING' });
     } catch (pingError) {
       // Content script 수동 주입 시도
-      await chrome.scripting.executeScript({
+      await browser.scripting.executeScript({
         target: { tabId: tabId },
         files: ['content/index.js']
       });
@@ -234,7 +236,7 @@ async function handleClipCurrentPageForStyle(sender: chrome.runtime.MessageSende
     }
 
     // Content Script로 클리핑 요청
-    const response = await chrome.tabs.sendMessage(tabId, {
+    const response = await browser.tabs.sendMessage(tabId, {
       type: 'CLIP_PAGE',
       options: { includeMetadata: true }
     });
@@ -258,7 +260,7 @@ let isFloatingButtonVisible = true;
 // 설정 로드
 const loadSettings = async () => {
   try {
-    const result = await chrome.storage.sync.get(['tyquillSettings']);
+    const result = await browser.storage.sync.get(['tyquillSettings']);
     if (result.tyquillSettings?.floatingButtonVisible !== undefined) {
       isFloatingButtonVisible = result.tyquillSettings.floatingButtonVisible;
     }
@@ -268,7 +270,7 @@ const loadSettings = async () => {
 };
 
 // 설정 변경 감지
-chrome.storage.onChanged.addListener((changes) => {
+browser.storage.onChanged.addListener((changes) => {
   if (changes.tyquillSettings?.newValue?.floatingButtonVisible !== undefined) {
     isFloatingButtonVisible = changes.tyquillSettings.newValue.floatingButtonVisible;
     
@@ -282,17 +284,17 @@ chrome.storage.onChanged.addListener((changes) => {
 // Context Menu 생성
 const createContextMenus = () => {
   // 기존 메뉴 제거
-  chrome.contextMenus.removeAll();
+  browser.contextMenus.removeAll();
   
   // Tyquill 메뉴 생성
-  chrome.contextMenus.create({
+  browser.contextMenus.create({
     id: 'tyquill',
     title: 'Tyquill',
     contexts: ['all']
   });
   
   // 플로팅 버튼 표시/숨김 서브메뉴
-  chrome.contextMenus.create({
+  browser.contextMenus.create({
     id: 'toggleFloatingButton',
     parentId: 'tyquill',
     title: isFloatingButtonVisible ? '👁️ 버튼 숨기기' : '👁️‍🗨️ 버튼 표시하기',
@@ -300,7 +302,7 @@ const createContextMenus = () => {
   });
   
   // 구분선
-  chrome.contextMenus.create({
+  browser.contextMenus.create({
     id: 'separator1',
     parentId: 'tyquill',
     type: 'separator',
@@ -308,7 +310,7 @@ const createContextMenus = () => {
   });
   
   // 스크랩 메뉴
-  chrome.contextMenus.create({
+  browser.contextMenus.create({
     id: 'scrapCurrentPage',
     parentId: 'tyquill',
     title: '📋 이 페이지 스크랩',
@@ -317,7 +319,7 @@ const createContextMenus = () => {
 };
 
 // Context Menu 클릭 처리
-chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+browser.contextMenus.onClicked.addListener(async (info, tab) => {
   if (!tab?.id) return;
   
   switch (info.menuItemId) {
@@ -326,24 +328,24 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
         const newValue = !isFloatingButtonVisible;
         
         // 기존 설정을 유지하면서 업데이트
-        const currentSettings = await chrome.storage.sync.get(['tyquillSettings']);
+        const currentSettings = await browser.storage.sync.get(['tyquillSettings']);
         const updatedSettings = {
           ...currentSettings.tyquillSettings,
           floatingButtonVisible: newValue
         };
         
-        await chrome.storage.sync.set({
+        await browser.storage.sync.set({
           tyquillSettings: updatedSettings
         });
         
         isFloatingButtonVisible = newValue;
         
         // 모든 탭에 설정 변경 알림
-        const allTabs = await chrome.tabs.query({});
+        const allTabs = await browser.tabs.query({});
         for (const currentTab of allTabs) {
           if (currentTab.id) {
             try {
-              await chrome.tabs.sendMessage(currentTab.id, {
+              await browser.tabs.sendMessage(currentTab.id, {
                 type: 'SETTINGS_CHANGED',
                 settings: { floatingButtonVisible: newValue }
               });
@@ -372,7 +374,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
-chrome.runtime.onInstalled.addListener(async () => {
+browser.runtime.onInstalled.addListener(async () => {
   // 초기 설정 로드
   await loadSettings();
   
@@ -382,6 +384,6 @@ chrome.runtime.onInstalled.addListener(async () => {
   // console.log('Tyquill Extension installed with context menus');
 });
 
-chrome.runtime.setUninstallURL('https://tally.so/r/3EOeqN');
+browser.runtime.setUninstallURL('https://tally.so/r/3EOeqN');
 
 export {}; 
