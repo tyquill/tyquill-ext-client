@@ -407,6 +407,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       };
 
       // V2 API로 비동기 생성 시작
+      setGenerationStatus('processing');
+      
       articleService.generateArticleV2(generateData)
         .then(async (response) => {
           // 즉시 요청 성공 메시지 표시
@@ -422,40 +424,33 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               if (currentPage === 'archive' && onRefreshArchiveList) {
                 onRefreshArchiveList();
               }
+              
+              // 폼 초기화는 성공한 경우에만 수행
+              resetForm();
             } else if (completedArticle.status === 'failed') {
               setGenerationStatus('failed');
+              setGenerating(false);
               // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
             console.error('폴링 오류:', pollingError);
+            setGenerationStatus('failed');
+            setGenerating(false);
             showError('상태 확인 실패', '생성 상태를 확인할 수 없습니다. 보관함을 직접 확인해주세요.');
           }
         })
         .catch(error => {
+          setGenerationStatus('failed');
+          setGenerating(false);
           showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
         });
-
-      setGenerationStatus('processing');
-      
-      setTimeout(() => {
-        setGenerationStatus('idle');
-      }, 2000);
-
-      // 폼 초기화
-      resetForm();
 
     } catch (error: any) {
       setGenerationError(error.message || '초안 생성에 실패했습니다.');
       setGenerationStatus('failed');
+      setGenerating(false);
       showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
-      
-      setTimeout(() => {
-        setGenerationStatus('idle');
-      }, 3000);
-    } finally {
-      // 성공인 경우에는 모달을 유지하므로 여기서 닫지 않음
-      // 실패/오류 케이스는 위 finally 블록에서 처리
     }
   };
 
