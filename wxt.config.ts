@@ -34,8 +34,7 @@ export default defineConfig({
         48: '/icon48.png',
         128: '/icon128.png'
       }
-    },
-    options_page: 'options.html'
+    }
   },
   webExt: {
     disabled: true, // 개발 시 자동으로 브라우저 열지 않도록 설정
