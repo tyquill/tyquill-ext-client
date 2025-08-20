@@ -425,8 +425,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 onRefreshArchiveList();
               }
               
-              // 폼 초기화는 성공한 경우에만 수행
-              resetForm();
+              // 완료 상태에서는 폼 필드만 개별적으로 초기화 (생성 상태는 유지)
+              setTopic('');
+              setKeyInsight('');
+              setHandle('');
+              clearScraps();
+              // selectedTags는 유지 (다음 생성에 유용할 수 있음)
+              clearTemplate();
             } else if (completedArticle.status === 'failed') {
               setGenerationStatus('failed');
               setGenerating(false);
@@ -946,7 +951,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 {generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
                     <button
-                      onClick={() => onNavigate('archive')}
+                      onClick={() => {
+                        setGenerating(false);
+                        setGenerationStatus('idle');
+                        setGenerationError(null);
+                        onNavigate('archive');
+                      }}
                       style={{
                         padding: '10px 20px',
                         border: 'none',
@@ -961,7 +971,11 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       보관함으로 이동
                     </button>
                     <button
-                      onClick={() => setGenerating(false)}
+                      onClick={() => {
+                        setGenerating(false);
+                        setGenerationStatus('idle');
+                        setGenerationError(null);
+                      }}
                       style={{
                         padding: '10px 20px',
                         border: '1px solid #e0e0e0',
