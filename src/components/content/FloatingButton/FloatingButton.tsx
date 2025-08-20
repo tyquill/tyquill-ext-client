@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
+import { browser } from 'wxt/browser';
+import type { Browser } from 'wxt/browser';
 import styles from './FloatingButton.module.css';
 import { BsBook } from 'react-icons/bs';
 import { IoClose } from 'react-icons/io5';
@@ -99,7 +101,7 @@ const FloatingButton: React.FC = () => {
   // 사이드패널 상태 가져오기
   const getSidePanelState = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await chrome.runtime.sendMessage({ action: 'getSidePanelState' });
+      const response = await browser.runtime.sendMessage({ action: 'getSidePanelState' });
       return response?.isOpen || false;
     } catch (error) {
       // Extension context invalidated는 정상적인 상황이므로 조용히 처리
@@ -129,7 +131,7 @@ const FloatingButton: React.FC = () => {
   // 설정 로드 및 변경 감지
   useEffect(() => {
     const loadSettings = () => {
-      chrome.storage.sync.get(['tyquillSettings'], (result) => {
+      browser.storage.sync.get(['tyquillSettings'], (result) => {
         if (result.tyquillSettings) {
           setSettings(prev => ({ ...prev, ...result.tyquillSettings }));
         }
@@ -140,7 +142,7 @@ const FloatingButton: React.FC = () => {
     loadSettings();
 
     // 설정 변경 감지 (Chrome Storage)
-    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }) => {
+    const handleStorageChange = (changes: { [key: string]: Browser.storage.StorageChange }) => {
       if (changes.tyquillSettings) {
         setSettings(prev => ({ ...prev, ...changes.tyquillSettings.newValue }));
       }
@@ -153,11 +155,11 @@ const FloatingButton: React.FC = () => {
       }
     };
 
-    chrome.storage.onChanged.addListener(handleStorageChange);
+    browser.storage.onChanged.addListener(handleStorageChange);
     window.addEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
 
     return () => {
-      chrome.storage.onChanged.removeListener(handleStorageChange);
+      browser.storage.onChanged.removeListener(handleStorageChange);
       window.removeEventListener('tyquill-settings-changed', handleSettingsChanged as EventListener);
     };
   }, []);
@@ -401,12 +403,12 @@ const FloatingButton: React.FC = () => {
 
   // 사이드패널 열기/닫기
   const openSidePanel = useCallback(async () => {
-    await chrome.runtime.sendMessage({ action: 'openSidePanel' });
+    await browser.runtime.sendMessage({ action: 'openSidePanel' });
     setIsSidePanelOpen(true);
   }, []);
 
   const closeSidePanel = useCallback(async () => {
-    await chrome.runtime.sendMessage({ action: 'closeSidePanel' });
+    await browser.runtime.sendMessage({ action: 'closeSidePanel' });
     setIsSidePanelOpen(false);
   }, []);
 
@@ -456,8 +458,8 @@ const FloatingButton: React.FC = () => {
   const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      const { tyquillSettings } = await chrome.storage.sync.get('tyquillSettings');
-      await chrome.storage.sync.set({
+      const { tyquillSettings } = await browser.storage.sync.get('tyquillSettings');
+      await browser.storage.sync.set({
         tyquillSettings: { ...tyquillSettings, floatingButtonVisible: false }
       });
     } catch (error) {

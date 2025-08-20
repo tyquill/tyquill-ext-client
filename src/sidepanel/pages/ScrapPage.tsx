@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh } from 'react-icons/io5';
+import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
@@ -100,7 +101,7 @@ const ScrapPage: React.FC = () => {
   // 인증 상태 확인
   const checkAuthStatus = useCallback(async () => {
     try {
-      const result = await chrome.storage.local.get(['authState']);
+      const result = await browser.storage.local.get(['authState']);
       const authState = result.authState;
       const hasToken = !!(authState?.accessToken && authState?.isAuthenticated);
       setIsAuthenticated(hasToken);
@@ -201,7 +202,7 @@ const ScrapPage: React.FC = () => {
       }
     };
 
-    chrome.runtime.onMessage.addListener(handleScrapCreatedMessage);
+    browser.runtime.onMessage.addListener(handleScrapCreatedMessage);
     
     return () => {
       isActive = false;

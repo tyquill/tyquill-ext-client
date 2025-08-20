@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IoArrowUpCircle } from 'react-icons/io5';
+import { browser } from 'wxt/browser';
 import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
 
@@ -22,7 +23,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
         
         while (!currentTab && attempts < maxAttempts) {
           try {
-            const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+            const tabs = await browser.tabs.query({ active: true, currentWindow: true });
             currentTab = tabs[0];
             
             if (!currentTab && attempts < maxAttempts - 1) {
@@ -54,20 +55,20 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
       setTimeout(checkMailyPage, 100);
     };
     
-    if (chrome.tabs && chrome.tabs.onUpdated) {
-      chrome.tabs.onUpdated.addListener(handleTabUpdate);
+    if (browser.tabs && browser.tabs.onUpdated) {
+      browser.tabs.onUpdated.addListener(handleTabUpdate);
     }
     
-    if (chrome.tabs && chrome.tabs.onActivated) {
-      chrome.tabs.onActivated.addListener(handleTabUpdate);
+    if (browser.tabs && browser.tabs.onActivated) {
+      browser.tabs.onActivated.addListener(handleTabUpdate);
     }
     
     return () => {
-      if (chrome.tabs && chrome.tabs.onUpdated) {
-        chrome.tabs.onUpdated.removeListener(handleTabUpdate);
+      if (browser.tabs && browser.tabs.onUpdated) {
+        browser.tabs.onUpdated.removeListener(handleTabUpdate);
       }
-      if (chrome.tabs && chrome.tabs.onActivated) {
-        chrome.tabs.onActivated.removeListener(handleTabUpdate);
+      if (browser.tabs && browser.tabs.onActivated) {
+        browser.tabs.onActivated.removeListener(handleTabUpdate);
       }
     };
   }, []);
@@ -85,12 +86,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
 
     try {
       // 이미 isMailyPage로 체크했으므로 다시 확인할 필요 없음
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
       const currentTab = tabs[0];
       
       if (currentTab?.id) {
         
-        await chrome.scripting.executeScript({
+        await browser.scripting.executeScript({
           target: { tabId: currentTab.id! },
           func: (contentToInsert: string) => {
             const cleanedContent = contentToInsert

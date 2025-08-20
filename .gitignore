@@ -86,7 +86,6 @@ dist
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out
@@ -126,3 +125,5 @@ logs
 *.crx
 *.pem
 web-ext-artifacts/ 
+
+.output/

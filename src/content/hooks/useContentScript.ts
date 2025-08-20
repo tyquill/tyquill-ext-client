@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useState } from 'react';
 import { webClipper } from '../../utils/webClipper';
+import { browser } from 'wxt/browser';
 import { 
   PageInfo, 
   ClipResult, 
@@ -57,7 +58,7 @@ export const useContentScript = (): UseContentScriptReturn => {
       }
     };
 
-    chrome.runtime.onMessage.addListener(messageListener);
+    browser.runtime.onMessage.addListener(messageListener);
     setIsReady(true);
 
     return () => {
