@@ -13,8 +13,8 @@ export interface Environment {
 
 const development: Environment = {
   production: false,
-  serverUrl: 'http://localhost:3000',
-  apiUrl: 'http://localhost:3000/api',
+  serverUrl: 'https://api.tyquill.ai',
+  apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 

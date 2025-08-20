@@ -72,6 +72,7 @@
     "@types/marked": "^6.0.0",
     "@types/three": "^0.178.1",
     "framer-motion": "^12.23.12",
+    "immer": "^10.1.1",
     "its-fine": "1.2.0",
     "marked": "^16.1.1",
     "quill": "^2.0.3",
@@ -82,6 +83,7 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.15.0",
     "three": "^0.178.0",
-    "turndown": "^7.2.0"
+    "turndown": "^7.2.0",
+    "zustand": "^5.0.7"
   }
 }

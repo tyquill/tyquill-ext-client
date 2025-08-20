@@ -1,4 +1,4 @@
-import React, { useEffect, useReducer, useState, useMemo, useRef } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
@@ -17,6 +17,7 @@ import { PageType } from '../../types/pages';
 import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
 import { browser } from 'wxt/browser';
+import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -25,273 +26,9 @@ interface ArticleGeneratePageProps {
   onRefreshArchiveList?: () => void;
 }
 
-interface SelectedScrap extends ScrapResponse {
-  opinion: string;
-}
-
-// Template sections are imported from articleService
-
-interface ArticleGenerateState {
-  topic: string;
-  keyInsight: string;
-  handle: string;
-  selectedTemplate: string;
-  isScrapModalOpen: boolean;
-  selectedScraps: SelectedScrap[];
-  selectedTags: string[];
-  isTagDropdownOpen: boolean;
-  isGenerating: boolean;
-  generationError: string | null;
-  generationStatus: 'idle' | 'processing' | 'completed' | 'failed';
-  // New state properties
-  templateStructure: TemplateSection[] | null;
-  sectionIdCounter: number;
-  isAnalyzing: boolean;
-  isAnalysisConfirmModalOpen: boolean;
-  selectedWritingStyleId: number | null; // writingStyleUrl -> selectedWritingStyleId
-  isAnalyzingStyle: boolean;
-}
-
-type DraftAction =
-  | { type: 'SET_SUBJECT'; payload: string }
-  | { type: 'SET_MESSAGE'; payload: string }
-  | { type: 'SET_HANDLE'; payload: string }
-  | { type: 'SET_TEMPLATE'; payload: string }
-  | { type: 'TOGGLE_SCRAP_MODAL' }
-  | { type: 'ADD_SCRAP'; payload: ScrapResponse }
-  | { type: 'UPDATE_SCRAP_OPINION'; payload: { id: number; opinion: string } }
-  | { type: 'REMOVE_SCRAP'; payload: number }
-  | { type: 'CLEAR_SCRAPS' }
-  | { type: 'TOGGLE_TAG'; payload: string }
-  | { type: 'REMOVE_TAG'; payload: string }
-  | { type: 'TOGGLE_TAG_DROPDOWN' }
-  | { type: 'SET_GENERATING'; payload: boolean }
-  | { type: 'SET_GENERATION_ERROR'; payload: string | null }
-  | { type: 'SET_GENERATION_STATUS'; payload: 'idle' |'processing' | 'completed' | 'failed' }
-  // New actions
-  | { type: 'SET_ANALYZING'; payload: boolean }
-  | { type: 'SET_TEMPLATE_STRUCTURE'; payload: TemplateSection[] | null }
-  | { type: 'SET_STRUCTURED_IDEA'; payload: { sectionId: string; idea: string } }
-  | { type: 'SET_TEMPLATE_TITLE'; payload: { sectionId: string; newTitle: string } }
-  | { type: 'ADD_TEMPLATE_SECTION'; payload: { parentId?: string; title: string } }
-  | { type: 'REMOVE_TEMPLATE_SECTION'; payload: string }
-  | { type: 'CLEAR_TEMPLATE' }
-  | { type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' }
-  | { type: 'SET_WRITING_STYLE_ID'; payload: number | null } // SET_WRITING_STYLE_URL -> SET_WRITING_STYLE_ID
-  | { type: 'SET_ANALYZING_STYLE'; payload: boolean };
-
-const STORAGE_KEY = 'tyquill-article-generate-draft';
 const DEFAULT_MODAL_TOP_OFFSET = 160;
 
-const getInitialState = (): ArticleGenerateState => {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    // console.log('🔍 Loading saved state:', saved);
-    if (saved) {
-      const parsedState = JSON.parse(saved);
-      // console.log('🔍 Parsed state:', parsedState);
-      // console.log('🔍 Template structure from storage:', parsedState.templateStructure);
-      
-      const restoredState = {
-        ...parsedState,
-        isScrapModalOpen: false,
-        isTagDropdownOpen: false,
-        isGenerating: false,
-        generationError: null,
-        generationStatus: 'idle',
-        templateStructure: parsedState.templateStructure || null, // 템플릿 구조도 복원
-        sectionIdCounter: parsedState.sectionIdCounter || 0,
-        isAnalyzing: false,
-        isAnalysisConfirmModalOpen: false,
-        selectedWritingStyleId: parsedState.selectedWritingStyleId || null, // writingStyleUrl -> selectedWritingStyleId
-        isAnalyzingStyle: false,
-      };
-      
-      // console.log('✅ Restored state with template:', restoredState.templateStructure);
-      return restoredState;
-    }
-  } catch (error) {
-    console.warn('Failed to load saved draft state:', error);
-  }
-  
-  return {
-    topic: '',
-    keyInsight: '',
-    handle: '',
-    selectedTemplate: '비즈니스 미팅 요청',
-    isScrapModalOpen: false,
-    selectedScraps: [],
-    selectedTags: [],
-    isTagDropdownOpen: false,
-    isGenerating: false,
-    generationError: null,
-    generationStatus: 'idle',
-    templateStructure: null, // 기본값은 null
-    sectionIdCounter: 0,
-    isAnalyzing: false,
-    isAnalysisConfirmModalOpen: false,
-    selectedWritingStyleId: null,
-    isAnalyzingStyle: false,
-  };
-};
 
-function draftReducer(state: ArticleGenerateState, action: DraftAction): ArticleGenerateState {
-  switch (action.type) {
-    case 'SET_SUBJECT':
-      return { ...state, topic: action.payload };
-    case 'SET_MESSAGE':
-      return { ...state, keyInsight: action.payload };
-    case 'SET_HANDLE':
-      return { ...state, handle: action.payload };
-    case 'SET_TEMPLATE':
-      return { ...state, selectedTemplate: action.payload };
-    case 'TOGGLE_SCRAP_MODAL':
-      return { ...state, isScrapModalOpen: !state.isScrapModalOpen };
-    case 'ADD_SCRAP':
-      return !state.selectedScraps.find(s => s.scrapId === action.payload.scrapId)
-        ? { ...state, selectedScraps: [...state.selectedScraps, { ...action.payload, opinion: '' }] }
-        : state;
-    case 'UPDATE_SCRAP_OPINION':
-      return {
-        ...state,
-        selectedScraps: state.selectedScraps.map(scrap =>
-          scrap.scrapId === action.payload.id ? { ...scrap, opinion: action.payload.opinion } : scrap
-        ),
-      };
-    case 'REMOVE_SCRAP':
-      return {
-        ...state,
-        selectedScraps: state.selectedScraps.filter(scrap => scrap.scrapId !== action.payload),
-      };
-    case 'CLEAR_SCRAPS':
-      return {
-        ...state,
-        selectedScraps: [],
-      };
-    case 'TOGGLE_TAG':
-      return {
-        ...state,
-        selectedTags: state.selectedTags.includes(action.payload)
-          ? state.selectedTags.filter(tag => tag !== action.payload)
-          : [...state.selectedTags, action.payload],
-      };
-    case 'REMOVE_TAG':
-      return {
-        ...state,
-        selectedTags: state.selectedTags.filter(tag => tag !== action.payload),
-      };
-    case 'TOGGLE_TAG_DROPDOWN':
-      return { ...state, isTagDropdownOpen: !state.isTagDropdownOpen };
-    case 'SET_GENERATING':
-      return { ...state, isGenerating: action.payload };
-    case 'SET_GENERATION_ERROR':
-      return { ...state, generationError: action.payload };
-    case 'SET_GENERATION_STATUS':
-      return { ...state, generationStatus: action.payload };
-    // New reducers
-    case 'SET_ANALYZING':
-      return { ...state, isAnalyzing: action.payload };
-    case 'SET_TEMPLATE_STRUCTURE': {
-      let counter = state.sectionIdCounter;
-      const assignIds = (sections: TemplateSection[]): TemplateSection[] => {
-        return sections.map(section => {
-          const sectionId = section.id || `section_${counter++}`;
-          return {
-            ...section,
-            id: sectionId,
-            children: section.children ? assignIds(section.children) : [],
-          };
-        });
-      };
-      const sectionsWithIds = action.payload ? assignIds(action.payload) : null;
-      return {
-        ...state,
-        templateStructure: sectionsWithIds,
-        sectionIdCounter: counter,
-      };
-    }
-    case 'SET_STRUCTURED_IDEA': {
-      if (!state.templateStructure) return state;
-      const updateKeyIdea = (sections: TemplateSection[]): TemplateSection[] =>
-        sections.map(section =>
-          section.id === action.payload.sectionId
-            ? { ...section, keyIdea: action.payload.idea }
-            : { ...section, children: section.children ? updateKeyIdea(section.children) : [] }
-        );
-      return {
-        ...state,
-        templateStructure: state.templateStructure ? updateKeyIdea(state.templateStructure) : null,
-      };
-    }
-    case 'SET_TEMPLATE_TITLE': {
-      if (!state.templateStructure) return state;
-      const updateTitle = (sections: TemplateSection[]): TemplateSection[] =>
-        sections.map(section =>
-          section.id === action.payload.sectionId
-            ? { ...section, title: action.payload.newTitle }
-            : { ...section, children: section.children ? updateTitle(section.children) : [] }
-        );
-      return {
-        ...state,
-        templateStructure: state.templateStructure ? updateTitle(state.templateStructure) : null,
-      };
-    }
-    case 'ADD_TEMPLATE_SECTION': {
-      const newSectionId = `section_${state.sectionIdCounter}`;
-      const newSection: TemplateSection = {
-        title: action.payload.title,
-        keyIdea: '',
-        children: [],
-        id: newSectionId,
-      };
-      if (!action.payload.parentId) {
-        return {
-          ...state,
-          templateStructure: state.templateStructure ? [...state.templateStructure, newSection] : [newSection],
-          sectionIdCounter: state.sectionIdCounter + 1,
-        };
-      } else {
-        if (!state.templateStructure) return state;
-        const addChildToSection = (sections: TemplateSection[]): TemplateSection[] =>
-          sections.map(section =>
-            section.id === action.payload.parentId
-              ? { ...section, children: [...(section.children || []), newSection] }
-              : { ...section, children: section.children ? addChildToSection(section.children) : [] }
-          );
-        return {
-          ...state,
-          templateStructure: addChildToSection(state.templateStructure),
-          sectionIdCounter: state.sectionIdCounter + 1,
-        };
-      }
-    }
-    case 'REMOVE_TEMPLATE_SECTION': {
-      if (!state.templateStructure) return state;
-      const removeSectionById = (sections: TemplateSection[], targetId: string): TemplateSection[] =>
-        sections.filter(section => {
-          if (section.id === targetId) return false;
-          if (section.children && section.children.length > 0) {
-            section.children = removeSectionById(section.children, targetId);
-          }
-          return true;
-        });
-      return {
-        ...state,
-        templateStructure: removeSectionById(state.templateStructure, action.payload),
-      };
-    }
-    case 'CLEAR_TEMPLATE':
-      return { ...state, templateStructure: null };
-    case 'TOGGLE_ANALYSIS_CONFIRM_MODAL':
-      return { ...state, isAnalysisConfirmModalOpen: !state.isAnalysisConfirmModalOpen };
-    case 'SET_WRITING_STYLE_ID':
-      return { ...state, selectedWritingStyleId: action.payload };
-    case 'SET_ANALYZING_STYLE':
-      return { ...state, isAnalyzingStyle: action.payload };
-    default:
-      return state;
-  }
-}
 
 const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ 
   onNavigateToDetail, 
@@ -300,7 +37,56 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   onRefreshArchiveList 
 }) => {
   const { showSuccess, showError, showInfo } = useToastHelpers();
-  const [state, dispatch] = useReducer(draftReducer, getInitialState());
+  
+  // Zustand 스토어 사용
+  const {
+    // 상태 값들
+    topic,
+    keyInsight,
+    handle,
+    selectedTemplate,
+    selectedScraps,
+    selectedTags,
+    isScrapModalOpen,
+    isTagDropdownOpen,
+    isAnalysisConfirmModalOpen,
+    isGenerating,
+    generationError,
+    generationStatus,
+    templateStructure,
+    isAnalyzing,
+    selectedWritingStyleId,
+    isAnalyzingStyle,
+    
+    // 액션들
+    setTopic,
+    setKeyInsight,
+    setHandle,
+    setSelectedTemplate,
+    addScrap,
+    removeScrap,
+    updateScrapOpinion,
+    clearScraps,
+    toggleTag,
+    removeTag,
+    toggleScrapModal,
+    toggleTagDropdown,
+    toggleAnalysisConfirmModal,
+    setGenerating,
+    setGenerationError,
+    setGenerationStatus,
+    setTemplateStructure,
+    setStructuredIdea,
+    setTemplateTitle,
+    addTemplateSection,
+    removeTemplateSection,
+    clearTemplate,
+    setAnalyzing,
+    setWritingStyleId,
+    setAnalyzingStyle,
+    resetForm,
+  } = useArticleGenerateStore();
+
   const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
@@ -325,56 +111,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     fetchStyles();
   }, []);
 
-  // 디버깅: 템플릿 구조 상태 변화 추적
-  useEffect(() => {
-    // console.log('📊 Current template structure:', state.templateStructure);
-  }, [state.templateStructure]);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
   const styleDropdownRef = useRef<HTMLDivElement | null>(null);
-
-  // Save state to localStorage whenever relevant state changes (템플릿 포함)
-  useEffect(() => {
-    const stateToSave = {
-      topic: state.topic,
-      keyInsight: state.keyInsight,
-      handle: state.handle,
-      selectedTemplate: state.selectedTemplate,
-      selectedScraps: state.selectedScraps,
-      selectedTags: state.selectedTags,
-      // 템플릿 관련 상태들도 저장
-      templateStructure: state.templateStructure,
-      sectionIdCounter: state.sectionIdCounter,
-      selectedWritingStyleId: state.selectedWritingStyleId,
-    };
-    
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    } catch (error) {
-      console.warn('Failed to save draft state:', error);
-    }
-  }, [
-    state.topic, 
-    state.keyInsight, 
-    state.handle, 
-    state.selectedTemplate, 
-    state.selectedScraps, 
-    state.selectedTags,
-    state.templateStructure,
-    state.sectionIdCounter,
-    state.selectedWritingStyleId
-  ]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
 
       // 모달 바깥 클릭 처리
-      if (state.isScrapModalOpen) {
+      if (isScrapModalOpen) {
         const modalOverlay = document.querySelector(`.${articleStyles.modalOverlay}`);
         const scrapModal = document.querySelector(`.${articleStyles.scrapModal}`);
         
         if (modalOverlay && target === modalOverlay && !scrapModal?.contains(target)) {
-          dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
+          toggleScrapModal();
         }
       }
 
@@ -390,7 +140,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     document.addEventListener('click', handleClickOutside);
     return () => document.removeEventListener('click', handleClickOutside);
-  }, [showAllTags, state.isScrapModalOpen]);
+  }, [showAllTags, isScrapModalOpen, toggleScrapModal]);
 
   // 문체 선택 드롭다운 바깥 클릭/ESC 시 닫기 (ScrapPage TagSelector 패턴 참고)
   useEffect(() => {
@@ -415,7 +165,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   // 초안 생성 중 경과 시간 타이머 (시작/종료는 isGenerating 기준으로만 제어)
   useEffect(() => {
-    if (state.isGenerating) {
+    if (isGenerating) {
       generationStartTimeRef.current = Date.now();
       setElapsedSeconds(0);
       generationTimerRef.current = setInterval(() => {
@@ -430,15 +180,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         generationTimerRef.current = null;
       }
     };
-  }, [state.isGenerating]);
+  }, [isGenerating]);
 
   // 완료 시 타이머 정지 (표시값 유지)
   useEffect(() => {
-    if (state.generationStatus === 'completed' && generationTimerRef.current) {
+    if (generationStatus === 'completed' && generationTimerRef.current) {
       clearInterval(generationTimerRef.current);
       generationTimerRef.current = null;
     }
-  }, [state.generationStatus]);
+  }, [generationStatus]);
 
   const formatElapsed = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -448,7 +198,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
    
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
   useEffect(() => {
-    if (!state.isScrapModalOpen) return;
+    if (!isScrapModalOpen) return;
 
     const updateTopOffset = () => {
       try {
@@ -468,31 +218,31 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     updateTopOffset();
     window.addEventListener('resize', updateTopOffset);
     return () => window.removeEventListener('resize', updateTopOffset);
-  }, [state.isScrapModalOpen]);
+  }, [isScrapModalOpen]);
 
   const handleScrapSelect = (scrap: ScrapResponse) => {
-    const isSelected = state.selectedScraps.find(s => s.scrapId === scrap.scrapId);
+    const isSelected = selectedScraps.find(s => s.scrapId === scrap.scrapId);
     
     if (isSelected) {
-      dispatch({ type: 'REMOVE_SCRAP', payload: scrap.scrapId });
+      removeScrap(scrap.scrapId);
     } else {
-      dispatch({ type: 'ADD_SCRAP', payload: scrap });
+      addScrap(scrap);
     }
   };
 
   const handleOpinionChange = (id: number, opinion: string) => {
-    dispatch({ type: 'UPDATE_SCRAP_OPINION', payload: { id, opinion } });
+    updateScrapOpinion(id, opinion);
   };
 
   const handleRemoveScrap = (id: number) => {
-    dispatch({ type: 'REMOVE_SCRAP', payload: id });
+    removeScrap(id);
   };
 
   const handleGenerateTemplateFromPage = async () => {
-    if (state.isAnalyzing) return;
+    if (isAnalyzing) return;
 
     try {
-      dispatch({ type: 'SET_ANALYZING', payload: true });
+      setAnalyzing(true);
       
       // 현재 활성 탭 정보 가져오기
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
@@ -548,34 +298,32 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         throw new Error('페이지 구조를 분석할 수 없습니다.');
       }
 
-      dispatch({ type: 'SET_TEMPLATE_STRUCTURE', payload: sections });
+      setTemplateStructure(sections);
       showSuccess('AI 분석 완료', `${sections.length}개의 섹션으로 구성을 만들었습니다.`);
 
     } catch (error: any) {
       console.error('Template generation error:', error);
       showError('섹션 구성 실패', error.message || '섹션 구성 생성 중 오류가 발생했습니다.');
     } finally {
-      dispatch({ type: 'SET_ANALYZING', payload: false });
+      setAnalyzing(false);
     }
   };
 
   const handleIdeaChange = (sectionId: string, idea: string) => {
-    dispatch({ type: 'SET_STRUCTURED_IDEA', payload: { sectionId, idea } });
+    setStructuredIdea(sectionId, idea);
   };
 
   const handleTitleChange = (sectionId: string, newTitle: string) => {
-    dispatch({ type: 'SET_TEMPLATE_TITLE', payload: { sectionId, newTitle } });
+    setTemplateTitle(sectionId, newTitle);
   };
 
   const addSection = (parentId?: string) => {
     const newTitle = parentId ? '새 하위 섹션' : '새 섹션';
-    // console.log('🔥 Adding section:', { parentId, title: newTitle });
-    // console.log('🔥 Current template structure before:', state.templateStructure);
-    dispatch({ type: 'ADD_TEMPLATE_SECTION', payload: { parentId, title: newTitle } });
+    addTemplateSection(parentId, newTitle);
   };
 
   const removeSection = (sectionId: string) => {
-    dispatch({ type: 'REMOVE_TEMPLATE_SECTION', payload: sectionId });
+    removeTemplateSection(sectionId);
   };
 
   // 섹션 구조를 평탄화하여 렌더링하는 함수 (ID 기반)
@@ -595,9 +343,22 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   };
 
   const handleGenerateArticle = async () => {
-    // state.structuredIdeas가 존재하는지 확인하고, 객체 타입임을 보장
-    const structuredIdeas = (state as any).structuredIdeas || {};
-    const isTemplateMode = state.templateStructure && Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '');
+    // templateStructure에서 섹션별 아이디어 수집
+    const collectIdeas = (sections: TemplateSection[]): Record<string, string> => {
+      const ideas: Record<string, string> = {};
+      sections.forEach(section => {
+        if (section.keyIdea && section.keyIdea.trim()) {
+          ideas[section.id!] = section.keyIdea;
+        }
+        if (section.children) {
+          Object.assign(ideas, collectIdeas(section.children));
+        }
+      });
+      return ideas;
+    };
+
+    const structuredIdeas = templateStructure ? collectIdeas(templateStructure) : {};
+    const isTemplateMode = templateStructure && Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '');
 
     if (isTemplateMode) {
       if (!Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '')) {
@@ -605,14 +366,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         return;
       }
     } else {
-      if (!state.topic || !state.keyInsight) {
-        dispatch({ type: 'SET_GENERATION_ERROR', payload: '주제와 키메시지를 입력해주세요.' });
+      if (!topic || !keyInsight) {
+        setGenerationError('주제와 키메시지를 입력해주세요.');
         showError('입력 오류', '주제와 키메시지를 모두 입력해주세요.');
         return;
       }
     }
 
-    if (state.isGenerating) return;
+    if (isGenerating) return;
 
     // Helper function to recursively remove 'id' from template sections
     const removeIdsFromTemplate = (sections: TemplateSection[]): any => {
@@ -626,23 +387,23 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     };
 
     try {
-      dispatch({ type: 'SET_GENERATING', payload: true });
-      dispatch({ type: 'SET_GENERATION_ERROR', payload: null });
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+      setGenerating(true);
+      setGenerationError(null);
+      setGenerationStatus('idle');
 
-      const templateWithoutIds = state.templateStructure ? removeIdsFromTemplate(state.templateStructure) : [];
+      const templateWithoutIds = templateStructure ? removeIdsFromTemplate(templateStructure) : [];
 
       // V2 API를 사용한 비동기 생성
       const generateData: GenerateArticleV2Dto = {
-        topic: isTemplateMode ? (state.templateStructure?.[0]?.title || '섹션 기반 아티클') : state.topic,
-        keyInsight: isTemplateMode ? JSON.stringify((state as any).structuredIdeas) : state.keyInsight,
-        scrapWithOptionalComment: state.selectedScraps.map(scrap => ({
+        topic: isTemplateMode ? (templateStructure?.[0]?.title || '섹션 기반 아티클') : topic,
+        keyInsight: isTemplateMode ? JSON.stringify(structuredIdeas) : keyInsight,
+        scrapWithOptionalComment: selectedScraps.map(scrap => ({
           scrapId: scrap.scrapId,
           userComment: scrap.opinion || undefined,
         })),
-        generationParams: state.handle || undefined,
+        generationParams: handle || undefined,
         articleStructureTemplate: templateWithoutIds,
-        writingStyleId: state.selectedWritingStyleId ?? undefined,
+        writingStyleId: selectedWritingStyleId ?? undefined,
       };
 
       // V2 API로 비동기 생성 시작
@@ -656,13 +417,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 50, 5000);
             
             if (completedArticle.status === 'completed') {
-              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'completed' });
+              setGenerationStatus('completed');
               // showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
               if (currentPage === 'archive' && onRefreshArchiveList) {
                 onRefreshArchiveList();
               }
             } else if (completedArticle.status === 'failed') {
-              dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
+              setGenerationStatus('failed');
               // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
             }
           } catch (pollingError) {
@@ -675,32 +436,22 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
         });
 
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'processing' });
+      setGenerationStatus('processing');
       
       setTimeout(() => {
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+        setGenerationStatus('idle');
       }, 2000);
 
-      dispatch({ type: 'SET_SUBJECT', payload: '' });
-      dispatch({ type: 'SET_MESSAGE', payload: '' });
-      dispatch({ type: 'SET_HANDLE', payload: '' });
-      dispatch({ type: 'SET_WRITING_STYLE_ID', payload: null });
-      dispatch({ type: 'CLEAR_SCRAPS' });
-      dispatch({ type: 'CLEAR_TEMPLATE' });
-      
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch (error) {
-        console.warn('Failed to clear saved draft state:', error);
-      }
+      // 폼 초기화
+      resetForm();
 
     } catch (error: any) {
-      dispatch({ type: 'SET_GENERATION_ERROR', payload: error.message || '초안 생성에 실패했습니다.' });
-      dispatch({ type: 'SET_GENERATION_STATUS', payload: 'failed' });
+      setGenerationError(error.message || '초안 생성에 실패했습니다.');
+      setGenerationStatus('failed');
       showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
       
       setTimeout(() => {
-        dispatch({ type: 'SET_GENERATION_STATUS', payload: 'idle' });
+        setGenerationStatus('idle');
       }, 3000);
     } finally {
       // 성공인 경우에는 모달을 유지하므로 여기서 닫지 않음
@@ -718,7 +469,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       textarea.style.height = 'auto';
       textarea.style.height = textarea.scrollHeight + 'px';
     }
-  }, [state.keyInsight]);
+  }, [keyInsight]);
 
   useEffect(() => {
     const fetchScraps = async () => {
@@ -730,16 +481,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   }, []);
 
   const filteredScraps = useMemo(() => {
-    if (state.selectedTags.length === 0) {
+    if (selectedTags.length === 0) {
       return allScraps;
     }
     
     return allScraps.filter(scrap => {
-      return state.selectedTags.some(selectedTag => 
+      return selectedTags.some(selectedTag => 
         scrap.tags?.some(tag => tag.name === selectedTag)
       );
     });
-  }, [allScraps, state.selectedTags]);
+  }, [allScraps, selectedTags]);
 
   const formatScrapDate = (dateString: string) => {
     try {
@@ -777,8 +528,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               id="subject"
               type="text"
               className={styles.formInput}
-              value={state.topic}
-              onChange={(e) => dispatch({ type: 'SET_SUBJECT', payload: e.target.value })}
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
               placeholder="뉴스레터의 핵심 주제를 입력하세요"
             />
           </div>
@@ -790,9 +541,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <textarea
               id="message"
               className={articleStyles.keyMessageTextarea}
-              value={state.keyInsight}
+              value={keyInsight}
               onChange={(e) => {
-                dispatch({ type: 'SET_MESSAGE', payload: e.target.value });
+                setKeyInsight(e.target.value);
                 // 자동 높이 조정
                 e.target.style.height = 'auto';
                 e.target.style.height = e.target.scrollHeight + 'px';
@@ -822,17 +573,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 </button>
                 
                   <button 
-                  onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
-                  disabled={state.isAnalyzing}
-                  className={`${articleStyles.sectionButton} ${state.isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
+                  onClick={() => toggleAnalysisConfirmModal()}
+                  disabled={isAnalyzing}
+                  className={`${articleStyles.sectionButton} ${isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                 >
                   <FaWandMagicSparkles size={14} />
-                  {state.isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
+                  {isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
                 </button>
               </div>
             </div>
             
-            {!state.templateStructure && (
+            {!templateStructure && (
               <div className={articleStyles.emptyState}>
                 <RiAiGenerate size={24} className={articleStyles.emptyStateIcon} />
                 <p className={articleStyles.emptyStateTitle}>
@@ -845,7 +596,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             )}
 
             {/* 섹션 구성 표시 */}
-            {state.templateStructure && (
+            {templateStructure && (
               <div className={articleStyles.sectionContainer}>
                 <div className={articleStyles.sectionHeader}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -858,13 +609,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     </span>
                   </div>
                   <button 
-                    onClick={() => dispatch({ type: 'CLEAR_TEMPLATE' })}
+                    onClick={() => clearTemplate()}
                     className={articleStyles.clearButton}
                   >
                     × 초기화
                   </button>
                 </div>
-                {flattenSections(state.templateStructure).map(({ section, level, id, parentId }) => {
+                {flattenSections(templateStructure).map(({ section, level, id, parentId }) => {
                   const isChild = level > 0;
                   return (
                     <div key={id} className={`${articleStyles.sectionItem} ${isChild ? articleStyles.sectionItemChild : ''}`}>
@@ -942,17 +693,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       setIsStyleDropdownOpen((prev) => !prev);
                     }}
                   >
-                    {state.selectedWritingStyleId
-                      ? (writingStyles.find((ws) => ws.id === state.selectedWritingStyleId)?.name || '문체 선택')
+                    {selectedWritingStyleId
+                      ? (writingStyles.find((ws) => ws.id === selectedWritingStyleId)?.name || '문체 선택')
                       : '기본 뉴스레터 문체'}
                     {isStyleDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
                   </button>
                   <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
                     <div
-                      className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
+                      className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        dispatch({ type: 'SET_WRITING_STYLE_ID', payload: null });
+                        setWritingStyleId(null);
                         setIsStyleDropdownOpen(false);
                       }}
                     >
@@ -961,10 +712,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     {writingStyles.map((ws) => (
                       <div
                         key={ws.id}
-                        className={`${tagSelectorStyles.tagOption} ${state.selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
+                        className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          dispatch({ type: 'SET_WRITING_STYLE_ID', payload: ws.id });
+                          setWritingStyleId(ws.id);
                           setIsStyleDropdownOpen(false);
                         }}
                       >
@@ -992,14 +743,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
             <button 
               className={articleStyles.addReferenceButton}
-              onClick={() => dispatch({ type: 'TOGGLE_SCRAP_MODAL' })}
+              onClick={() => toggleScrapModal()}
             >
               <IoAdd size={16} />
               스크랩에서 자료 추가
             </button>
             
             <div className={articleStyles.referenceList}>
-              {state.selectedScraps.map(scrap => (
+              {selectedScraps.map(scrap => (
                 <div key={scrap.scrapId} className={articleStyles.referenceItem}>
                   <div>
                     <div>{scrap.title}</div>
@@ -1022,9 +773,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             </div>
           </div>
 
-          {state.generationError && (
+          {generationError && (
             <div className={articleStyles.errorMessage}>
-              {state.generationError}
+              {generationError}
             </div>
           )}
           </div>
@@ -1033,16 +784,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         {/* Footer - 초안 생성 버튼 */}
         <div className={articleStyles.fixedButtonContainer}>
           <button 
-            className={`${articleStyles.addButton} ${state.isGenerating ? articleStyles.loading : ''}`}
+            className={`${articleStyles.addButton} ${isGenerating ? articleStyles.loading : ''}`}
             onClick={handleGenerateArticle}
-            disabled={state.isGenerating || (!state.topic && !state.templateStructure)}
+            disabled={isGenerating || (!topic && !templateStructure)}
           >
-            {state.generationStatus === 'completed' ? (
+            {generationStatus === 'completed' ? (
               <>
                 <IoCheckmark size={20} />
                 생성 요청 완료
               </>
-            ) : state.generationStatus === 'failed' ? (
+            ) : generationStatus === 'failed' ? (
               <>
                 <IoClose size={20} />
                 실패
@@ -1058,12 +809,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       </div>
 
       {/* AI 분석 컨펌 모달 */}
-      {state.isAnalysisConfirmModalOpen && (
+      {isAnalysisConfirmModalOpen && (
         <div 
           className={articleStyles.analysisModalOverlay}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+              toggleAnalysisConfirmModal();
             }
           }}
         >
@@ -1072,7 +823,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <h2 className={articleStyles.modalTitle}>AI 페이지 분석</h2>
                 <button 
                   className={articleStyles.modalCloseButton}
-                  onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
+                  onClick={() => toggleAnalysisConfirmModal()}
                 >
                   <IoClose />
                 </button>
@@ -1090,7 +841,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   </p>
                   
                   {/* 기존 섹션이 있을 때 경고 메시지 */}
-                  {state.templateStructure && state.templateStructure.length > 0 && (
+                  {templateStructure && templateStructure.length > 0 && (
                     <div style={{ 
                       margin: '0 0 20px 0', 
                       padding: '12px 16px', 
@@ -1109,7 +860,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                     <button
-                      onClick={() => dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' })}
+                      onClick={() => toggleAnalysisConfirmModal()}
                       style={{
                         padding: '10px 20px',
                         border: '1px solid #e0e0e0',
@@ -1124,7 +875,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     </button>
                     <button
                       onClick={async () => {
-                        dispatch({ type: 'TOGGLE_ANALYSIS_CONFIRM_MODAL' });
+                        toggleAnalysisConfirmModal();
                         await handleGenerateTemplateFromPage();
                       }}
                       style={{
@@ -1148,7 +899,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         )}
 
         {/* 초안 생성 중 모달 (비활성 오버레이) */}
-        {state.isGenerating && (
+        {isGenerating && (
           <div className={articleStyles.analysisModalOverlay} onClick={(e) => e.stopPropagation()}>
             <div className={articleStyles.analysisModal}>
               <div className={articleStyles.modalHeader}>
@@ -1156,7 +907,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               </div>
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
-                  {state.generationStatus === 'completed' ? (
+                  {generationStatus === 'completed' ? (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                       <div style={{
                         width: 56,
@@ -1186,9 +937,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     <div className={articleStyles.loadingSpinner} />
                   )}
                   <h3 style={{ margin: '12px 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
-                    {state.generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                    {generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
                   </h3>
-                  {state.generationStatus !== 'completed' && (
+                  {generationStatus !== 'completed' && (
                     <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
                       입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.
                     </p>
@@ -1197,7 +948,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     경과 시간: {formatElapsed(elapsedSeconds)}
                   </div>
                 </div>
-                {state.generationStatus === 'completed' && (
+                {generationStatus === 'completed' && (
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', marginTop: 12 }}>
                     <button
                       onClick={() => onNavigate('archive')}
@@ -1215,7 +966,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       보관함으로 이동
                     </button>
                     <button
-                      onClick={() => dispatch({ type: 'SET_GENERATING', payload: false })}
+                      onClick={() => setGenerating(false)}
                       style={{
                         padding: '10px 20px',
                         border: '1px solid #e0e0e0',
@@ -1235,13 +986,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           </div>
         )}
 
-        {state.isScrapModalOpen && (
+        {isScrapModalOpen && (
           <div 
             className={articleStyles.modalOverlay}
             style={{ top: scrapModalTop, right: SIDE_RAIL_WIDTH }}
             onClick={(e) => {
               if (e.target === e.currentTarget) {
-                dispatch({ type: 'TOGGLE_SCRAP_MODAL' });
+                toggleScrapModal();
               }
             }}
           >
@@ -1253,7 +1004,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <h2 className={articleStyles.modalTitle}>스크랩 선택</h2>
                 <button 
                   className={articleStyles.modalCloseButton}
-                  onClick={() => dispatch({ type: 'TOGGLE_SCRAP_MODAL' })}
+                  onClick={() => toggleScrapModal()}
                 >
                   <IoClose />
                 </button>
@@ -1261,9 +1012,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
               <TagSelector
                 availableTags={allTags}
-                selectedTags={state.selectedTags}
-                onTagSelect={(tag) => dispatch({ type: 'TOGGLE_TAG', payload: tag })}
-                onTagRemove={(tag) => dispatch({ type: 'REMOVE_TAG', payload: tag })}
+                selectedTags={selectedTags}
+                onTagSelect={(tag) => toggleTag(tag)}
+                onTagRemove={(tag) => removeTag(tag)}
               />
 
               <div
@@ -1274,7 +1025,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   <div
                     key={scrap.scrapId}
                     className={`${articleStyles.scrapItem} ${
-                      state.selectedScraps.find(s => s.scrapId === scrap.scrapId) ? articleStyles.selected : ''
+                      selectedScraps.find(s => s.scrapId === scrap.scrapId) ? articleStyles.selected : ''
                     }`}
                     onClick={() => handleScrapSelect(scrap)}
                     data-url={scrap.url}

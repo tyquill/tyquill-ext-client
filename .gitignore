@@ -126,3 +126,5 @@ logs
 *.crx
 *.pem
 web-ext-artifacts/ 
+
+.output/
