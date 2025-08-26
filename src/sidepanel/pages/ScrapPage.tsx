@@ -11,6 +11,7 @@ import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 import Tooltip from '../../components/common/Tooltip';
+import { mp } from '../../lib/mixpanel';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -135,6 +136,13 @@ const ScrapPage: React.FC = () => {
       setClipStatus('success');
       showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
       
+      // Track scrap creation
+      mp.track('Scrap_Created', {
+        url: scrapResponse?.url,
+        tags_count: selectedTags.length,
+        timestamp: Date.now()
+      });
+      
       // 스크랩 목록 새로고침
       await loadScraps();
       
@@ -230,6 +238,13 @@ const ScrapPage: React.FC = () => {
       await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
       
       // console.log('✅ Tag added successfully');
+      
+      // Track tag applied
+      mp.track('Tag_Applied_To_Scrap', {
+        scrap_id: scrapId,
+        tag_name: tag.trim(),
+        timestamp: Date.now()
+      });
       
       // 스크랩 목록 새로고침하여 새 태그 반영
       await loadScraps();
@@ -532,10 +547,35 @@ const ScrapPage: React.FC = () => {
           <TagSelector
             availableTags={allTags}
             selectedTags={selectedTags}
-            onTagSelect={(tag) => setSelectedTags(prev => 
-              prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-            )}
-            onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
+            onTagSelect={(tag) => {
+              setSelectedTags(prev => {
+                const isRemoving = prev.includes(tag);
+                // Track tag filter selection
+                try {
+                  mp.track(isRemoving ? 'Tag_Filter_Removed' : 'Tag_Filter_Added', {
+                    tag_name: tag,
+                    total_selected_tags: isRemoving ? prev.length - 1 : prev.length + 1,
+                    timestamp: Date.now()
+                  });
+                } catch (error) {
+                  console.error('Mixpanel tracking error:', error);
+                }
+                return isRemoving ? prev.filter(t => t !== tag) : [...prev, tag];
+              });
+            }}
+            onTagRemove={(tag) => {
+              setSelectedTags(prev => prev.filter(t => t !== tag));
+              // Track tag filter removal
+              try {
+                mp.track('Tag_Filter_Removed', {
+                  tag_name: tag,
+                  total_selected_tags: selectedTags.length - 1,
+                  timestamp: Date.now()
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
+            }}
           />
           {isAuthenticated && (
             <Tooltip content="스크랩 목록 새로고침" side='bottom'>

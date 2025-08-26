@@ -18,6 +18,7 @@ import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
 import { browser } from 'wxt/browser';
 import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
+import { mp } from '../../lib/mixpanel';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -421,6 +422,21 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             if (completedArticle.status === 'completed') {
               setGenerationStatus('completed');
               // showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+              
+              // Track article generation success
+              try {
+                mp.track('Article_Generated', {
+                  scraps_count: selectedScraps.length,
+                  tags_count: selectedTags.length,
+                  has_template: !!templateStructure,
+                  writing_style_id: selectedWritingStyleId,
+                  generation_time_seconds: elapsedSeconds,
+                  timestamp: Date.now()
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
+              
               if (currentPage === 'archive' && onRefreshArchiveList) {
                 onRefreshArchiveList();
               }
@@ -436,6 +452,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               setGenerationStatus('failed');
               setGenerating(false);
               // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
+              
+              // Track article generation failure
+              try {
+                mp.track('Article_Generation_Failed', {
+                  error: 'Generation failed during processing',
+                  scraps_count: selectedScraps.length,
+                  has_template: !!templateStructure,
+                  timestamp: Date.now()
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
@@ -449,6 +477,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           setGenerationStatus('failed');
           setGenerating(false);
           showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
+          
+          // Track article generation failure
+          try {
+            mp.track('Article_Generation_Failed', {
+              error: error.message,
+              scraps_count: selectedScraps.length,
+              has_template: !!templateStructure,
+              timestamp: Date.now()
+            });
+          } catch (error) {
+            console.error('Mixpanel tracking error:', error);
+          }
         });
 
     } catch (error: any) {
@@ -456,6 +496,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       setGenerationStatus('failed');
       setGenerating(false);
       showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
+      
+      // Track article generation failure
+      try {
+        mp.track('Article_Generation_Failed', {
+          error: error.message,
+          scraps_count: selectedScraps.length,
+          has_template: !!templateStructure,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
     }
   };
 
@@ -565,7 +617,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <h3 className={styles.sectionTitle}>섹션 구성</h3>
               <div className={articleStyles.sectionActions}>
                 <button 
-                  onClick={() => addSection()}
+                  onClick={() => {
+                    addSection();
+                    // Track section addition
+                    try {
+                      mp.track('Section_Added', {
+                        total_sections: templateStructure ? templateStructure.length + 1 : 1,
+                        timestamp: Date.now()
+                      });
+                    } catch (error) {
+                      console.error('Mixpanel tracking error:', error);
+                    }
+                  }}
                   className={articleStyles.sectionButton}
                 >
                   <IoAdd size={14} />
@@ -573,7 +636,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 </button>
                 
                   <button 
-                  onClick={() => toggleAnalysisConfirmModal()}
+                  onClick={() => {
+                    toggleAnalysisConfirmModal();
+                    // Track page analysis initiated
+                    try {
+                      mp.track('Page_Analysis_Modal_Opened', {
+                        has_existing_template: !!templateStructure,
+                        timestamp: Date.now()
+                      });
+                    } catch (error) {
+                      console.error('Mixpanel tracking error:', error);
+                    }
+                  }}
                   disabled={isAnalyzing}
                   className={`${articleStyles.sectionButton} ${isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                 >
@@ -743,7 +817,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
             <button 
               className={articleStyles.addReferenceButton}
-              onClick={() => toggleScrapModal()}
+              onClick={() => {
+                toggleScrapModal();
+                // Track scrap modal opened
+                try {
+                  mp.track('Scrap_Modal_Opened', {
+                    current_scraps_count: selectedScraps.length,
+                    timestamp: Date.now()
+                  });
+                } catch (error) {
+                  console.error('Mixpanel tracking error:', error);
+                }
+              }}
             >
               <IoAdd size={16} />
               스크랩에서 자료 추가

@@ -3,6 +3,7 @@ import { IoTrash, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
 import Tooltip from '../../components/common/Tooltip';
+import { mp } from '../../lib/mixpanel';
 
 interface ArchivePageProps {
   onDraftClick: (draftId: string) => void;
@@ -37,6 +38,14 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
 
   useEffect(() => {
     loadArticles();
+    // Track archive page view
+    try {
+      mp.track('Archive_Page_Viewed', {
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
   }, [loadArticles]);
 
   const handleDelete = async (id: number) => {
@@ -44,6 +53,15 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       try {
         await articleService.deleteArticle(id);
         setArticles(articles.filter(article => article.articleId !== id));
+        // Track article deletion
+        try {
+          mp.track('Article_Deleted', {
+            article_id: id,
+            timestamp: Date.now()
+          });
+        } catch (error) {
+          console.error('Mixpanel tracking error:', error);
+        }
       } catch (err: any) {
         alert('삭제에 실패했습니다: ' + err.message);
       }
@@ -149,7 +167,19 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
             <div 
               key={article.articleId} 
               className={styles.archiveItem}
-              onClick={() => onDraftClick(article.articleId.toString())}
+              onClick={() => {
+                onDraftClick(article.articleId.toString());
+                // Track article click
+                try {
+                  mp.track('Article_Clicked', {
+                    article_id: article.articleId,
+                    article_title: article.title || 'Untitled',
+                    timestamp: Date.now()
+                  });
+                } catch (error) {
+                  console.error('Mixpanel tracking error:', error);
+                }
+              }}
               style={{ cursor: 'pointer' }}
             >
               <div className={styles.archiveGrid}>
