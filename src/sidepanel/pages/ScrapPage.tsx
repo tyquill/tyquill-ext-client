@@ -240,11 +240,15 @@ const ScrapPage: React.FC = () => {
       // console.log('✅ Tag added successfully');
       
       // Track tag applied
+      try {
       mp.track('Tag_Applied_To_Scrap', {
         scrap_id: scrapId,
-        tag_name: tag.trim(),
-        timestamp: Date.now()
-      });
+          tag_name: tag.trim(),
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
       
       // 스크랩 목록 새로고침하여 새 태그 반영
       await loadScraps();

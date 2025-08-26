@@ -28,16 +28,32 @@ if (token) {
 // 공통 래퍼 export
 export const mp = {
   track: (name: string, props?: Record<string, any>) => {
-    if (token) mixpanel.track(name, props);
+    try {
+      if (token) mixpanel.track(name, props);
+    } catch (e) {
+      console.warn('mp.track failed:', e);
+    }
   },
   identify: (id: string) => {
-    if (token) mixpanel.identify(id);
+    try {
+      if (token) mixpanel.identify(id);
+    } catch (e) {
+      console.warn('mp.identify failed:', e);
+    }
   },
   peopleSet: (props: Record<string, any>) => {
-    if (token) mixpanel.people.set(props);
+    try {
+      if (token) mixpanel.people.set(props);
+    } catch (e) {
+      console.warn('mp.peopleSet failed:', e);
+    }
   },
   reset: () => {
-    if (token) mixpanel.reset();
+    try {
+      if (token) mixpanel.reset();
+    } catch (e) {
+      console.warn('mp.reset failed:', e);
+    }
   },
 };
 
