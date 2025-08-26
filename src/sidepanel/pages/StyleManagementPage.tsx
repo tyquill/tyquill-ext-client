@@ -6,6 +6,7 @@ import { clipCurrentPageForStyle } from '../../utils/scrapHelper';
 import Tooltip from '../../components/common/Tooltip';
 import styles from './StyleManagementPage.module.css';
 import pageStyles from './PageStyles.module.css';
+import { mp } from '../../lib/mixpanel';
 
 const StyleManagementPage: React.FC = () => {
   const [stylesList, setStylesList] = useState<WritingStyle[]>([]);
@@ -21,6 +22,14 @@ const StyleManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchStyles();
+    // Track style management page view
+    try {
+      mp.track('Style_Management_Page_Viewed', {
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
   }, []);
 
   const fetchStyles = async () => {

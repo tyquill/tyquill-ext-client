@@ -6,6 +6,7 @@
 
 export interface Environment {
   production: boolean;
+  isDevelopment: boolean;
   serverUrl: string;
   apiUrl: string;
   oauthCallbackPath: string;
@@ -20,6 +21,7 @@ const development: Environment = {
 
 const production: Environment = {
   production: true,
+  isDevelopment: false,
   serverUrl: 'https://api.tyquill.ai',
   apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
@@ -29,6 +31,7 @@ const production: Environment = {
 declare const process: {
   env: {
     NODE_ENV?: string;
+    MIXPANEL_TOKEN?: string;
   };
 };
 
