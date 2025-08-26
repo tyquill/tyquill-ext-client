@@ -5,23 +5,18 @@
  */
 
 export interface Environment {
-  production: boolean;
-  isDevelopment: boolean;
   serverUrl: string;
   apiUrl: string;
   oauthCallbackPath: string;
 }
 
 const development: Environment = {
-  production: false,
   serverUrl: 'https://dev-api.tyquill.ai',
   apiUrl: 'https://dev-api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 
 const production: Environment = {
-  production: true,
-  isDevelopment: false,
   serverUrl: 'https://api.tyquill.ai',
   apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
@@ -31,20 +26,16 @@ const production: Environment = {
 declare const process: {
   env: {
     NODE_ENV?: string;
-    MIXPANEL_TOKEN?: string;
   };
 };
 
 // webpack DefinePlugin으로 주입된 NODE_ENV 직접 확인
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 // console.log('🔍 Environment detection:', {
 //   nodeEnv: process.env.NODE_ENV,
-//   isDevelopment,
-//   selectedEnv: isDevelopment ? 'development' : 'production'
+//   selectedEnv: process.env.NODE_ENV === 'development' ? 'development' : 'production'
 // });
 
-export const environment: Environment = isDevelopment ? development : production;
+export const environment: Environment = process.env.NODE_ENV === 'development' ? development : production;
 
 /**
  * 환경별 서버 URL 반환
@@ -77,7 +68,7 @@ export const getOAuthCallbackUrl = (): string => {
  */
 export const logEnvironmentInfo = (): void => {
   // console.log('🌍 Environment Configuration:', {
-  //   production: environment.production,
+  //   isProduction: process.env.NODE_ENV === 'production',
   //   serverUrl: environment.serverUrl,
   //   apiUrl: environment.apiUrl,
   // });
