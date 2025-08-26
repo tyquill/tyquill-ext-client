@@ -567,13 +567,14 @@ const ScrapPage: React.FC = () => {
               }
             }}
             onTagRemove={(tag) => {
-              setSelectedTags(prev => prev.filter(t => t !== tag));
-              // Track tag filter removal
+              const next = selectedTags.filter(t => t !== tag);
+              setSelectedTags(next);
+              // Track with computed next length
               try {
                 mp.track('Tag_Filter_Removed', {
                   tag_name: tag,
-                  total_selected_tags: selectedTags.length - 1,
-                  timestamp: Date.now()
+                  total_selected_tags: next.length,
+                  timestamp: Date.now(),
                 });
               } catch (error) {
                 console.error('Mixpanel tracking error:', error);
