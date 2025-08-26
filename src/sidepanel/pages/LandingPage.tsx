@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToastHelpers } from '../../hooks/useToast';
 import styles from './LandingPage.module.css';
+import { mp } from '../../lib/mixpanel';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -11,15 +12,51 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { login, isLoading, error, clearError } = useAuth();
   const { showSuccess, showError } = useToastHelpers();
 
+  // Track landing page view
+  useEffect(() => {
+    try {
+      mp.track('Landing_Page_Viewed', {
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
+  }, []);
+
   const handleStartClick = async () => {
     try {
       clearError();
+      // Track login attempt
+      try {
+        mp.track('Login_Attempt', {
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
       await login();
       showSuccess('로그인 성공', 'Tyquill에 오신 것을 환영합니다!');
+      // Track successful login
+      try {
+        mp.track('Login_Success', {
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
       onStart(); // 인증 성공 후 메인 페이지로 이동
     } catch (err: any) {
       const errorMessage = err?.message || '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
       showError('로그인 실패', errorMessage);
+      // Track login failure
+      try {
+        mp.track('Login_Failed', {
+          error: errorMessage,
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
     }
   };
 

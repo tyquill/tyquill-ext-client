@@ -13,6 +13,7 @@ import ArchiveDetailPage from './pages/ArchiveDetailPage';
 import StyleManagementPage from './pages/StyleManagementPage';
 import styles from './App.module.css';
 import { PageType } from '../types/pages';
+import { mp } from '../lib/mixpanel';
 
 interface PageState {
   type: PageType;
@@ -20,8 +21,33 @@ interface PageState {
 }
 
 const App: React.FC = () => {
+  // Mixpanel 앱 시작 추적
+  React.useEffect(() => {
+    try {
+      mp.track('App_Opened', { 
+        timestamp: Date.now(),
+        session_start: new Date().toISOString() 
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
+  }, []);
+
   const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageState>({ type: 'landing' });
+
+  // 사용자 인증 상태 추적
+  React.useEffect(() => {
+    try {
+      if (isAuthenticated) {
+        mp.track('User_Authenticated', {
+          timestamp: Date.now()
+        });
+      }
+    } catch (error) {
+      console.error('Mixpanel auth tracking error:', error);
+    }
+  }, [isAuthenticated]);
 
   const navigateToMain = () => {
     setCurrentPage({ type: 'scrap' });
@@ -29,6 +55,14 @@ const App: React.FC = () => {
 
   const handleMenuClick = (menu: string) => {
     setCurrentPage({ type: menu as PageType });
+    try {
+      mp.track('Tab_Switched', {
+        from_tab: currentPage.type,
+        to_tab: menu
+      });
+    } catch (error) {
+      console.error('Mixpanel tab tracking error:', error);
+    }
   };
 
   const handleArchiveDetail = (draftId: string) => {
@@ -37,10 +71,28 @@ const App: React.FC = () => {
 
   const handleArchiveBack = () => {
     setCurrentPage({ type: 'archive' });
+    // Track navigation back to archive
+    try {
+      mp.track('Navigate_Back_To_Archive', {
+        from_page: currentPage.type,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
   };
 
   const handleNavigateToDetail = (articleId: number) => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
+    // Track navigation to article detail from archive list
+    try {
+      mp.track('Navigate_To_Article_Detail_From_List', {
+        article_id: articleId,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('Mixpanel tracking error:', error);
+    }
   };
 
   // 인증 상태에 따른 페이지 렌더링
@@ -65,6 +117,11 @@ const App: React.FC = () => {
 
     // 사이드패널이 닫힐 때 background에 알리기
     const handleBeforeUnload = () => {
+      try {
+        mp.track('App_Closed', { timestamp: Date.now() });
+      } catch (error) {
+        console.error('Mixpanel close tracking error:', error);
+      }
       browser.runtime.sendMessage({ action: 'sidePanelClosed' });
     };
 

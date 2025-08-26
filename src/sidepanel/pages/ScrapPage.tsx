@@ -11,6 +11,7 @@ import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 import Tooltip from '../../components/common/Tooltip';
+import { mp } from '../../lib/mixpanel';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -135,6 +136,13 @@ const ScrapPage: React.FC = () => {
       setClipStatus('success');
       showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
       
+      // Track scrap creation
+      mp.track('Scrap_Created', {
+        url: scrapResponse?.url,
+        tags_count: selectedTags.length,
+        timestamp: Date.now()
+      });
+      
       // 스크랩 목록 새로고침
       await loadScraps();
       
@@ -230,6 +238,17 @@ const ScrapPage: React.FC = () => {
       await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
       
       // console.log('✅ Tag added successfully');
+      
+      // Track tag applied
+      try {
+      mp.track('Tag_Applied_To_Scrap', {
+        scrap_id: scrapId,
+          tag_name: tag.trim(),
+          timestamp: Date.now()
+        });
+      } catch (error) {
+        console.error('Mixpanel tracking error:', error);
+      }
       
       // 스크랩 목록 새로고침하여 새 태그 반영
       await loadScraps();
@@ -532,10 +551,35 @@ const ScrapPage: React.FC = () => {
           <TagSelector
             availableTags={allTags}
             selectedTags={selectedTags}
-            onTagSelect={(tag) => setSelectedTags(prev => 
-              prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
-            )}
-            onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
+            onTagSelect={(tag) => {
+              const isRemoving = selectedTags.includes(tag);
+              const next = isRemoving ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
+              setSelectedTags(next);
+              // Track outside updater to avoid double-fire in StrictMode
+              try {
+                mp.track(isRemoving ? 'Tag_Filter_Removed' : 'Tag_Filter_Added', {
+                  tag_name: tag,
+                  total_selected_tags: next.length,
+                  timestamp: Date.now(),
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
+            }}
+            onTagRemove={(tag) => {
+              const next = selectedTags.filter(t => t !== tag);
+              setSelectedTags(next);
+              // Track with computed next length
+              try {
+                mp.track('Tag_Filter_Removed', {
+                  tag_name: tag,
+                  total_selected_tags: next.length,
+                  timestamp: Date.now(),
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
+            }}
           />
           {isAuthenticated && (
             <Tooltip content="스크랩 목록 새로고침" side='bottom'>
