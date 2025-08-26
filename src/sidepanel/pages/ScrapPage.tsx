@@ -552,20 +552,19 @@ const ScrapPage: React.FC = () => {
             availableTags={allTags}
             selectedTags={selectedTags}
             onTagSelect={(tag) => {
-              setSelectedTags(prev => {
-                const isRemoving = prev.includes(tag);
-                // Track tag filter selection
-                try {
-                  mp.track(isRemoving ? 'Tag_Filter_Removed' : 'Tag_Filter_Added', {
-                    tag_name: tag,
-                    total_selected_tags: isRemoving ? prev.length - 1 : prev.length + 1,
-                    timestamp: Date.now()
-                  });
-                } catch (error) {
-                  console.error('Mixpanel tracking error:', error);
-                }
-                return isRemoving ? prev.filter(t => t !== tag) : [...prev, tag];
-              });
+              const isRemoving = selectedTags.includes(tag);
+              const next = isRemoving ? selectedTags.filter(t => t !== tag) : [...selectedTags, tag];
+              setSelectedTags(next);
+              // Track outside updater to avoid double-fire in StrictMode
+              try {
+                mp.track(isRemoving ? 'Tag_Filter_Removed' : 'Tag_Filter_Added', {
+                  tag_name: tag,
+                  total_selected_tags: next.length,
+                  timestamp: Date.now(),
+                });
+              } catch (error) {
+                console.error('Mixpanel tracking error:', error);
+              }
             }}
             onTagRemove={(tag) => {
               setSelectedTags(prev => prev.filter(t => t !== tag));
