@@ -14,6 +14,7 @@ import StyleManagementPage from './pages/StyleManagementPage';
 import styles from './App.module.css';
 import { PageType } from '../types/pages';
 import { mp } from '../lib/mixpanel';
+import { initPostHog, trackEvent, trackPageView } from '../lib/posthog';
 
 interface PageState {
   type: PageType;
@@ -21,6 +22,19 @@ interface PageState {
 }
 
 const App: React.FC = () => {
+  // Initialize PostHog for sidepanel
+  React.useEffect(() => {
+    const initAnalytics = async () => {
+      await initPostHog({ 
+        persistence: 'localStorage'
+      });
+      trackEvent('sidepanel_opened');
+      trackPageView('sidepanel');
+    };
+
+    initAnalytics();
+  }, []);
+
   // Mixpanel 앱 시작 추적
   React.useEffect(() => {
     try {
@@ -38,6 +52,10 @@ const App: React.FC = () => {
 
   // 사용자 인증 상태 추적
   React.useEffect(() => {
+    if (isAuthenticated) {
+      trackEvent('user_authenticated');
+    }
+    
     try {
       if (isAuthenticated) {
         mp.track('User_Authenticated', {
@@ -55,6 +73,15 @@ const App: React.FC = () => {
 
   const handleMenuClick = (menu: string) => {
     setCurrentPage({ type: menu as PageType });
+    
+    // PostHog tracking
+    trackEvent('page_navigation', {
+      from_page: currentPage.type,
+      to_page: menu,
+      navigation_type: 'menu_click'
+    });
+    trackPageView(menu);
+    
     try {
       mp.track('Tab_Switched', {
         from_tab: currentPage.type,
@@ -67,6 +94,8 @@ const App: React.FC = () => {
 
   const handleArchiveDetail = (draftId: string) => {
     setCurrentPage({ type: 'archive-detail', draftId });
+    trackEvent('archive_detail_opened', { draft_id: draftId });
+    trackPageView('archive-detail');
   };
 
   const handleArchiveBack = () => {

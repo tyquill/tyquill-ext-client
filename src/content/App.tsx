@@ -3,9 +3,25 @@ import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 import { WebClipper } from '../utils/webClipper';
+import { initPostHog, trackEvent } from '../lib/posthog';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
+
+  // Initialize PostHog for content script context
+  useEffect(() => {
+    const initAnalytics = async () => {
+      await initPostHog({ 
+        persistence: 'memory' // Use memory persistence for content scripts
+      });
+      trackEvent('content_script_loaded', { 
+        url: window.location.href,
+        domain: window.location.hostname 
+      });
+    };
+
+    initAnalytics();
+  }, []);
 
   // Background Script로부터의 메시지 처리
   useEffect(() => {
@@ -28,14 +44,26 @@ const App: React.FC = () => {
 
       // 스크랩 요청 처리
       if (request.action === 'scrapePage') {
+        trackEvent('content_scrap_request');
         try {
           const clipper = new WebClipper(request.options || {});
           const result = await clipper.clipPage();
+          
+          trackEvent('content_scrap_success', {
+            url: window.location.href,
+            hasTitle: !!result.title,
+            hasContent: !!result.content,
+            contentLength: result.content?.length || 0
+          });
           
           if (sendResponse) {
             sendResponse(result);
           }
         } catch (error) {
+          trackEvent('content_scrap_failed', {
+            url: window.location.href,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
           console.error('스크랩 실패:', error);
           if (sendResponse) {
             sendResponse({ error: error instanceof Error ? error.message : 'Unknown error' });

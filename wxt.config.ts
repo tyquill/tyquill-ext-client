@@ -2,6 +2,12 @@ import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  vite: () => ({
+    define: {
+      'import.meta.env.VITE_POSTHOG_KEY': JSON.stringify(process.env.VITE_POSTHOG_KEY || ''),
+      'import.meta.env.VITE_POSTHOG_HOST': JSON.stringify(process.env.VITE_POSTHOG_HOST || 'https://us.i.posthog.com'),
+    },
+  }),
   manifest: {
     name: 'Tyquill',
     version: '1.2.3',
@@ -17,6 +23,9 @@ export default defineConfig({
       'https://maily.so/*',
       'https://api-js.mixpanel.com/*',
       'https://api.mixpanel.com/*',
+      'https://us.i.posthog.com/*',
+      'https://eu.i.posthog.com/*',
+      'https://app.posthog.com/*',
       '<all_urls>'
     ],
     icons: {

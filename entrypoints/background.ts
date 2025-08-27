@@ -2,24 +2,40 @@
 import { scrapService } from '../src/services/scrapService';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { initPostHog, trackEvent } from '../src/lib/posthog';
 
-export default defineBackground(() => {
+export default defineBackground(async () => {
+  // Initialize PostHog for background context
+  await initPostHog({ 
+    persistence: 'localStorage'
+  });
+
   // 사이드패널 상태 (전역)
   let isSidePanelOpen = false;
 
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener((details) => {
     // console.log('Tyquill Extension installed');
+    trackEvent('ext_installed', { 
+      reason: details.reason,
+      version: browser.runtime.getManifest().version 
+    });
   });
 
   // Handle extension icon click to open side panel
   browser.action.onClicked.addListener(async (tab) => {
     // console.log('Extension icon clicked');
+    trackEvent('ext_icon_clicked');
     
     // Open side panel
     try {
       await browser.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
+      trackEvent('side_panel_opened', { trigger: 'icon_click' });
       // console.log('Side panel opened');
     } catch (error) {
+      trackEvent('side_panel_open_failed', { 
+        trigger: 'icon_click',
+        error: (error as Error).message 
+      });
       // console.error('Failed to open side panel:', error);
     }
   });
@@ -30,11 +46,21 @@ export default defineBackground(() => {
     
 
     if (request.action === 'clipAndScrapCurrentPage') {
+      trackEvent('scrap_attempt', { trigger: 'background_message' });
       handleClipAndScrapCurrentPage(sender)
         .then(response => {
+          trackEvent('scrap_success', { 
+            url: response.url,
+            hasContent: !!response.content,
+            hasTitle: !!response.title 
+          });
           sendResponse({ success: true, data: response });
         })
         .catch(error => {
+          trackEvent('scrap_failed', { 
+            error: error.message,
+            trigger: 'background_message'
+          });
           console.error('❌ Background clip and scrap error:', error);
           sendResponse({ success: false, error: error.message });
         });

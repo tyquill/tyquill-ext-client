@@ -8,6 +8,7 @@ import { IoClose } from 'react-icons/io5';
 import { IoMdCheckmark } from 'react-icons/io';
 import { motion } from 'framer-motion';
 import Tooltip from '../../common/Tooltip'; // Tooltip 컴포넌트 import
+import { trackEvent } from '../../../lib/posthog';
 
 // 타입 정의
 type ButtonStyle = {
@@ -403,11 +404,19 @@ const FloatingButton: React.FC = () => {
 
   // 사이드패널 열기/닫기
   const openSidePanel = useCallback(async () => {
+    trackEvent('floating_button_sidepanel_open', { 
+      trigger: 'button_click',
+      url: window.location.href 
+    });
     await browser.runtime.sendMessage({ action: 'openSidePanel' });
     setIsSidePanelOpen(true);
   }, []);
 
   const closeSidePanel = useCallback(async () => {
+    trackEvent('floating_button_sidepanel_close', { 
+      trigger: 'button_click',
+      url: window.location.href 
+    });
     await browser.runtime.sendMessage({ action: 'closeSidePanel' });
     setIsSidePanelOpen(false);
   }, []);
@@ -418,13 +427,28 @@ const FloatingButton: React.FC = () => {
     setIsLoading(true);
     setToolbarStyle(prev => ({ ...prev, opacity: 0.7, pointerEvents: 'none', cursor: 'wait' }));
 
+    trackEvent('floating_button_scrap_attempt', { 
+      url: window.location.href,
+      domain: window.location.hostname 
+    });
+
     try {
       await clipAndScrapCurrentPage();
+
+      trackEvent('floating_button_scrap_success', { 
+        url: window.location.href,
+        domain: window.location.hostname 
+      });
 
       // 성공 애니메이션 표시
       setShowSuccessAnimation(true);
       setToolbarStyle(prev => ({ ...prev, backgroundColor: '#10b981', color: 'white', borderColor: '#10b981' }));
     } catch (error) {
+      trackEvent('floating_button_scrap_failed', { 
+        url: window.location.href,
+        domain: window.location.hostname,
+        error: (error as Error).message 
+      });
       setToolbarStyle(prev => ({ ...prev, backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }));
       console.error('❌ 스크랩 실패:', error);
     } finally {
@@ -457,6 +481,10 @@ const FloatingButton: React.FC = () => {
   // 닫기 버튼 클릭
   const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
+    trackEvent('floating_button_hide', { 
+      url: window.location.href,
+      domain: window.location.hostname 
+    });
     try {
       const { tyquillSettings } = await browser.storage.sync.get('tyquillSettings');
       await browser.storage.sync.set({
