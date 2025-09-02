@@ -15,8 +15,6 @@ export default defineConfig({
     ],
     host_permissions: [
       'https://maily.so/*',
-      'https://api-js.mixpanel.com/*',
-      'https://api.mixpanel.com/*',
       '<all_urls>'
     ],
     icons: {

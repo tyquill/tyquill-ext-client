@@ -11,8 +11,8 @@ export interface Environment {
 }
 
 const development: Environment = {
-  serverUrl: 'https://dev-api.tyquill.ai',
-  apiUrl: 'https://dev-api.tyquill.ai/api',
+  serverUrl: 'https://api.tyquill.ai',
+  apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
 };
 
