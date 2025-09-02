@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh, IoDocument, IoCloudUpload } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
+import scrapStyles from './ScrapPage.module.css';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
@@ -33,6 +34,9 @@ const ScrapPage: React.FC = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showUploadArea, setShowUploadArea] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchAllTags = async () => {
@@ -322,6 +326,72 @@ const ScrapPage: React.FC = () => {
     }
   }, [isAuthenticated, isRefreshing, loadScraps, showSuccess, showError]);
 
+  // PDF 파일 업로드 핸들러
+  const handlePDFUpload = useCallback(async (file: File) => {
+    if (!file) return;
+    
+    // PDF 파일 검증
+    if (file.type !== 'application/pdf') {
+      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
+      return;
+    }
+    
+    // 파일 크기 제한 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showError('파일 크기 초과', '10MB 이하의 파일만 업로드 가능합니다.');
+      return;
+    }
+    
+    try {
+      setIsUploading(true);
+      
+      // TODO: 실제 UploadThing 서비스 연동
+      // const uploadResult = await uploadFiles([file]);
+      
+      // 임시 시뮬레이션
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      showSuccess('업로드 완료', `${file.name}이 성공적으로 업로드되었습니다.`);
+      setShowUploadArea(false);
+      await loadScraps();
+      
+    } catch (error: any) {
+      console.error('PDF upload error:', error);
+      showError('업로드 실패', error.message || 'PDF 업로드 중 오류가 발생했습니다.');
+    } finally {
+      setIsUploading(false);
+    }
+  }, [showSuccess, showError, loadScraps]);
+
+  // 드래그 앤 드롭 이벤트 핸들러
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    
+    const files = Array.from(e.dataTransfer.files);
+    const pdfFile = files.find(file => file.type === 'application/pdf');
+    
+    if (!pdfFile) {
+      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
+      return;
+    }
+    
+    await handlePDFUpload(pdfFile);
+  }, [handlePDFUpload, showError]);
+
   // 로그인 페이지로 이동 (또는 로그아웃 처리)
   const handleLogin = useCallback(async () => {
     if (isAuthenticated) {
@@ -524,9 +594,74 @@ const ScrapPage: React.FC = () => {
                   </>
                 )}
               </button>
+              
+              <button
+                className={`${styles.addButton} ${scrapStyles.pdfUploadButton}`}
+                onClick={() => setShowUploadArea(!showUploadArea)}
+              >
+                <IoDocument size={20} />
+                PDF
+              </button>
             </div>
           )}
         </div>
+
+        {showUploadArea && isAuthenticated && (
+          <div className={`${scrapStyles.uploadSection} ${isUploading ? scrapStyles.uploading : ''}`}>
+            <div className={scrapStyles.uploadDropzoneWrapper}>
+              <div 
+                className={`${scrapStyles.uploadDropzone} ${isDragging ? scrapStyles.dragging : ''}`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                onClick={() => document.getElementById('pdf-file-input')?.click()}
+              >
+                {isUploading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div className={styles.loadingSpinner} style={{ marginBottom: '8px' }} />
+                    <div style={{ color: '#3b82f6', fontSize: '14px', fontWeight: '500' }}>
+                      업로드 중...
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <IoCloudUpload size={32} style={{ color: '#64748b', marginBottom: '8px' }} />
+                    <div style={{ color: '#334155', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
+                      {isDragging ? 'PDF 파일을 여기에 놓아주세요' : 'PDF 파일을 드래그하거나 클릭하여 업로드'}
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '12px' }}>
+                      PDF 파일만 지원됩니다 (최대 10MB)
+                    </div>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept=".pdf,application/pdf"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      await handlePDFUpload(file);
+                      e.target.value = ''; // 입력 필드 자기화
+                    }
+                  }}
+                  style={{ display: 'none' }}
+                  id="pdf-file-input"
+                  disabled={isUploading}
+                />
+              </div>
+            </div>
+            <div className={scrapStyles.uploadActions}>
+              <button 
+                className={scrapStyles.cancelButton}
+                onClick={() => setShowUploadArea(false)}
+                disabled={isUploading}
+              >
+                <IoClose size={16} />
+                취소
+              </button>
+            </div>
+          </div>
+        )}
 
         <div className={styles.headerControls}>
           <TagSelector
