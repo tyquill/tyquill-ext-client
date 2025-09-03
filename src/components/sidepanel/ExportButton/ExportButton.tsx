@@ -138,11 +138,15 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
 
               const processTextFormatting = (text: string) => {
                 return text
-                  .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                  .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1</i>')
-                  .replace(/~~(.*?)~~/g, '<del>$1</del>')
-                  .replace(/__([^_]+)__/g, '<u>$1</u>')
-                  .replace(/`([^`]+)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>');
+                  // 이미지: ![alt](url "title") → <img class="image-tool__image-picture" src="url">
+                  .replace(/!\[[^\]]*\]\(\s*([^\)\s]+)(?:\s+\"[^\"]*\")?\s*\)/g, '<img class="image-tool__image-picture" src="$1">')
+                  // 링크: [text](url) → <a href="url" target="_blank">url</a>
+                  .replace(/\[[^\]]+\]\(\s*([^\)]+?)\s*\)/g, '<a href="$1" target="_blank">$1<\/a>')
+                  .replace(/\*\*(.*?)\*\*/g, '<b>$1<\/b>')
+                  .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1<\/i>')
+                  .replace(/~~(.*?)~~/g, '<del>$1<\/del>')
+                  .replace(/__([^_]+)__/g, '<u>$1<\/u>')
+                  .replace(/`([^`]+)`/g, '<code style=\"background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;\">$1<\/code>');
               };
 
               while (i < lines.length) {
