@@ -100,6 +100,11 @@ export class GlobalApiClient {
         if (!mergedHeaders['Content-Type']) {
           mergedHeaders['Content-Type'] = 'application/json';
         }
+      } else if (!isFormData && typeof body === 'string') {
+        // 문자열 본문인 경우에도 기본적으로 JSON으로 간주하여 헤더 보완
+        if (!mergedHeaders['Content-Type']) {
+          mergedHeaders['Content-Type'] = 'application/json';
+        }
       }
 
       const config: RequestInit = {

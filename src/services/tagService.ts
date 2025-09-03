@@ -55,6 +55,9 @@ export class TagService {
         const endpoint = scrapId ? `/v1/tags?scrapId=${scrapId}` : '/v1/tags';
         return this.apiRequest(endpoint, {
             method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(tagData),
         });
     }
@@ -96,6 +99,9 @@ export class TagService {
     async updateTag(tagId: number, updateData: UpdateTagDto): Promise<TagResponse> {
         return this.apiRequest(`/v1/tags/${tagId}`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
             body: JSON.stringify(updateData),
         });
     }
@@ -107,6 +113,9 @@ export class TagService {
     async deleteTag(tagId: number): Promise<void> {
         return this.apiRequest(`/v1/tags/${tagId}`, {
             method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            },
         });
     }
 

@@ -16,10 +16,30 @@ export interface LibraryItemDto {
   tags?: string[];
 }
 
+export interface TagDto {
+  tagId: number;
+  name: string;
+  createdAt?: string;
+}
+
 class LibraryItemService {
   async list(type?: LibraryItemType): Promise<LibraryItemDto[]> {
     const query = type ? `?type=${type}` : '';
     return globalApiClient.get(`/v1/library-items${query}`);
+  }
+
+  async addTag(itemId: number, itemType: LibraryItemType, tagName: string): Promise<TagDto> {
+    return globalApiClient.post(`/v1/library-items/${itemId}/tags?type=${itemType}`, {
+      name: tagName
+    });
+  }
+
+  async removeTag(itemId: number, itemType: LibraryItemType, tagId: number): Promise<void> {
+    return globalApiClient.delete(`/v1/library-items/${itemId}/tags/${tagId}?type=${itemType}`);
+  }
+
+  async getTags(itemId: number, itemType: LibraryItemType): Promise<TagDto[]> {
+    return globalApiClient.get(`/v1/library-items/${itemId}/tags?type=${itemType}`);
   }
 }
 
