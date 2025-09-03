@@ -324,9 +324,9 @@ class AuthService {
       }
     }
 
+    // 기본적으로 Authorization만 설정하고, Content-Type은 요청 본문 유형에 맞게 호출부에서 결정
     return {
       'Authorization': `Bearer ${this.authState.accessToken}`,
-      'Content-Type': 'application/json',
     };
   }
 
