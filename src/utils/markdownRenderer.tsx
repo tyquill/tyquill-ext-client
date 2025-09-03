@@ -11,6 +11,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
   // 볼드/이탤릭/취소선 텍스트 처리 헬퍼 함수 (개선된 패턴)
   const processTextFormatting = (text: string) => {
     return text
+      // 이미지 처리: ![alt](url "optional title") → <img>
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto; display: inline-block;" />')
       // 볼드 처리: **text** (한글과 특수문자 포함하여 더 넓게 매칭)
       .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
       // 이탤릭 처리: *text* (볼드와 겹치지 않도록 개선)
@@ -26,7 +28,20 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
   };
 
   const renderMarkdown = (markdown: string) => {
-    const lines = markdown.split('\n');
+    // 멀티라인 링크/이미지 구문을 먼저 HTML로 치환하여 줄 단위 파싱 한계를 보완
+    const normalized = markdown
+      // 멀티라인 이미지: ![alt...\n\n...](url)
+      .replace(/!\[([\s\S]*?)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g, (_m, alt: string, url: string) => {
+        const collapsedAlt = (alt as string).replace(/\s+/g, ' ').trim();
+        return `<img src="${url}" alt="${collapsedAlt}" style="max-width: 100%; height: auto; display: inline-block;" />`;
+      })
+      // 멀티라인 링크: [text...\n\n...](url)
+      .replace(/\[([\s\S]*?)\]\(\s*([^\)]+?)\s*\)/g, (_m, text: string, url: string) => {
+        const collapsedText = (text as string).replace(/\s+/g, ' ').trim();
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #0066cc; text-decoration: underline;">${collapsedText}</a>`;
+      });
+
+    const lines = normalized.split('\n');
     const elements: React.ReactElement[] = [];
     let key = 0;
     let i = 0;
