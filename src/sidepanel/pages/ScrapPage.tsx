@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh, IoDocument, IoCloudUpload } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh, IoDocument } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
@@ -12,6 +12,8 @@ import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 import Tooltip from '../../components/common/Tooltip';
+import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
+import { libraryItemService, type LibraryItemDto } from '../../services/libraryItemService';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -28,15 +30,17 @@ const ScrapPage: React.FC = () => {
   const [scraps, setScraps] = useState<Scrap[]>([]);
   const [scrapsLoading, setScrapsLoading] = useState(false);
   const [scrapsError, setScrapsError] = useState<string | null>(null);
+  const [uploads, setUploads] = useState<LibraryItemDto[]>([]);
+  const [uploadsLoading, setUploadsLoading] = useState(false);
+  const [uploadsError, setUploadsError] = useState<string | null>(null);
+  const [viewType, setViewType] = useState<'SCRAP' | 'UPLOAD'>('SCRAP');
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [showUploadArea, setShowUploadArea] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [showPDFUploadModal, setShowPDFUploadModal] = useState(false);
 
   useEffect(() => {
     const fetchAllTags = async () => {
@@ -99,6 +103,22 @@ const ScrapPage: React.FC = () => {
       }
     } finally {
       setScrapsLoading(false);
+    }
+  }, [isAuthenticated]);
+
+  // 업로드 목록 불러오기
+  const loadUploads = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      setUploadsLoading(true);
+      setUploadsError(null);
+      const items = await libraryItemService.list('UPLOAD');
+      setUploads(items);
+    } catch (error: any) {
+      setUploadsError(error.message || '업로드 목록을 불러오는데 실패했습니다.');
+      if (error.message?.includes('Authentication')) setIsAuthenticated(false);
+    } finally {
+      setUploadsLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -172,19 +192,24 @@ const ScrapPage: React.FC = () => {
   
   // 인증 상태가 변경되면 스크랩 목록 로드
   useEffect(() => {
-    if (isAuthenticated && authChecked) {
+    if (!isAuthenticated || !authChecked) {
+      setScraps([]);
+      setUploads([]);
+      return;
+    }
+    if (viewType === 'SCRAP') {
       loadScraps();
     } else {
-      setScraps([]);
+      loadUploads();
     }
-  }, [isAuthenticated, authChecked, loadScraps]);
+  }, [isAuthenticated, authChecked, viewType, loadScraps, loadUploads]);
 
   // 페이지 visibility 변경 시 스크랩 목록 새로고침
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated && authChecked) {
-        // console.log('📱 Side panel visible, refreshing scraps...');
-        loadScraps();
+        if (viewType === 'SCRAP') loadScraps();
+        else loadUploads();
       }
     };
 
@@ -193,7 +218,7 @@ const ScrapPage: React.FC = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated, authChecked, loadScraps]);
+  }, [isAuthenticated, authChecked, viewType, loadScraps, loadUploads]);
 
   // Background script로부터 스크랩 생성 알림 수신
   useEffect(() => {
@@ -201,8 +226,7 @@ const ScrapPage: React.FC = () => {
     
     const handleScrapCreatedMessage = (message: any) => {
       if (isActive && message.action === 'scrapCreated' && isAuthenticated) {
-        // console.log('📱 Scrap created notification received, refreshing list...');
-        loadScraps();
+        if (viewType === 'SCRAP') loadScraps();
       }
     };
 
@@ -211,7 +235,7 @@ const ScrapPage: React.FC = () => {
     return () => {
       isActive = false;
     };
-  }, [isAuthenticated, loadScraps]);
+  }, [isAuthenticated, viewType, loadScraps]);
 
   // 스크랩에 태그 추가
   const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
@@ -317,80 +341,25 @@ const ScrapPage: React.FC = () => {
     
     try {
       setIsRefreshing(true);
-      await loadScraps();
-      showSuccess('새로고침 완료', '스크랩 목록이 업데이트되었습니다.');
+      if (viewType === 'SCRAP') {
+        await loadScraps();
+        showSuccess('새로고침 완료', '스크랩 목록이 업데이트되었습니다.');
+      } else {
+        await loadUploads();
+        showSuccess('새로고침 완료', '업로드 목록이 업데이트되었습니다.');
+      }
     } catch (error: any) {
-      showError('새로고침 실패', error.message || '스크랩 목록 새로고침에 실패했습니다.');
+      showError('새로고침 실패', error.message || '목록 새로고침에 실패했습니다.');
     } finally {
       setIsRefreshing(false);
     }
-  }, [isAuthenticated, isRefreshing, loadScraps, showSuccess, showError]);
+  }, [isAuthenticated, isRefreshing, viewType, loadScraps, loadUploads, showSuccess, showError]);
 
-  // PDF 파일 업로드 핸들러
-  const handlePDFUpload = useCallback(async (file: File) => {
-    if (!file) return;
-    
-    // PDF 파일 검증
-    if (file.type !== 'application/pdf') {
-      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
-      return;
-    }
-    
-    // 파일 크기 제한 (10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      showError('파일 크기 초과', '10MB 이하의 파일만 업로드 가능합니다.');
-      return;
-    }
-    
-    try {
-      setIsUploading(true);
-      
-      // TODO: 실제 UploadThing 서비스 연동
-      // const uploadResult = await uploadFiles([file]);
-      
-      // 임시 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      showSuccess('업로드 완료', `${file.name}이 성공적으로 업로드되었습니다.`);
-      setShowUploadArea(false);
-      await loadScraps();
-      
-    } catch (error: any) {
-      console.error('PDF upload error:', error);
-      showError('업로드 실패', error.message || 'PDF 업로드 중 오류가 발생했습니다.');
-    } finally {
-      setIsUploading(false);
-    }
-  }, [showSuccess, showError, loadScraps]);
-
-  // 드래그 앤 드롭 이벤트 핸들러
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    
-    const files = Array.from(e.dataTransfer.files);
-    const pdfFile = files.find(file => file.type === 'application/pdf');
-    
-    if (!pdfFile) {
-      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
-      return;
-    }
-    
-    await handlePDFUpload(pdfFile);
-  }, [handlePDFUpload, showError]);
+  // PDF 업로드 성공 시 처리
+  const handlePDFUploadSuccess = useCallback(() => {
+    if (viewType === 'SCRAP') loadScraps();
+    else loadUploads();
+  }, [viewType, loadScraps, loadUploads]);
 
   // 로그인 페이지로 이동 (또는 로그아웃 처리)
   const handleLogin = useCallback(async () => {
@@ -597,7 +566,7 @@ const ScrapPage: React.FC = () => {
               
               <button
                 className={`${styles.addButton} ${scrapStyles.pdfUploadButton}`}
-                onClick={() => setShowUploadArea(!showUploadArea)}
+                onClick={() => setShowPDFUploadModal(true)}
               >
                 <IoDocument size={20} />
                 PDF
@@ -606,62 +575,6 @@ const ScrapPage: React.FC = () => {
           )}
         </div>
 
-        {showUploadArea && isAuthenticated && (
-          <div className={`${scrapStyles.uploadSection} ${isUploading ? scrapStyles.uploading : ''}`}>
-            <div className={scrapStyles.uploadDropzoneWrapper}>
-              <div 
-                className={`${scrapStyles.uploadDropzone} ${isDragging ? scrapStyles.dragging : ''}`}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                onClick={() => document.getElementById('pdf-file-input')?.click()}
-              >
-                {isUploading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div className={styles.loadingSpinner} style={{ marginBottom: '8px' }} />
-                    <div style={{ color: '#3b82f6', fontSize: '14px', fontWeight: '500' }}>
-                      업로드 중...
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <IoCloudUpload size={32} style={{ color: '#64748b', marginBottom: '8px' }} />
-                    <div style={{ color: '#334155', fontSize: '14px', fontWeight: '500', marginBottom: '4px' }}>
-                      {isDragging ? 'PDF 파일을 여기에 놓아주세요' : 'PDF 파일을 드래그하거나 클릭하여 업로드'}
-                    </div>
-                    <div style={{ color: '#64748b', fontSize: '12px' }}>
-                      PDF 파일만 지원됩니다 (최대 10MB)
-                    </div>
-                  </>
-                )}
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      await handlePDFUpload(file);
-                      e.target.value = ''; // 입력 필드 자기화
-                    }
-                  }}
-                  style={{ display: 'none' }}
-                  id="pdf-file-input"
-                  disabled={isUploading}
-                />
-              </div>
-            </div>
-            <div className={scrapStyles.uploadActions}>
-              <button 
-                className={scrapStyles.cancelButton}
-                onClick={() => setShowUploadArea(false)}
-                disabled={isUploading}
-              >
-                <IoClose size={16} />
-                취소
-              </button>
-            </div>
-          </div>
-        )}
 
         <div className={styles.headerControls}>
           <TagSelector
@@ -672,6 +585,22 @@ const ScrapPage: React.FC = () => {
             )}
             onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
           />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              className={`${styles.refreshButton} ${viewType === 'SCRAP' ? styles.active : ''}`}
+              onClick={() => setViewType('SCRAP')}
+              title="스크랩 보기"
+            >
+              스크랩
+            </button>
+            <button
+              className={`${styles.refreshButton} ${viewType === 'UPLOAD' ? styles.active : ''}`}
+              onClick={() => setViewType('UPLOAD')}
+              title="업로드 보기"
+            >
+              업로드
+            </button>
+          </div>
           {isAuthenticated && (
             <Tooltip content="스크랩 목록 새로고침" side='bottom'>
               <button
@@ -688,55 +617,130 @@ const ScrapPage: React.FC = () => {
 
       <div className={styles.scrollableContent}>
         <div className={styles.scrapList}>
-          {scrapsLoading && scraps.length === 0 ? (
-            <div className={styles.loadingContainer}>
-              <div className={styles.loadingIndicator}>
-                스크랩 목록을 불러오는 중...
+          {viewType === 'SCRAP' ? (
+            scrapsLoading && scraps.length === 0 ? (
+              <div className={styles.loadingContainer}>
+                <div className={styles.loadingIndicator}>
+                  스크랩 목록을 불러오는 중...
+                </div>
               </div>
-            </div>
-          ) : scrapsError ? (
-            <div className={styles.errorContainer}>
-              <div className={styles.errorMessage}>
-                {scrapsError}
+            ) : scrapsError ? (
+              <div className={styles.errorContainer}>
+                <div className={styles.errorMessage}>
+                  {scrapsError}
+                </div>
+                <button 
+                  className={styles.retryButton}
+                  onClick={loadScraps}
+                >
+                  다시 시도
+                </button>
               </div>
-              <button 
-                className={styles.retryButton}
-                onClick={loadScraps}
-              >
-                다시 시도
-              </button>
-            </div>
-          ) : filteredScraps.length === 0 && selectedTags.length > 0 ? (
-            <div className={styles.emptyContainer}>
-              <div className={styles.emptyMessage}>
-                선택한 태그와 일치하는 스크랩이 없습니다.
+            ) : filteredScraps.length === 0 && selectedTags.length > 0 ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyMessage}>
+                  선택한 태그와 일치하는 스크랩이 없습니다.
+                </div>
               </div>
-            </div>
-          ) : scraps.length === 0 ? (
-            <div className={styles.emptyContainer}>
-              <div className={styles.emptyMessage}>
-                아직 스크랩한 내용이 없습니다.
+            ) : scraps.length === 0 ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyMessage}>
+                  아직 스크랩한 내용이 없습니다.
+                </div>
+                <div className={styles.emptySubMessage}>
+                  💡 위의 "페이지 스크랩" 버튼을 눌러 1초만에 스크랩하세요!
+                </div>
               </div>
-              <div className={styles.emptySubMessage}>
-                💡 위의 "페이지 스크랩" 버튼을 눌러 1초만에 스크랩하세요!
-              </div>
-            </div>
+            ) : (
+              filteredScraps.map((scrap) => (
+                <ScrapItem
+                  key={scrap.id} 
+                  scrap={scrap} 
+                  onDelete={async () => {
+                    try {
+                      await scrapService.deleteScrap(parseInt(scrap.id));
+                      await loadScraps();
+                      showSuccess('스크랩 삭제', '스크랩이 성공적으로 삭제되었습니다.');
+                    } catch (error: any) {
+                      showError('삭제 실패', error?.message || '스크랩 삭제에 실패했습니다.');
+                    }
+                  }}
+                />
+              ))
+            )
           ) : (
-            filteredScraps.map((scrap) => (
-            <ScrapItem
-              key={scrap.id} 
-              scrap={scrap} 
-              onDelete={async () => {
-                try {
-                  await scrapService.deleteScrap(parseInt(scrap.id));
-                  await loadScraps(); // 동기적으로 처리
-                  showSuccess('스크랩 삭제', '스크랩이 성공적으로 삭제되었습니다.');
-                } catch (error: any) {
-                  showError('삭제 실패', error?.message || '스크랩 삭제에 실패했습니다.');
-                }
-              }}
-            />
-          ))
+            uploadsLoading && uploads.length === 0 ? (
+              <div className={styles.loadingContainer}>
+                <div className={styles.loadingIndicator}>
+                  업로드 목록을 불러오는 중...
+                </div>
+              </div>
+            ) : uploadsError ? (
+              <div className={styles.errorContainer}>
+                <div className={styles.errorMessage}>
+                  {uploadsError}
+                </div>
+                <button 
+                  className={styles.retryButton}
+                  onClick={loadUploads}
+                >
+                  다시 시도
+                </button>
+              </div>
+            ) : uploads.length === 0 ? (
+              <div className={styles.emptyContainer}>
+                <div className={styles.emptyMessage}>
+                  아직 업로드한 PDF가 없습니다.
+                </div>
+              </div>
+            ) : (
+              uploads.map((item) => (
+                <div key={`upload-${item.id}`} className={styles.contentItem}>
+                  <div className={styles.contentHeader}>
+                    {item.url ? (
+                      <a href={item.url} target="_blank" rel="noreferrer" className={styles.contentTitle}>
+                        {item.title}
+                      </a>
+                    ) : (
+                      <div className={styles.contentTitle}>{item.title}</div>
+                    )}
+                    <Tooltip content="삭제" side='bottom'>
+                      <button
+                        onClick={async () => {
+                          try {
+                            await globalApiClient.delete(`/v1/uploaded-files/${item.id}`);
+                            await loadUploads();
+                            showSuccess('삭제 완료', '업로드가 삭제되었습니다.');
+                          } catch (e: any) {
+                            showError('삭제 실패', e?.message || '업로드 삭제에 실패했습니다.');
+                          }
+                        }}
+                        className={styles.deleteButton}
+                      >
+                        <IoTrash />
+                      </button>
+                    </Tooltip>
+                  </div>
+                  {item.description && (
+                    <div className={styles.contentDescription}>{item.description}</div>
+                  )}
+                  <div className={styles.contentFooter}>
+                    <div className={styles.tags}>
+                      {item.url ? (
+                        <a href={item.url} target="_blank" rel="noreferrer">파일 열기</a>
+                      ) : (
+                        'URL 없음'
+                      )}
+                    </div>
+                    {item.createdAt && (
+                      <div className={styles.contentDate}>
+                        {new Date(item.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )
           )}
         </div>
         {loading && (
@@ -747,6 +751,13 @@ const ScrapPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* PDF Upload Modal */}
+      <PDFUploadModal
+        isOpen={showPDFUploadModal}
+        onClose={() => setShowPDFUploadModal(false)}
+        onUploadSuccess={handlePDFUploadSuccess}
+      />
     </div>
   );
 };
