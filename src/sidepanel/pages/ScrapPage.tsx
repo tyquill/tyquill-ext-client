@@ -510,7 +510,7 @@ const ScrapPage: React.FC = () => {
 
   const openScrapInNewTab = useCallback(async (scrapId: string) => {
     try {
-      const url = browser.runtime.getURL(`/webscrapviewer.html#scrapId=${scrapId}`);
+      const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
       await browser.tabs.create({ url });
     } catch (e) {
       showError('새 탭 열기 실패', '스크랩 뷰어를 여는 중 오류가 발생했습니다.');
@@ -593,6 +593,15 @@ const ScrapPage: React.FC = () => {
       </div>
     );
   });
+
+  const openUploadInNewTab = useCallback(async (uploadedId: number) => {
+    try {
+      const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
+      await browser.tabs.create({ url });
+    } catch (e) {
+      showError('새 탭 열기 실패', '업로드 뷰어를 여는 중 오류가 발생했습니다.');
+    }
+  }, [showError]);
 
   return (
     <div className={styles.pageContainer}>
@@ -728,10 +737,15 @@ const ScrapPage: React.FC = () => {
               if (item.type === 'UPLOAD' && item.upload) {
                 const u = item.upload;
                 return (
-                  <div key={item.key} className={styles.contentItem}>
+                  <div
+                    key={item.key}
+                    className={styles.contentItem}
+                    onClick={() => openUploadInNewTab(u.id)}
+                    style={{ cursor: 'pointer' }}
+                  >
                     <div className={styles.contentHeader}>
                       {u.url ? (
-                        <a href={u.url} target="_blank" rel="noreferrer" className={styles.contentTitle}>
+                        <a href={u.url} target="_blank" rel="noreferrer" className={styles.contentTitle} onClick={(e) => e.stopPropagation()}>
                           <IoDocument size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
                           {u.title}
                         </a>
@@ -743,7 +757,8 @@ const ScrapPage: React.FC = () => {
                       )}
                       <Tooltip content="삭제" side='bottom'>
                         <button
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.stopPropagation();
                             // 낙관적 업데이트: 즉시 UI에서 항목 제거
                             const prevUploads = uploads;
                             setUploads((curr) => curr.filter((it) => it.id !== u.id));
@@ -764,9 +779,7 @@ const ScrapPage: React.FC = () => {
                         </button>
                       </Tooltip>
                     </div>
-                    {u.description && (
-                      <div className={styles.contentDescription}>{u.description}</div>
-                    )}
+                    <div className={styles.contentDescription}>{u.previewText || u.description || ''}</div>
                     <div className={styles.contentFooter}>
                       <div className={styles.tags}>
                         <button 
