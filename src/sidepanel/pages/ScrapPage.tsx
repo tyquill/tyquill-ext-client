@@ -508,16 +508,30 @@ const ScrapPage: React.FC = () => {
 
 
 
+  const openScrapInNewTab = useCallback(async (scrapId: string) => {
+    try {
+      const url = browser.runtime.getURL(`/webscrapviewer.html#scrapId=${scrapId}`);
+      await browser.tabs.create({ url });
+    } catch (e) {
+      showError('새 탭 열기 실패', '스크랩 뷰어를 여는 중 오류가 발생했습니다.');
+    }
+  }, [showError]);
+
   const ScrapItem = React.memo<{ scrap: Scrap; onDelete: () => void }>(({ scrap, onDelete }) => {
     return (
-      <div className={styles.contentItem} data-url={scrap.url}>
+      <div 
+        className={styles.contentItem} 
+        data-url={scrap.url}
+        onClick={() => openScrapInNewTab(scrap.id)}
+        style={{ cursor: 'pointer' }}
+      >
         <div className={styles.contentHeader}>
-          <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitle}>
+          <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitle} onClick={(e) => e.stopPropagation()}>
             <IoLink size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
             {scrap.title}
           </a>
           <Tooltip content="삭제" side='bottom'>
-            <button onClick={onDelete} className={styles.deleteButton}>
+            <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className={styles.deleteButton}>
               <IoTrash />
             </button>
           </Tooltip>

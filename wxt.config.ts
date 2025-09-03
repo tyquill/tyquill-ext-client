@@ -9,6 +9,7 @@ export default defineConfig({
     permissions: [
       'storage',
       'sidePanel',
+      'tabs',
       'activeTab',
       'scripting',
       'contextMenus'
@@ -26,6 +27,14 @@ export default defineConfig({
     side_panel: {
       default_path: 'sidepanel.html'
     },
+    web_accessible_resources: [
+      {
+        resources: [
+          'webscrapviewer.html'
+        ],
+        matches: ['<all_urls>']
+      }
+    ],
     action: {
       default_title: 'Open Tyquill Side Panel',
       default_icon: {

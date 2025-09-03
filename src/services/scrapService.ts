@@ -136,6 +136,20 @@ export class ScrapService {
   }
 
   /**
+   * 스크랩 단건 조회
+   */
+  async getScrapById(scrapId: number): Promise<ScrapResponse> {
+    try {
+      const response = await this.apiRequest<ScrapResponse>(`/v1/scraps/${scrapId}`, {
+        method: 'GET',
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * 스크랩 삭제
    */
   async deleteScrap(scrapId: number): Promise<void> {
