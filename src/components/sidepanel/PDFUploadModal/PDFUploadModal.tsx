@@ -19,8 +19,6 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -29,8 +27,6 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
     setSelectedFile(null);
     setTitle('');
     setDescription('');
-    setTags([]);
-    setTagInput('');
     setIsDragging(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -88,25 +84,6 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
       showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
     }
   }, []);
-
-  const handleAddTag = () => {
-    const trimmedTag = tagInput.trim();
-    if (trimmedTag && !tags.includes(trimmedTag)) {
-      setTags([...tags, trimmedTag]);
-      setTagInput('');
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
 
   const handleUpload = async () => {
     if (!selectedFile) {
@@ -236,44 +213,6 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
               rows={3}
               disabled={isUploading}
             />
-          </div>
-
-          <div className={styles.formGroup}>
-            <label className={styles.label}>태그</label>
-            <div className={styles.tagInputWrapper}>
-              <input
-                type="text"
-                className={styles.tagInput}
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="태그 입력 후 Enter"
-                disabled={isUploading}
-              />
-              <button
-                className={styles.addTagButton}
-                onClick={handleAddTag}
-                disabled={!tagInput.trim() || isUploading}
-              >
-                <IoAdd size={16} />
-              </button>
-            </div>
-            {tags.length > 0 && (
-              <div className={styles.tagList}>
-                {tags.map((tag) => (
-                  <span key={tag} className={styles.tag}>
-                    {tag}
-                    <button
-                      className={styles.removeTagButton}
-                      onClick={() => handleRemoveTag(tag)}
-                      disabled={isUploading}
-                    >
-                      <IoClose size={14} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
