@@ -81,12 +81,31 @@ export class GlobalApiClient {
 
     try {
       // 인증이 필요한 경우 토큰 가져오기
-      const headers = await authService.getAuthHeaders();
-
+      const authHeaders = await authService.getAuthHeaders();
       const url = `${this.apiUrl}${endpoint}`;
+
+      // FormData 여부 판단 및 헤더 병합
+      const isFormData =
+        typeof FormData !== 'undefined' && requestOptions.body instanceof FormData;
+
+      const mergedHeaders: Record<string, string> = {
+        ...authHeaders,
+        ...(requestOptions.headers || {}),
+      };
+
+      // JSON 자동 직렬화 (FormData가 아닌 경우에만)
+      let body: any = requestOptions.body;
+      if (!isFormData && body && typeof body !== 'string') {
+        body = JSON.stringify(body);
+        if (!mergedHeaders['Content-Type']) {
+          mergedHeaders['Content-Type'] = 'application/json';
+        }
+      }
+
       const config: RequestInit = {
         ...requestOptions,
-        headers,
+        body,
+        headers: mergedHeaders,
       };
 
       const response = await fetch(url, config);
@@ -97,9 +116,8 @@ export class GlobalApiClient {
           try {
             // console.log('🔄 401 error detected, refreshing token...');
             const newToken = await this.refreshAccessToken();
-            headers['Authorization'] = `Bearer ${newToken}`;
-            
-            const retryResponse = await fetch(url, { ...config, headers });
+            const retryHeaders = { ...mergedHeaders, Authorization: `Bearer ${newToken}` };
+            const retryResponse = await fetch(url, { ...config, headers: retryHeaders });
             
             if (!retryResponse.ok) {
               throw new Error(`API Error: ${retryResponse.status} ${retryResponse.statusText}`);
@@ -141,7 +159,7 @@ export class GlobalApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data,
     });
   }
 
@@ -152,7 +170,7 @@ export class GlobalApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data,
     });
   }
 
@@ -163,7 +181,7 @@ export class GlobalApiClient {
     return this.request<T>(endpoint, {
       ...options,
       method: 'PATCH',
-      body: data ? JSON.stringify(data) : undefined,
+      body: data,
     });
   }
 

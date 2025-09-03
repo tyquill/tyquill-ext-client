@@ -77,6 +77,9 @@ export class ScrapService {
 
       const response = await this.apiRequest<ScrapResponse>('/v1/scraps', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify(scrapData),
       });
 
