@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { scrapService } from '../services/scrapService';
 import MarkdownRenderer from '../utils/markdownRenderer';
+import styles from './ScrapView.module.css';
+import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 
 interface Props { id: number }
 
@@ -32,22 +34,52 @@ const ScrapView: React.FC<Props> = ({ id }) => {
     load();
   }, [id]);
 
+  const domain = (() => {
+    try {
+      if (!scrap?.url) return '';
+      const hostname = new URL(scrap.url).hostname.replace(/^www\./, '');
+      const parts = hostname.split('.');
+      return parts.length >= 3 ? parts.slice(-2).join('.') : hostname;
+    } catch {
+      return '';
+    }
+  })();
+
   if (loading) return <div style={{ padding: 16 }}>불러오는 중...</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
   if (!scrap) return <div style={{ padding: 16 }}>데이터가 없습니다.</div>;
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>{scrap.title}</h1>
-      <div style={{ marginBottom: 16, color: '#666' }}>
-        <a href={scrap.url} target="_blank" rel="noreferrer">원문 링크</a>
-        {scrap.createdAt && (
-          <span style={{ marginLeft: 12 }}>
-            {new Date(scrap.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
+    <div className={`${styles.pageBg} ${styles.themeLight}`}>
+      <div className={styles.viewer}>
+        <div className={styles.card}>
+          <div className={styles.header}>
+            <div className={styles.titleBlock}>
+              <div className={styles.title}>{scrap.title}</div>
+              <div className={styles.meta}>
+                <span className={styles.pill}>
+                  <span className={styles.pillIcon}><IoLinkOutline size={14} /></span>
+                  <a className={styles.pillLink} href={scrap.url} target="_blank" rel="noreferrer">{domain || '원문 링크'}</a>
+                </span>
+                {scrap.createdAt && (
+                  <span className={styles.pill}>
+                    <span className={styles.pillIcon}><IoTimeOutline size={14} /></span>
+                    {new Date(scrap.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className={styles.actions}>
+              <a className={`${styles.btn} ${styles.btnPrimary}`} href={scrap.url} target="_blank" rel="noreferrer">
+                원문 보기
+              </a>
+            </div>
+          </div>
+          <div className={styles.content}>
+            <MarkdownRenderer content={scrap.content} />
+          </div>
+        </div>
       </div>
-      <MarkdownRenderer content={scrap.content} />
     </div>
   );
 };

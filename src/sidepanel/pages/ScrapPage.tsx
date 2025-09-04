@@ -526,10 +526,14 @@ const ScrapPage: React.FC = () => {
         style={{ cursor: 'pointer' }}
       >
         <div className={styles.contentHeader}>
-          <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitle} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.contentTitleWrapper}>
             <IoLink size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-            {scrap.title}
-          </a>
+            <span className={styles.titleText}>
+              <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
+                {scrap.title}
+              </a>
+            </span>
+          </div>
           <Tooltip content="삭제" side='bottom'>
             <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className={styles.deleteButton}>
               <IoTrash />
@@ -537,7 +541,7 @@ const ScrapPage: React.FC = () => {
           </Tooltip>
         </div>
         <div className={styles.contentDescription}>
-          {markdownToPlainTextPreview(scrap.content)}
+          {scrap.content}
         </div>
         <div className={styles.contentFooter}>
           <div className={styles.tags}>
@@ -745,14 +749,18 @@ const ScrapPage: React.FC = () => {
                   >
                     <div className={styles.contentHeader}>
                       {u.url ? (
-                        <a href={u.url} target="_blank" rel="noreferrer" className={styles.contentTitle} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.contentTitleWrapper}>
                           <IoDocument size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                          {u.title}
-                        </a>
+                          <span className={styles.titleText}>
+                            <a href={u.url} target="_blank" rel="noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
+                              {u.title}
+                            </a>
+                          </span>
+                        </div>
                       ) : (
-                        <div className={styles.contentTitle}>
+                        <div className={styles.contentTitleWrapper}>
                           <IoDocument size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                          {u.title}
+                          <span className={styles.titleText}>{u.title}</span>
                         </div>
                       )}
                       <Tooltip content="삭제" side='bottom'>

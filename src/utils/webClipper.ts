@@ -157,6 +157,12 @@ export class WebClipper {
       '.markdown-body', // GitHub 등
       '.post', // 블로그
       '.story-body', // 뉴스
+      // CMS/빌더/메일 본문 컨테이너들
+      '.et_pb_post_content', // Divi (WordPress)
+      '.mail_view_contents_inner', // NAVER Mail 본문
+      '.mail_view_contents',
+      '[itemprop="articleBody"]',
+      '[data-article-body]'
     ];
 
     for (const selector of contentSelectors) {
@@ -177,7 +183,7 @@ export class WebClipper {
     const text = element.textContent?.trim() || '';
     const wordCount = text.split(/\s+/).length;
     
-    // 최소 50단어 이상 && 네비게이션/사이드바가 아님
+    // 포함 우선: 링크 밀도는 점수에서 페널티 처리하므로 여기서는 배제하지 않음
     return wordCount > 50 && !this.isNavigationElement(element);
   }
 
@@ -188,7 +194,7 @@ export class WebClipper {
     const className = element.className.toLowerCase();
     const tagName = element.tagName.toLowerCase();
     
-    const navKeywords = ['nav', 'menu', 'sidebar', 'header', 'footer', 'aside'];
+    const navKeywords = ['nav', 'menu', 'sidebar', 'header', 'footer', 'aside', 'gnb', 'lnb', 'breadcrumb'];
     
     return navKeywords.some(keyword => 
       className.includes(keyword) || 
@@ -207,7 +213,7 @@ export class WebClipper {
 
     for (const element of candidates) {
       const score = this.calculateContentScore(element);
-      if (score > maxScore && score > 100) {
+      if (score > maxScore) {
         maxScore = score;
         bestElement = element;
       }
@@ -224,16 +230,42 @@ export class WebClipper {
     const wordCount = text.split(/\s+/).length;
     const paragraphs = element.querySelectorAll('p').length;
     const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6').length;
-    
-    // 점수 계산 (단어 수 + 문단 수 * 10 + 헤딩 수 * 5)
-    let score = wordCount + (paragraphs * 10) + (headings * 5);
-    
-    // 네비게이션 요소면 점수 감점
-    if (this.isNavigationElement(element)) {
-      score *= 0.1;
+    const links = element.querySelectorAll('a').length;
+    const linkDensity = paragraphs > 0 ? links / Math.max(paragraphs, 1) : (links > 0 ? links : 0);
+
+    // 기본 점수 (문단 가중치 상향)
+    let score = wordCount + (paragraphs * 15) + (headings * 5);
+
+    // 본문 힌트 보너스
+    if (this.matchesContentHint(element)) {
+      score += 300;
     }
-    
+
+    // 네비게이션 요소면 큰 감점
+    if (this.isNavigationElement(element)) {
+      score *= 0.2;
+    }
+
+    // 링크 밀도 페널티
+    if (linkDensity > 0) {
+      score = score / (1 + Math.min(linkDensity, 5));
+    }
+
     return score;
+  }
+
+  /**
+   * 본문 컨테이너 힌트 매칭
+   */
+  private matchesContentHint(element: Element): boolean {
+    const el = element as HTMLElement;
+    const cls = `${el.className || ''}`.toLowerCase();
+    const id = `${el.id || ''}`.toLowerCase();
+    const hints = [
+      'article', 'content', 'post', 'entry', 'markdown-body',
+      'et_pb_post_content', 'mail_view_contents_inner', 'mail_view_contents',
+    ];
+    return hints.some(h => cls.includes(h) || id.includes(h));
   }
 
   /**
@@ -259,12 +291,43 @@ export class WebClipper {
       '.social-share',
       '.comments',
       '.related-posts',
+      // 쿠키/배너/모달/팝업/툴팁 등 비-본문 공통 요소
+      '[role="dialog"]',
+      '.modal',
+      '.popup',
+      '.popover',
+      '.tooltip',
+      '[data-nosnippet]',
+      '[aria-hidden="true"]',
+      // 컨센트/쿠키 배너 패턴
+      '[class*="cookie"]',
+      '[id*="cookie"]',
+      '[class*="consent"]',
+      '[id*="consent"]',
+      '.osano-cm-window',
+      // 글로벌 네비게이션/헤더
+      '#gnb',
+      '#pc_header',
+      '.gnb',
+      '.lnb',
+      // 기타 본문 외 위젯/배너
+      '[class*="subscribe"]',
+      '[class*="newsletter"]',
+      '[class*="signup"]',
+      '[class*="share"]',
+      '[class*="breadcrumb"]'
     ];
 
     unwantedSelectors.forEach(selector => {
       const elements = body.querySelectorAll(selector);
       elements.forEach(el => el.remove());
     });
+
+    // 폼/컨트롤 요소 제거 (일반적 관례상 본문 제외)
+    body.querySelectorAll('form, button, input, select, textarea, label').forEach(el => el.remove());
+
+    // 숨김 요소 제거
+    body.querySelectorAll('[hidden], [style*="display:none"], [style*="visibility:hidden"]').forEach(el => el.remove());
 
     return body;
   }
@@ -281,6 +344,8 @@ export class WebClipper {
       .replace(/<!--[\s\S]*?-->/g, '')
       // 불필요한 속성 제거
       .replace(/\s*(class|id|style|onclick|onload)="[^"]*"/g, '')
+      .replace(/\s*aria-[a-z\-]+="[^"]*"/gi, '')
+      .replace(/\s*data-[a-z\-]+="[^"]*"/gi, '')
       // 빈 요소 제거
       .replace(/<(\w+)[^>]*>\s*<\/\1>/g, '');
   }
@@ -374,8 +439,21 @@ export class WebClipper {
 
     // 불필요한 요소 제거
     this.turndownService.addRule('removeUnwanted', {
-      filter: ['script', 'style', 'noscript', 'iframe', 'embed'],
+      filter: ['script', 'style', 'noscript', 'iframe', 'embed', 'form', 'button', 'input', 'select', 'textarea', 'label'],
       replacement: () => '',
+    });
+
+    // UI 전용 컨테이너 제거 (쿠키/팝업/공유/브레드크럼 등)
+    this.turndownService.addRule('removeUiOnly', {
+      filter: (node: any) => {
+        if (!node || (node as any).nodeType !== 1) return false;
+        const el = node as HTMLElement;
+        const cls = `${el.className || ''}`.toLowerCase();
+        const id = `${el.id || ''}`.toLowerCase();
+        const uiHints = ['cookie', 'consent', 'popup', 'modal', 'tooltip', 'popover', 'share', 'breadcrumb', 'gnb', 'lnb'];
+        return uiHints.some(k => cls.includes(k) || id.includes(k));
+      },
+      replacement: () => ''
     });
 
     // 코드 블록 개선
