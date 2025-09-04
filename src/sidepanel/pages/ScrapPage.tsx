@@ -537,7 +537,7 @@ const ScrapPage: React.FC = () => {
           </Tooltip>
         </div>
         <div className={styles.contentDescription}>
-          {markdownToPlainTextPreview(scrap.content)}
+          {scrap.content}
         </div>
         <div className={styles.contentFooter}>
           <div className={styles.tags}>
