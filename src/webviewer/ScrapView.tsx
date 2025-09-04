@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { scrapService } from '../services/scrapService';
 import MarkdownRenderer from '../utils/markdownRenderer';
 import styles from './ScrapView.module.css';
@@ -17,14 +17,6 @@ const ScrapView: React.FC<Props> = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scrap, setScrap] = useState<ScrapData | null>(null);
-  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
-    try {
-      const saved = localStorage.getItem('scrapViewTheme');
-      return (saved === 'dark' || saved === 'light') ? (saved as 'light' | 'dark') : 'light';
-    } catch {
-      return 'light';
-    }
-  });
 
   useEffect(() => {
     const load = async () => {
@@ -42,15 +34,7 @@ const ScrapView: React.FC<Props> = ({ id }) => {
     load();
   }, [id]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('scrapViewTheme', theme);
-    } catch {}
-  }, [theme]);
-
-  const themeClass = useMemo(() => theme === 'dark' ? styles.themeDark : styles.themeLight, [theme]);
-
-  const domain = useMemo(() => {
+  const domain = (() => {
     try {
       if (!scrap?.url) return '';
       const hostname = new URL(scrap.url).hostname.replace(/^www\./, '');
@@ -59,14 +43,14 @@ const ScrapView: React.FC<Props> = ({ id }) => {
     } catch {
       return '';
     }
-  }, [scrap?.url]);
+  })();
 
   if (loading) return <div style={{ padding: 16 }}>불러오는 중...</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
   if (!scrap) return <div style={{ padding: 16 }}>데이터가 없습니다.</div>;
 
   return (
-    <div className={`${styles.pageBg} ${themeClass}`}>
+    <div className={`${styles.pageBg} ${styles.themeLight}`}>
       <div className={styles.viewer}>
         <div className={styles.card}>
           <div className={styles.header}>
@@ -86,9 +70,6 @@ const ScrapView: React.FC<Props> = ({ id }) => {
               </div>
             </div>
             <div className={styles.actions}>
-              <button className={styles.btn} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
-                {theme === 'light' ? 'Dark' : 'Light'} Mode
-              </button>
               <a className={`${styles.btn} ${styles.btnPrimary}`} href={scrap.url} target="_blank" rel="noreferrer">
                 원문 보기
               </a>

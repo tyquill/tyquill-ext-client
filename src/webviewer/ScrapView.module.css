@@ -59,7 +59,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
   white-space: nowrap;
   flex: 0 0 auto;
 }
@@ -72,10 +72,24 @@
   background: var(--accent);
   color: var(--accent-contrast);
   border-color: transparent;
+  text-decoration: none;
 }
 
 .btnPrimary:hover {
-  filter: brightness(0.95);
+  background: #1a1a1a;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+.btnPrimary:active {
+  background: #0b0b0b;
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.btnPrimary:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(17, 17, 17, 0.15);
 }
 
 .content {
