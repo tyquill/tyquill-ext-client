@@ -38,12 +38,11 @@ const UploadView: React.FC<Props> = ({ id }) => {
           createdAt: data.createdAt,
         });
 
-        // 2) 분석/요약 마크다운 (향후 tyquill-agent 결과를 서버가 제공)
-        // 예상 엔드포인트: /v1/library-items/:id/analysis?type=UPLOAD
+        // 2) 분석/요약 마크다운 (업로드 전용 분석 조회)
         try {
-          const res: any = await globalApiClient.get(`/v1/library-items/${id}/analysis?type=UPLOAD`);
-          if (res && (res.markdown || res.content)) {
-            setAnalysis({ markdown: res.markdown || res.content, updatedAt: res.updatedAt });
+          const res: any = await globalApiClient.get(`/v1/uploaded-files/${id}/analysis`);
+          if (res && (res.markdown)) {
+            setAnalysis({ markdown: res.markdown, updatedAt: res.updatedAt });
           } else {
             setAnalysis(null);
           }
@@ -62,9 +61,9 @@ const UploadView: React.FC<Props> = ({ id }) => {
 
   const refreshAnalysis = useCallback(async () => {
     try {
-      const res: any = await globalApiClient.get(`/v1/library-items/${id}/analysis?type=UPLOAD`);
-      if (res && (res.markdown || res.content)) {
-        setAnalysis({ markdown: res.markdown || res.content, updatedAt: res.updatedAt });
+      const res: any = await globalApiClient.get(`/v1/uploaded-files/${id}/analysis`);
+      if (res && (res.markdown)) {
+        setAnalysis({ markdown: res.markdown, updatedAt: res.updatedAt });
       } else {
         setAnalysis(null);
       }
