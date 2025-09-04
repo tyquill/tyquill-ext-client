@@ -1,6 +1,8 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { globalApiClient } from '../services/globalApiClient';
 import MarkdownRenderer from '../utils/markdownRenderer';
+import styles from './ScrapView.module.css';
+import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 
 interface Props { id: number }
 
@@ -22,6 +24,14 @@ const UploadView: React.FC<Props> = ({ id }) => {
   const [error, setError] = useState<string | null>(null);
   const [upload, setUpload] = useState<UploadData | null>(null);
   const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const saved = localStorage.getItem('scrapViewTheme');
+      return (saved === 'dark' || saved === 'light') ? (saved as 'light' | 'dark') : 'light';
+    } catch {
+      return 'light';
+    }
+  });
 
   useEffect(() => {
     const load = async () => {
@@ -59,6 +69,29 @@ const UploadView: React.FC<Props> = ({ id }) => {
     load();
   }, [id]);
 
+  useEffect(() => {
+    try {
+      localStorage.setItem('scrapViewTheme', theme);
+    } catch {}
+  }, [theme]);
+
+  const themeClass = useMemo(() => theme === 'dark' ? styles.themeDark : styles.themeLight, [theme]);
+
+  const domain = useMemo(() => {
+    try {
+      if (!upload?.url) return '';
+      const url = upload.url;
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        const hostname = new URL(url).hostname.replace(/^www\./, '');
+        const parts = hostname.split('.');
+        return parts.length >= 3 ? parts.slice(-2).join('.') : hostname;
+      }
+      return '파일';
+    } catch {
+      return '';
+    }
+  }, [upload?.url]);
+
   const refreshAnalysis = useCallback(async () => {
     try {
       const res: any = await globalApiClient.get(`/v1/uploaded-files/${id}/analysis`);
@@ -77,28 +110,52 @@ const UploadView: React.FC<Props> = ({ id }) => {
   if (!upload) return <div style={{ padding: 16 }}>데이터가 없습니다.</div>;
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 24, marginBottom: 8 }}>{upload.title}</h1>
-      <div style={{ marginBottom: 16, color: '#666', display: 'flex', alignItems: 'center' }}>
-        <a href={upload.url} target="_blank" rel="noreferrer">원본 파일 열기</a>
-        {upload.createdAt && (
-          <span style={{ marginLeft: 12 }}>
-            {new Date(upload.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
-          </span>
-        )}
-        <button onClick={refreshAnalysis} style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#fff', cursor: 'pointer' }}>새로고침</button>
-      </div>
-      {upload.description && (
-        <div style={{ marginBottom: 16, color: '#333' }}>{upload.description}</div>
-      )}
+    <div className={`${styles.pageBg} ${themeClass}`}>
+      <div className={styles.viewer}>
+        <div className={styles.card}>
+          <div className={styles.header}>
+            <div className={styles.titleBlock}>
+              <div className={styles.title}>{upload.title}</div>
+              <div className={styles.meta}>
+                <span className={styles.pill}>
+                  <span className={styles.pillIcon}><IoLinkOutline size={14} /></span>
+                  <a className={styles.pillLink} href={upload.url} target="_blank" rel="noreferrer">{domain || '원본 파일'}</a>
+                </span>
+                {upload.createdAt && (
+                  <span className={styles.pill}>
+                    <span className={styles.pillIcon}><IoTimeOutline size={14} /></span>
+                    {new Date(upload.createdAt).toLocaleString('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className={styles.actions}>
+              <button className={styles.btn} onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}>
+                {theme === 'light' ? 'Dark' : 'Light'} Mode
+              </button>
+              <a className={`${styles.btn} ${styles.btnPrimary}`} href={upload.url} target="_blank" rel="noreferrer">
+                원본 파일 열기
+              </a>
+              <button className={styles.btn} onClick={refreshAnalysis}>
+                새로고침
+              </button>
+            </div>
+          </div>
+          <div className={styles.content}>
+            {upload.description && (
+              <div style={{ marginBottom: 16, color: 'var(--text-primary)' }}>{upload.description}</div>
+            )}
 
-      {analysis ? (
-        <MarkdownRenderer content={analysis.markdown} />
-      ) : (
-        <div style={{ padding: 12, background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: 6, color: '#333' }}>
-          아직 분석 결과가 없습니다. 처리 완료 후 이곳에 요약/분석 마크다운이 표시됩니다.
+            {analysis ? (
+              <MarkdownRenderer content={analysis.markdown} />
+            ) : (
+              <div style={{ padding: 12, background: 'var(--surface-elev)', border: '1px solid var(--border-color)', borderRadius: 6, color: 'var(--text-secondary)' }}>
+                아직 분석 결과가 없습니다. 처리 완료 후 이곳에 요약/분석 마크다운이 표시됩니다.
+              </div>
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
