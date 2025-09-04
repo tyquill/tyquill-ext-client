@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { scrapService } from '../services/scrapService';
 import MarkdownRenderer from '../utils/markdownRenderer';
+
+interface Props { id: number }
 
 interface ScrapData {
   title: string;
@@ -9,28 +11,17 @@ interface ScrapData {
   createdAt?: string;
 }
 
-const getScrapIdFromHash = (): string | null => {
-  const hash = window.location.hash.replace(/^#/, '');
-  const params = new URLSearchParams(hash);
-  return params.get('scrapId');
-};
-
-const App: React.FC = () => {
+const ScrapView: React.FC<Props> = ({ id }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scrap, setScrap] = useState<ScrapData | null>(null);
 
-  const scrapId = useMemo(() => getScrapIdFromHash(), []);
-
   useEffect(() => {
     const load = async () => {
-      if (!scrapId) {
-        setError('유효하지 않은 스크랩 ID');
-        setLoading(false);
-        return;
-      }
+      setError(null);
+      setLoading(true);
       try {
-        const data = await scrapService.getScrapById(parseInt(scrapId, 10));
+        const data = await scrapService.getScrapById(id);
         setScrap({ title: data.title, content: data.content, url: data.url, createdAt: data.createdAt });
       } catch (e: any) {
         setError(e?.message || '스크랩을 불러오지 못했습니다.');
@@ -39,7 +30,7 @@ const App: React.FC = () => {
       }
     };
     load();
-  }, [scrapId]);
+  }, [id]);
 
   if (loading) return <div style={{ padding: 16 }}>불러오는 중...</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
@@ -61,6 +52,5 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
-
+export default ScrapView;
 

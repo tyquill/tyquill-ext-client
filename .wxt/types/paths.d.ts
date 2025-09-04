@@ -15,7 +15,7 @@ declare module "wxt/browser" {
     | "/icon48.png"
     | "/options.html"
     | "/sidepanel.html"
-    | "/webscrapviewer.html"
+    | "/webviewer.html"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>
   export interface WxtRuntime {
     getURL(path: PublicPath): string;

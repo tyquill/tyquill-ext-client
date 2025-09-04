@@ -30,7 +30,7 @@ export default defineConfig({
     web_accessible_resources: [
       {
         resources: [
-          'webscrapviewer.html'
+          'webviewer.html'
         ],
         matches: ['<all_urls>']
       }

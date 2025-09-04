@@ -496,6 +496,8 @@
   color: #4a4a4a;
   line-height: 1.5;
   margin-bottom: 12px;
+  /* reserve two lines height for consistent card height */
+  min-height: calc(1.5em * 2);
   display: -webkit-box;
   line-clamp: 2;
   -webkit-line-clamp: 2;
