@@ -155,7 +155,7 @@ export default defineBackground(() => {
       // Content Script로 클리핑 요청
       const response = await browser.tabs.sendMessage(tabId, {
         type: 'CLIP_PAGE',
-        options: { includeMetadata: true }
+        options: { includeMetadata: false }
       });
 
       if (!response.success) {
