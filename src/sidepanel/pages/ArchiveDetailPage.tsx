@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { GoScreenFull } from "react-icons/go";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
@@ -36,6 +37,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
   const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const [isEditorPageOpen, setIsEditorPageOpen] = useState(false);
   const versionDropdownRef = useRef<HTMLDivElement>(null);
 
   // 툴팁 표시 여부 확인
@@ -51,6 +53,100 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     });
   }, []);
 
+  // 편집기 페이지 상태 확인
+  useEffect(() => {
+    if (!article) return;
+
+    const checkEditorPageStatus = () => {
+      browser.storage.local.get(`tyquill-editor-open-${article.articleId}`, (result) => {
+        const editorStatus = result[`tyquill-editor-open-${article.articleId}`];
+        const isOpen = editorStatus && (Date.now() - editorStatus.timestamp < 5 * 60 * 1000); // 5분 타임아웃
+        
+        setIsEditorPageOpen(isOpen);
+        
+        // 편집기 페이지가 열려있고 현재 편집 모드라면 편집 모드 종료
+        if (isOpen && isEditing) {
+          setIsEditing(false);
+        }
+      });
+    };
+
+    // 초기 확인
+    checkEditorPageStatus();
+
+    // storage 변화 감지
+    const handleStorageChange = (changes: any) => {
+      if (changes[`tyquill-editor-open-${article.articleId}`]) {
+        checkEditorPageStatus();
+      }
+      
+      // 편집기에서 저장 완료 신호 감지
+      if (changes[`tyquill-editor-saved-${article.articleId}`]) {
+        // 저장 신호 정리
+        browser.storage.local.remove(`tyquill-editor-saved-${article.articleId}`);
+        
+        // 아티클 데이터만 새로고침
+        setTimeout(async () => {
+          await refreshArticleData();
+        }, 1000);
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    // 주기적으로 상태 확인 (5초마다)
+    const interval = setInterval(checkEditorPageStatus, 5000);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+      clearInterval(interval);
+    };
+  }, [article?.articleId, isEditing]);
+
+  // 아티클 데이터 새로고침 함수 (전체 페이지 리로드 없이)
+  const refreshArticleData = useCallback(async () => {
+    try {
+      const articleData = await articleService.getArticle(parseInt(draftId));
+      
+      // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
+      const normalizeContent = (content: string) => {
+        return content.replace(/\n{2,}/g, '\n').trim();
+      };
+
+      // 아티클 데이터 정리
+      const normalizedArticle = {
+        ...articleData,
+        content: normalizeContent(articleData.content),
+        archives: articleData.archives?.map(archive => ({
+          ...archive,
+          content: normalizeContent(archive.content)
+        }))
+      };
+      
+      setArticle(normalizedArticle);
+      
+      // 편집기에서 저장한 후이므로 항상 최신 버전으로 전환
+      if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
+        const latestArchive = normalizedArticle.archives[0]; // 이미 정렬된 상태 (최신 버전)
+        
+        setSelectedVersionNumber(latestArchive.versionNumber);
+        setCurrentArchive(latestArchive);
+        setEditTitle(latestArchive.title);
+        setEditContent(latestArchive.content);
+      } else {
+        // 아카이브가 없는 경우 기본값 사용
+        setEditTitle(normalizedArticle.title);
+        setEditContent(normalizedArticle.content);
+      }
+      
+      // 편집 모드 종료 (편집기 페이지에서 저장한 후이므로)
+      setIsEditing(false);
+      
+    } catch (err: any) {
+      console.error('Failed to refresh article data:', err);
+      // 에러가 발생해도 사용자에게 알리지 않음 (백그라운드 새로고침)
+    }
+  }, [draftId]);
 
   useEffect(() => {
     const fetchArticle = async () => {
@@ -148,6 +244,11 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   }, [countEditor, currentArchive?.content, article?.content, editContent, isEditing]);
 
   const handleEdit = () => {
+    // 편집기 페이지가 열려있으면 편집 모드 진입 방지
+    if (isEditorPageOpen) {
+      alert('페이지 편집기에서 편집 중입니다. 페이지 편집기를 먼저 닫아주세요.');
+      return;
+    }
     setIsEditing(true);
   };
 
@@ -205,6 +306,29 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       setEditContent(article?.content || '');
     }
     setIsEditing(false);
+  };
+
+  const handleOpenFullscreenEditor = () => {
+    if (!article) return;
+    
+    // 편집기로 전달할 데이터 준비
+    const editorData = {
+      articleId: article.articleId,
+      title: editTitle,
+      content: editContent,
+      originalTitle: currentArchive?.title || article.title,
+      originalContent: currentArchive?.content || article.content
+    };
+    
+    // base64 인코딩으로 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
+    const dataParam = btoa(encodeURIComponent(JSON.stringify(editorData)));
+    const editorUrl = `${browser.runtime.getURL('/editor.html')}?data=${dataParam}`;
+    
+    // 새 탭에서 편집기 열기
+    browser.tabs.create({
+      url: editorUrl,
+      active: true
+    });
   };
 
   const handleVersionSelect = (versionNumber: number) => {
@@ -287,9 +411,33 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           </div>
         </div>
 
-        <div className={styles.characterCount} style={{display: 'flex', justifyContent: 'flex-end', marginBottom: '16px'}}>
-          <span>글자 수: {characterCount.characters}</span>
-          <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
+        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px'}}>
+          {isEditorPageOpen && (
+            <div style={{
+              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+              color: 'white',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              fontSize: '13px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+            }}>
+              <div style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: 'white'
+              }} className={detailStyles.pulse}></div>
+              페이지 편집기에서 편집 중
+            </div>
+          )}
+          <div className={styles.characterCount} style={{display: 'flex'}}>
+            <span>글자 수: {characterCount.characters}</span>
+            <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
+          </div>
         </div>
 
         <div className={styles.actionButtons}>
@@ -341,8 +489,16 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     content={currentArchive?.content || article.content}
                     />
                   </Tooltip>
-                <Tooltip content="초안 수정하기">
-                  <button className={detailStyles.primaryActionButton} onClick={handleEdit}>
+                <Tooltip content={isEditorPageOpen ? "페이지 편집기에서 편집 중" : "초안 수정하기"}>
+                  <button 
+                    className={detailStyles.primaryActionButton} 
+                    onClick={handleEdit}
+                    disabled={isEditorPageOpen}
+                    style={{ 
+                      opacity: isEditorPageOpen ? 0.5 : 1,
+                      cursor: isEditorPageOpen ? 'not-allowed' : 'pointer'
+                    }}
+                  >
                     <IoCreate size={20} />
                   </button>
                 </Tooltip>
@@ -383,6 +539,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
+                <Tooltip content="전체 화면으로 편집">
+                  <button 
+                    className={detailStyles.editSecondaryButton}
+                    onClick={handleOpenFullscreenEditor}
+                    disabled={saving}
+                  >
+                    <GoScreenFull size={18} />
+                  </button>
+                </Tooltip>
                 <Tooltip content={saving ? '저장 중...' : '저장'}>
                   <button 
                     className={detailStyles.editPrimaryButton}

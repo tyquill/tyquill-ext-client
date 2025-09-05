@@ -9,6 +9,7 @@ declare module "wxt/browser" {
     | "/auth/callback.html"
     | "/background.js"
     | "/content-scripts/content.js"
+    | "/editor.html"
     | "/icon128.png"
     | "/icon16.png"
     | "/icon32.png"

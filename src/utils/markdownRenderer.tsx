@@ -23,8 +23,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       .replace(/__([^_\n]+?)__/g, '<u>$1</u>')
       // 인라인 코드 처리: `code`
       .replace(/`([^`\n]+?)`/g, '<code style="background-color: #f0f0f0; padding: 2px 4px; border-radius: 3px; font-family: monospace;">$1</code>')
-      // 링크 처리: [text](url) - non-greedy 매칭으로 가장 가까운 괄호 쌍만 매칭
-      .replace(/\[([^\[\]]+?)\]\(([^)]+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0066cc; text-decoration: underline;">$1</a>');
+      // 링크 처리: [text](url) - 이미지가 아닌 경우만 (! 로 시작하지 않는 경우)
+      .replace(/(?<!\!)\[([^\[\]]+?)\]\(([^)]+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #0066cc; text-decoration: underline;">$1</a>');
   };
 
   const renderMarkdown = (markdown: string) => {
@@ -35,8 +35,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         const collapsedAlt = (alt as string).replace(/\s+/g, ' ').trim();
         return `<img src="${url}" alt="${collapsedAlt}" style="max-width: 100%; height: auto; display: inline-block;" />`;
       })
-      // 멀티라인 링크: [text...\n\n...](url) - 중첩된 대괄호 방지
-      .replace(/\[([^\[\]]*(?:\n[^\[\]]*)*?)\]\(\s*([^\)]+?)\s*\)/g, (_m, text: string, url: string) => {
+      // 멀티라인 링크: [text...\n\n...](url) - 이미지가 아닌 경우만 (! 로 시작하지 않는 경우)
+      .replace(/(?<!\!)\[([^\[\]]*(?:\n[^\[\]]*)*?)\]\(\s*([^\)]+?)\s*\)/g, (_m, text: string, url: string) => {
         const collapsedText = (text as string).replace(/\s+/g, ' ').trim();
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #0066cc; text-decoration: underline;">${collapsedText}</a>`;
       });
