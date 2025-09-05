@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
-import { GoScreenFull } from "react-icons/go";
+import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
@@ -548,7 +548,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     onClick={handleOpenFullscreenEditor}
                     disabled={saving}
                   >
-                    <GoScreenFull size={18} />
+                    <CgArrowsExpandRight size={18} />
                   </button>
                 </Tooltip>
                 <Tooltip content={saving ? '저장 중...' : '저장'}>
