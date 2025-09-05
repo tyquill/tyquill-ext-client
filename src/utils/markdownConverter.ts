@@ -205,8 +205,8 @@ export const markdownToHtml = (markdown: string): string => {
     .replace(/__(.*?)__/g, '<u>$1</u>')
     // 인라인 코드
     .replace(/`(.*?)`/g, '<code>$1</code>')
-    // 링크
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+    // 링크 - non-greedy 매칭으로 중첩된 대괄호 방지
+    .replace(/\[([^\[\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>')
     // 줄바꿈
     .replace(/\n/g, '<br>');
 };
