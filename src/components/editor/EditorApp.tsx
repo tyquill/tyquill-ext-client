@@ -20,6 +20,7 @@ const EditorApp: React.FC = () => {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [canUndo, setCanUndo] = useState(false);
 
   // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
   useEffect(() => {
@@ -92,9 +93,12 @@ const EditorApp: React.FC = () => {
   useEffect(() => {
     if (!editorData) return;
     
-    const hasChanged = title !== editorData.originalTitle || content !== editorData.originalContent;
+    const contentChanged = title !== editorData.originalTitle || content !== editorData.originalContent;
+    // 컨텐츠가 변경되었고 실행 취소가 가능한 경우에만 hasChanges를 true로 설정
+    // 실행 취소가 불가능하면 초기 상태로 돌아간 것으로 간주
+    const hasChanged = contentChanged && canUndo;
     setHasChanges(hasChanged);
-  }, [title, content, editorData]);
+  }, [title, content, editorData, canUndo]);
 
   // 페이지 닫기 전 경고
   useEffect(() => {
@@ -129,8 +133,9 @@ const EditorApp: React.FC = () => {
       
       await articleService.updateArticle(editorData.articleId, updateData);
       
-      // 저장 성공 시 변경사항 플래그 초기화
+      // 저장 성공 시 변경사항 플래그 및 실행 취소 상태 초기화
       setHasChanges(false);
+      setCanUndo(false);
       
       // storage에 저장 완료 신호 보내기
       browser.storage.local.set({
@@ -178,6 +183,11 @@ const EditorApp: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  // 히스토리 상태 변경 핸들러
+  const handleHistoryStateChange = useCallback((canUndoState: boolean, canRedoState: boolean) => {
+    setCanUndo(canUndoState);
+  }, []);
 
   if (!editorData) {
     return (
@@ -232,6 +242,7 @@ const EditorApp: React.FC = () => {
             onChange={setContent}
             placeholder="내용을 입력하세요..."
             readOnly={saving}
+            onHistoryStateChange={handleHistoryStateChange}
           />
         </div>
       </div>

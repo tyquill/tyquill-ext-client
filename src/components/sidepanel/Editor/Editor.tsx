@@ -32,6 +32,7 @@ interface EditorWrapperProps {
   onChange: (content: string) => void; // Returns Markdown content for AI editing
   placeholder?: string;
   readOnly?: boolean;
+  onHistoryStateChange?: (canUndo: boolean, canRedo: boolean) => void; // Callback for history state changes
 }
 
 interface CustomBubbleMenuProps {
@@ -569,7 +570,8 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   content,
   onChange,
   placeholder = "내용을 입력하세요...",
-  readOnly = false
+  readOnly = false,
+  onHistoryStateChange
 }) => {
   const isUpdatingRef = useRef(false);
 
@@ -612,6 +614,13 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
         // AI 편집을 위해 마크다운으로 변환하여 반환
         const markdown = htmlToMarkdown(html);
         onChange(markdown);
+        
+        // 히스토리 상태 변경 알림
+        if (onHistoryStateChange) {
+          const canUndo = editor.can().chain().focus().undo().run();
+          const canRedo = editor.can().chain().focus().redo().run();
+          onHistoryStateChange(canUndo, canRedo);
+        }
       } catch (error) {
         console.error('Error converting HTML to Markdown:', error);
         // 변환 실패 시 텍스트만 반환
@@ -625,14 +634,34 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
     },
   });
 
+  // 편집기 생성 시 초기 히스토리 상태 설정
+  useEffect(() => {
+    if (editor && onHistoryStateChange) {
+      setTimeout(() => {
+        const canUndo = editor.can().chain().focus().undo().run();
+        const canRedo = editor.can().chain().focus().redo().run();
+        onHistoryStateChange(canUndo, canRedo);
+      }, 0);
+    }
+  }, [editor, onHistoryStateChange]);
+
   useEffect(() => {
     if (editor && !isUpdatingRef.current) {
       const newHtml = convertMarkdownToHtml(content);
       if (editor.getHTML() !== newHtml) {
         editor.commands.setContent(newHtml);
+        
+        // 콘텐츠 설정 후 히스토리 상태 업데이트
+        if (onHistoryStateChange) {
+          setTimeout(() => {
+            const canUndo = editor.can().chain().focus().undo().run();
+            const canRedo = editor.can().chain().focus().redo().run();
+            onHistoryStateChange(canUndo, canRedo);
+          }, 0);
+        }
       }
     }
-  }, [content, editor, convertMarkdownToHtml]);
+  }, [content, editor, convertMarkdownToHtml, onHistoryStateChange]);
 
   // 키보드 단축키 설정
   useHotkeys('ctrl+alt+1, cmd+alt+1', () => {
