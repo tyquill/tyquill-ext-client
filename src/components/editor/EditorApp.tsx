@@ -21,46 +21,50 @@ const EditorApp: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
 
-  // URL 파라미터에서 데이터 읽기 및 편집기 상태 설정
+  // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataParam = urlParams.get('data');
-    
-    if (dataParam) {
-      try {
-        // base64 디코딩 후 JSON 파싱 (anchor 링크나 특수 문자 안전 처리)
-        let decoded: string;
+    const loadEditorData = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionKey = urlParams.get('sessionKey');
+      
+      if (sessionKey) {
         try {
-          decoded = decodeURIComponent(atob(dataParam));
-        } catch (base64Error) {
-          console.error('Base64 decoding failed:', base64Error);
-          // base64 실패 시 기존 방식으로 fallback
-          decoded = decodeURIComponent(dataParam);
-        }
-        
-        const data: EditorData = JSON.parse(decoded);
-        setEditorData(data);
-        setTitle(data.title);
-        setContent(data.content);
-        
-        // 편집기 페이지가 열렸음을 storage에 저장
-        browser.storage.local.set({
-          [`tyquill-editor-open-${data.articleId}`]: {
-            articleId: data.articleId,
-            timestamp: Date.now()
+          // browser.storage.local에서 데이터 읽기 (anchor 링크나 특수 문자 안전 처리)
+          const result = await browser.storage.local.get(sessionKey);
+          const data = result[sessionKey];
+          
+          if (!data) {
+            throw new Error('편집기 데이터를 찾을 수 없습니다.');
           }
-        });
-        
-      } catch (error) {
-        console.error('Failed to parse editor data:', error);
-        console.error('Data parameter:', dataParam);
-        alert('편집기 데이터를 불러오는데 실패했습니다. 콘솔을 확인해주세요.');
+          
+          setEditorData(data);
+          setTitle(data.title);
+          setContent(data.content);
+          
+          // 사용한 데이터 정리
+          await browser.storage.local.remove(sessionKey);
+          
+          // 편집기 페이지가 열렸음을 storage에 저장
+          await browser.storage.local.set({
+            [`tyquill-editor-open-${data.articleId}`]: {
+              articleId: data.articleId,
+              timestamp: Date.now()
+            }
+          });
+          
+        } catch (error) {
+          console.error('Failed to load editor data:', error);
+          console.error('Session key:', sessionKey);
+          alert('편집기 데이터를 불러오는데 실패했습니다. 콘솔을 확인해주세요.');
+          window.close();
+        }
+      } else {
+        alert('편집기 데이터가 없습니다.');
         window.close();
       }
-    } else {
-      alert('편집기 데이터가 없습니다.');
-      window.close();
-    }
+    };
+    
+    loadEditorData();
   }, []);
 
   // 페이지 언로드 시 편집기 상태 정리

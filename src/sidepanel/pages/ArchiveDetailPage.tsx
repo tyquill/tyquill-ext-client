@@ -308,7 +308,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     setIsEditing(false);
   };
 
-  const handleOpenFullscreenEditor = () => {
+  const handleOpenFullscreenEditor = async () => {
     if (!article) return;
     
     // 편집기로 전달할 데이터 준비
@@ -320,9 +320,12 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       originalContent: currentArchive?.content || article.content
     };
     
-    // base64 인코딩으로 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
-    const dataParam = btoa(encodeURIComponent(JSON.stringify(editorData)));
-    const editorUrl = `${browser.runtime.getURL('/editor.html')}?data=${dataParam}`;
+    // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
+    const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
+    await browser.storage.local.set({
+      [sessionKey]: editorData
+    });
+    const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
     
     // 새 탭에서 편집기 열기
     browser.tabs.create({
