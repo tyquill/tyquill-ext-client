@@ -138,10 +138,10 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
 
               const processTextFormatting = (text: string) => {
                 return text
-                  // 이미지: ![alt](url "title") → <img class="image-tool__image-picture" src="url">
+                  // 이미지 처리 먼저: ![alt](url "title") → <img class="image-tool__image-picture" src="url">
                   .replace(/!\[[^\]]*\]\(\s*([^\)\s]+)(?:\s+\"[^\"]*\")?\s*\)/g, '<img class="image-tool__image-picture" src="$1">')
-                  // 링크: [text](url) → <a href="url" target="_blank">url</a>
-                  .replace(/\[[^\]]+\]\(\s*([^\)]+?)\s*\)/g, '<a href="$1" target="_blank">$1<\/a>')
+                  // 링크: [text](url) → <a href="url" target="_blank">url</a> - 이미지가 아닌 경우만 (! 로 시작하지 않는 경우)
+                  .replace(/(?<!\!)\[([^\[\]]+?)\]\(\s*([^\)]+?)\s*\)/g, '<a href="$2" target="_blank">$2<\/a>')
                   .replace(/\*\*(.*?)\*\*/g, '<b>$1<\/b>')
                   .replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<i>$1<\/i>')
                   .replace(/~~(.*?)~~/g, '<del>$1<\/del>')

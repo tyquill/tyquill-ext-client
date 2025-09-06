@@ -30,7 +30,8 @@ export default defineConfig({
     web_accessible_resources: [
       {
         resources: [
-          'webviewer.html'
+          'webviewer.html',
+          'editor.html'
         ],
         matches: ['<all_urls>']
       }

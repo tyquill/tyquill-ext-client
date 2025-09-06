@@ -264,6 +264,20 @@
   gap: 10px;
 }
 
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse {
+  animation: pulse 2s infinite;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .secondaryActionRow {
