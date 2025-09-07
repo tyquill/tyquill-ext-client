@@ -8,7 +8,7 @@ import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector'
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
-import { articleService, GenerateArticleV2Dto, TemplateSection } from '../../services/articleService';
+import { articleService, GenerateArticleV3Dto, TemplateSection } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import Confetti from '../../components/sidepanel/Confetti/Confetti';
 import { FaWandMagicSparkles } from "react-icons/fa6";
@@ -18,6 +18,7 @@ import Tooltip from '../../components/common/Tooltip';
 import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelector.module.css';
 import { browser } from 'wxt/browser';
 import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
+import { libraryItemService, LibraryItemDto } from '../../services/libraryItemService';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -97,6 +98,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const [elapsedSeconds, setElapsedSeconds] = useState<number>(0);
   const generationTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const generationStartTimeRef = useRef<number>(0);
+  // 참고 자료 모달 탭 상태
+  const [referenceModalTab, setReferenceModalTab] = useState<'SCRAP' | 'PDF'>('SCRAP');
+  // 모달 취소 복구를 위한 백업 상태
+  const backupSelectedScrapsRef = useRef<ScrapResponse[]>([]);
+  const backupSelectedUploadsRef = useRef<Array<{ uploadedFileId: number; title: string; usagePrompt: string }>>([]);
+  // 탭별 태그 필터(탭 이동 시 초기화)
+  const [scrapTagFilters, setScrapTagFilters] = useState<string[]>([]);
+  const [uploadTagFilters, setUploadTagFilters] = useState<string[]>([]);
   
   useEffect(() => {
     const fetchStyles = async () => {
@@ -393,8 +402,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       const templateWithoutIds = templateStructure ? removeIdsFromTemplate(templateStructure) : [];
 
-      // V2 API를 사용한 비동기 생성
-      const generateData: GenerateArticleV2Dto = {
+      // V3 API를 사용한 비동기 생성 (PDF 지원)
+      const generateData: GenerateArticleV3Dto = {
         topic: isTemplateMode ? (templateStructure?.[0]?.title || '섹션 기반 아티클') : topic,
         keyInsight: isTemplateMode ? JSON.stringify(structuredIdeas) : keyInsight,
         scrapWithOptionalComment: selectedScraps.map(scrap => ({
@@ -404,19 +413,24 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         generationParams: handle || undefined,
         articleStructureTemplate: templateWithoutIds,
         writingStyleId: selectedWritingStyleId ?? undefined,
+        // V3에서 추가: PDF 업로드 지원
+        uploadWithUsagePrompt: selectedUploads.map(upload => ({
+          uploadedFileId: upload.uploadedFileId,
+          usagePrompt: upload.usagePrompt,
+        })),
       };
 
-      // V2 API로 비동기 생성 시작
+      // V3 API로 비동기 생성 시작
       setGenerationStatus('processing');
       
-      articleService.generateArticleV2(generateData)
+      articleService.generateArticleV3(generateData)
         .then(async (response) => {
           // 즉시 요청 성공 메시지 표시
-          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.`);
+          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.${selectedUploads.length > 0 ? ` PDF ${selectedUploads.length}개 파일도 함께 분석합니다.` : ''}`);
           
           try {
             // 백그라운드에서 완성 대기 (최대 50회, 5초 간격 = 2.5분)
-            const completedArticle = await articleService.waitForArticleCompletion(response.articleId, 50, 5000);
+            const completedArticle = await articleService.waitForArticleCompletionV3(response.articleId, 50, 5000);
             
             if (completedArticle.status === 'completed') {
               setGenerationStatus('completed');
@@ -430,12 +444,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               setKeyInsight('');
               setHandle('');
               clearScraps();
+              setSelectedUploads([]);
               // selectedTags는 유지 (다음 생성에 유용할 수 있음)
               clearTemplate();
             } else if (completedArticle.status === 'failed') {
               setGenerationStatus('failed');
               setGenerating(false);
-              // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
+              const serverMsg = (completedArticle as any)?.errorMessage as string | undefined;
+              const hint = '생성 중 오류가 발생했습니다. (참고 자료/키메시지 길이를 줄이고 다시 시도해 주세요)';
+              setGenerationError(serverMsg || hint);
+              showError('초안 생성 실패', serverMsg || hint);
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
@@ -461,6 +479,39 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   const [allScraps, setAllScraps] = useState<ScrapResponse[]>([]);
   const [allTags, setAllTags] = useState<string[]>([]);
+  // 업로드된 PDF 관리 상태 (사용 프롬프트만)
+  const [allUploads, setAllUploads] = useState<LibraryItemDto[]>([]);
+  const [allUploadTags, setAllUploadTags] = useState<string[]>([]);
+  const [selectedUploads, setSelectedUploads] = useState<Array<{
+    uploadedFileId: number;
+    title: string;
+    usagePrompt: string; // 해당 자료를 어떻게 쓸지 지시문
+  }>>([]);
+  // 막힘 애니메이션 상태 (75자 도달 시 순간 흔들기)
+  const [blockedAnimIds, setBlockedAnimIds] = useState<Set<number>>(new Set());
+
+  const triggerBlockedAnim = (id: number) => {
+    setBlockedAnimIds(prev => new Set(prev).add(id));
+    setTimeout(() => {
+      setBlockedAnimIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 380);
+  };
+
+  const toggleUploadSelection = (upload: LibraryItemDto) => {
+    setSelectedUploads(prev => {
+      const exists = prev.find(u => u.uploadedFileId === upload.id);
+      if (exists) return prev.filter(u => u.uploadedFileId !== upload.id);
+      return [...prev, { uploadedFileId: upload.id, title: upload.title, usagePrompt: '' }];
+    });
+  };
+
+  const setUploadUsagePrompt = (uploadedFileId: number, value: string) => {
+    setSelectedUploads(prev => prev.map(u => u.uploadedFileId === uploadedFileId ? { ...u, usagePrompt: value } : u));
+  };
 
   // 키메시지 textarea 자동 높이 조정
   useEffect(() => {
@@ -480,17 +531,59 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     fetchScraps();
   }, []);
 
+  // 업로드된 PDF 목록 로드
+  useEffect(() => {
+    const fetchUploads = async () => {
+      try {
+        const uploads = await libraryItemService.list('UPLOAD');
+        const pdfs = uploads.filter((u: LibraryItemDto) => (u.mimeType?.includes('pdf') || u.url?.toLowerCase().endsWith('.pdf')));
+        setAllUploads(pdfs);
+        setAllUploadTags(Array.from(new Set(pdfs.flatMap((u: LibraryItemDto) => u.tags || []))).sort());
+      } catch (err) {
+        console.error('Failed to load uploads', err);
+      }
+    };
+    fetchUploads();
+  }, []);
+
+  const filteredUploads = useMemo(() => {
+    if (uploadTagFilters.length === 0) return allUploads;
+    return allUploads.filter((u: LibraryItemDto) => (u.tags || []).some((t: string) => uploadTagFilters.includes(t)));
+  }, [allUploads, uploadTagFilters]);
+
   const filteredScraps = useMemo(() => {
-    if (selectedTags.length === 0) {
+    if (scrapTagFilters.length === 0) {
       return allScraps;
     }
     
     return allScraps.filter(scrap => {
-      return selectedTags.some(selectedTag => 
+      return scrapTagFilters.some(selectedTag => 
         scrap.tags?.some(tag => tag.name === selectedTag)
       );
     });
-  }, [allScraps, selectedTags]);
+  }, [allScraps, scrapTagFilters]);
+
+  // 탭 이동 시 해당 탭의 태그 선택 초기화
+  useEffect(() => {
+    if (referenceModalTab === 'SCRAP') {
+      setScrapTagFilters([]);
+    } else {
+      setUploadTagFilters([]);
+    }
+  }, [referenceModalTab]);
+
+  const toggleScrapTagFilter = (tag: string) => {
+    setScrapTagFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+  const removeScrapTagFilter = (tag: string) => {
+    setScrapTagFilters(prev => prev.filter(t => t !== tag));
+  };
+  const toggleUploadTagFilter = (tag: string) => {
+    setUploadTagFilters(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+  const removeUploadTagFilter = (tag: string) => {
+    setUploadTagFilters(prev => prev.filter(t => t !== tag));
+  };
 
   const formatScrapDate = (dateString: string) => {
     try {
@@ -740,27 +833,58 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
           {/* 참고 자료 */}
           <div className={articleStyles.referenceSection}>
-            <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
-            <button 
-              className={articleStyles.addReferenceButton}
-              onClick={() => toggleScrapModal()}
-            >
-              <IoAdd size={16} />
-              스크랩에서 자료 추가
-            </button>
+          <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
+          <button 
+            className={articleStyles.addReferenceButton}
+            onClick={() => {
+              // 모달 열기 전에 현재 선택 상태 백업
+              backupSelectedScrapsRef.current = [...selectedScraps];
+              backupSelectedUploadsRef.current = JSON.parse(JSON.stringify(selectedUploads));
+              setReferenceModalTab('SCRAP');
+              toggleScrapModal();
+            }}
+          >
+            <IoAdd size={16} />
+            참고 자료 추가
+          </button>
             
             <div className={articleStyles.referenceList}>
               {selectedScraps.map(scrap => (
                 <div key={scrap.scrapId} className={articleStyles.referenceItem}>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div>{scrap.title}</div>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      value={scrap.opinion}
-                      onChange={(e) => handleOpinionChange(scrap.scrapId, e.target.value)}
-                      placeholder="이 자료에 대한 의견을 입력하세요"
+                    <textarea
+                      value={scrap.opinion || ''}
+                      maxLength={75}
+                      onChange={(e) => {
+                        const ta = e.target as HTMLTextAreaElement;
+                        const v = ta.value.slice(0, 75);
+                        handleOpinionChange(scrap.scrapId, v);
+                        ta.style.height = 'auto';
+                        ta.style.height = ta.scrollHeight + 'px';
+                      }}
+                      onKeyDown={(e) => {
+                        const len = (scrap.opinion?.length || 0);
+                        const isModifier = e.ctrlKey || e.metaKey || e.altKey;
+                        const isNavKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Home','End','PageUp','PageDown','Shift','Control','Meta','Alt','Escape'].includes(e.key);
+                        const isDeletion = ['Backspace','Delete'].includes(e.key);
+                        const willAddChar = !isModifier && !isNavKey && !isDeletion && e.key.length === 1;
+                        if (len >= 75 && willAddChar) {
+                          triggerBlockedAnim(scrap.scrapId);
+                        }
+                      }}
+                      rows={1}
+                      className={`${styles.formInput} ${(scrap.opinion?.length || 0) >= 75 ? articleStyles.blockedInput : ''} ${blockedAnimIds.has(scrap.scrapId) ? articleStyles.shake : ''}`}
+                      style={{
+                        resize: 'none',
+                        overflow: 'hidden',
+                        minHeight: '36px',
+                      }}
+                      placeholder="이 자료를 어떻게 활용할지 입력해주세요 (최대 75자)"
                     />
+                    <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((scrap.opinion?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
+                      {(scrap.opinion?.length || 0)}/75
+                    </div>
                   </div>
                   <button 
                     className={articleStyles.referenceRemoveButton}
@@ -771,6 +895,61 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 </div>
               ))}
             </div>
+            {/* 선택된 PDF 요약 표시 및 프롬프트 수정 */}
+            {selectedUploads.length > 0 && (
+              <div style={{ marginTop: 20 }}>
+                <h4 style={{ margin: 0, fontSize: 14, color: '#374151' }}>선택된 PDF</h4>
+                <div className={articleStyles.referenceList} style={{ marginTop: 8 }}>
+                  {selectedUploads.map(u => (
+                    <div key={u.uploadedFileId} className={articleStyles.referenceItem}>
+                      <div style={{ flex: 1 }}>
+                        <div>{u.title}</div>
+                        <textarea
+                          value={u.usagePrompt || ''}
+                          maxLength={75}
+                          onChange={(e) => {
+                            const ta = e.target as HTMLTextAreaElement;
+                            // 막히는 느낌: maxLength로 추가 입력 차단 + 카운터/테두리 피드백
+                            const v = ta.value.slice(0, 75);
+                            setUploadUsagePrompt(u.uploadedFileId, v);
+                            // auto-resize (초기 높이는 기존 input과 비슷하게 rows=1 + minHeight)
+                            ta.style.height = 'auto';
+                            ta.style.height = ta.scrollHeight + 'px';
+                          }}
+                          onKeyDown={(e) => {
+                            const len = (u.usagePrompt?.length || 0);
+                            const isModifier = e.ctrlKey || e.metaKey || e.altKey;
+                            const isNavKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Home','End','PageUp','PageDown','Shift','Control','Meta','Alt','Escape'].includes(e.key);
+                            const isDeletion = ['Backspace','Delete'].includes(e.key);
+                            const willAddChar = !isModifier && !isNavKey && !isDeletion && e.key.length === 1;
+                            if (len >= 75 && willAddChar) {
+                              triggerBlockedAnim(u.uploadedFileId);
+                            }
+                          }}
+                          rows={1}
+                          className={`${styles.formInput} ${(u.usagePrompt?.length || 0) >= 75 ? articleStyles.blockedInput : ''} ${blockedAnimIds.has(u.uploadedFileId) ? articleStyles.shake : ''}`}
+                          style={{
+                            resize: 'none',
+                            overflow: 'hidden',
+                            minHeight: '36px',
+                          }}
+                          placeholder="이 자료를 어떻게 활용할지 입력해주세요 (최대 75자)"
+                        />
+                        <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((u.usagePrompt?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
+                          {(u.usagePrompt?.length || 0)}/75
+                        </div>
+                      </div>
+                      <button 
+                        className={articleStyles.referenceRemoveButton}
+                        onClick={() => setSelectedUploads(prev => prev.filter(x => x.uploadedFileId !== u.uploadedFileId))}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {generationError && (
@@ -1010,46 +1189,130 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               style={{ maxHeight: `calc(100vh - ${scrapModalTop + 32}px)` }}
             >
               <div className={articleStyles.modalHeader}>
-                <h2 className={articleStyles.modalTitle}>스크랩 선택</h2>
-                <button 
-                  className={articleStyles.modalCloseButton}
-                  onClick={() => toggleScrapModal()}
-                >
-                  <IoClose />
-                </button>
+                <h2 className={articleStyles.modalTitle}>참고 자료 선택</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button 
+                    className={articleStyles.modalCloseButton}
+                    onClick={() => toggleScrapModal()}
+                    aria-label="선택 확정"
+                  >
+                    <IoCheckmark />
+                  </button>
+                  <button 
+                    className={articleStyles.modalCloseButton}
+                    onClick={() => {
+                      // 취소: 백업으로 복구 후 닫기
+                      clearScraps();
+                      backupSelectedScrapsRef.current.forEach(s => addScrap(s));
+                      setSelectedUploads(JSON.parse(JSON.stringify(backupSelectedUploadsRef.current)));
+                      toggleScrapModal();
+                    }}
+                  >
+                    <IoClose />
+                  </button>
+                </div>
+              </div>
+              {/* 탭 */}
+              <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px 16px' }}>
+                <button
+                  className={articleStyles.sectionButton}
+                  style={{ background: referenceModalTab === 'SCRAP' ? '#111827' : '#fff', color: referenceModalTab === 'SCRAP' ? '#fff' : '#111827' }}
+                  onClick={() => setReferenceModalTab('SCRAP')}
+                >스크랩</button>
+                <button
+                  className={articleStyles.sectionButton}
+                  style={{ background: referenceModalTab === 'PDF' ? '#111827' : '#fff', color: referenceModalTab === 'PDF' ? '#fff' : '#111827' }}
+                  onClick={() => setReferenceModalTab('PDF')}
+                >PDF</button>
               </div>
 
-              <TagSelector
-                availableTags={allTags}
-                selectedTags={selectedTags}
-                onTagSelect={(tag) => toggleTag(tag)}
-                onTagRemove={(tag) => removeTag(tag)}
-              />
+              {/* 스크랩 탭: 태그 + 리스트 */}
+              {referenceModalTab === 'SCRAP' && (
+                <>
+                  <TagSelector
+                    availableTags={allTags}
+                    selectedTags={scrapTagFilters}
+                    onTagSelect={toggleScrapTagFilter}
+                    onTagRemove={removeScrapTagFilter}
+                  />
+                </>
+              )}
+
+              {/* PDF 탭: 태그 선택 위치를 스크랩과 동일하게 */}
+              {referenceModalTab === 'PDF' && (
+                <>
+                  <TagSelector
+                    availableTags={allUploadTags}
+                    selectedTags={uploadTagFilters}
+                    onTagSelect={toggleUploadTagFilter}
+                    onTagRemove={removeUploadTagFilter}
+                  />
+                </>
+              )}
 
               <div
                 className={articleStyles.modalContent}
                 style={{ maxHeight: `calc(100vh - ${scrapModalTop + 172}px)` }}
               >
-                {filteredScraps.map((scrap: ScrapResponse) => (
-                  <div
-                    key={scrap.scrapId}
-                    className={`${articleStyles.scrapItem} ${
-                      selectedScraps.find(s => s.scrapId === scrap.scrapId) ? articleStyles.selected : ''
-                    }`}
-                    onClick={() => handleScrapSelect(scrap)}
-                    data-url={scrap.url}
-                  >
-                    <div className={articleStyles.scrapTitle}>{scrap.title}</div>
-                    <div className={articleStyles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
-                    <div className={articleStyles.scrapFooter}>
-                      <div className={articleStyles.scrapTags}>
-                        <TagList tags={scrap.tags?.map(tag => tag.name) || []} />
+                {referenceModalTab === 'SCRAP' && (
+                  <>
+                    {filteredScraps.map((scrap: ScrapResponse) => (
+                      <div
+                        key={scrap.scrapId}
+                        className={`${articleStyles.scrapItem} ${
+                          selectedScraps.find(s => s.scrapId === scrap.scrapId) ? articleStyles.selected : ''
+                        }`}
+                        onClick={() => handleScrapSelect(scrap)}
+                        data-url={scrap.url}
+                      >
+                        <div className={articleStyles.scrapTitle}>{scrap.title}</div>
+                        <div className={articleStyles.scrapContent}>{scrap.content.length > 100 ? `${scrap.content.substring(0, 100)}...` : scrap.content}</div>
+                        <div className={articleStyles.scrapFooter}>
+                          <div className={articleStyles.scrapTags}>
+                            <TagList tags={scrap.tags?.map(tag => tag.name) || []} />
+                          </div>
+                          <div className={articleStyles.scrapDate}>{formatScrapDate(scrap.createdAt)}</div>
+                        </div>
                       </div>
-                      <div className={articleStyles.scrapDate}>{formatScrapDate(scrap.createdAt)}</div>
-                    </div>
-                  </div>
-                ))}
+                    ))}
+                  </>
+                )}
+
+                {referenceModalTab === 'PDF' && (
+                  <>
+                    {filteredUploads.length === 0 ? (
+                      <div className={articleStyles.emptyState}>
+                        <p className={articleStyles.emptyStateSubtitle}>조건에 맞는 PDF가 없습니다.</p>
+                      </div>
+                    ) : (
+                      filteredUploads.map(upload => {
+                        const selected = selectedUploads.find(u => u.uploadedFileId === upload.id);
+                        return (
+                          <div
+                            key={upload.id}
+                            className={`${articleStyles.scrapItem} ${selected ? articleStyles.selected : ''}`}
+                            onClick={() => toggleUploadSelection(upload)}
+                            data-url={upload.url}
+                          >
+                            <div className={articleStyles.scrapTitle}>{upload.title}</div>
+                            <div className={articleStyles.scrapContent}>
+                              {upload.previewText ? (upload.previewText.length > 100 ? `${upload.previewText.substring(0, 100)}...` : upload.previewText) : '설명이 없습니다.'}
+                            </div>
+                            <div className={articleStyles.scrapFooter}>
+                              <div className={articleStyles.scrapTags}>
+                                <TagList tags={upload.tags || []} />
+                              </div>
+                              <div className={articleStyles.scrapDate}>{formatScrapDate(upload.createdAt)}</div>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </>
+                )}
               </div>
+
+              
             </div>
           </div>
         )}
