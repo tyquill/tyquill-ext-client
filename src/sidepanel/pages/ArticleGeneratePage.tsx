@@ -848,15 +848,40 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             <div className={articleStyles.referenceList}>
               {selectedScraps.map(scrap => (
                 <div key={scrap.scrapId} className={articleStyles.referenceItem}>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div>{scrap.title}</div>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      value={scrap.opinion}
-                      onChange={(e) => handleOpinionChange(scrap.scrapId, e.target.value)}
-                      placeholder="이 자료에 대한 의견을 입력하세요"
+                    <textarea
+                      value={scrap.opinion || ''}
+                      maxLength={75}
+                      onChange={(e) => {
+                        const ta = e.target as HTMLTextAreaElement;
+                        const v = ta.value.slice(0, 75);
+                        handleOpinionChange(scrap.scrapId, v);
+                        ta.style.height = 'auto';
+                        ta.style.height = ta.scrollHeight + 'px';
+                      }}
+                      onKeyDown={(e) => {
+                        const len = (scrap.opinion?.length || 0);
+                        const isModifier = e.ctrlKey || e.metaKey || e.altKey;
+                        const isNavKey = ['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Tab','Home','End','PageUp','PageDown','Shift','Control','Meta','Alt','Escape'].includes(e.key);
+                        const isDeletion = ['Backspace','Delete'].includes(e.key);
+                        const willAddChar = !isModifier && !isNavKey && !isDeletion && e.key.length === 1;
+                        if (len >= 75 && willAddChar) {
+                          triggerBlockedAnim(scrap.scrapId);
+                        }
+                      }}
+                      rows={1}
+                      className={`${styles.formInput} ${(scrap.opinion?.length || 0) >= 75 ? articleStyles.blockedInput : ''} ${blockedAnimIds.has(scrap.scrapId) ? articleStyles.shake : ''}`}
+                      style={{
+                        resize: 'none',
+                        overflow: 'hidden',
+                        minHeight: '36px',
+                      }}
+                      placeholder="이 자료를 어떻게 활용할지 입력해주세요 (최대 75자)"
                     />
+                    <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((scrap.opinion?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
+                      {(scrap.opinion?.length || 0)}/75
+                    </div>
                   </div>
                   <button 
                     className={articleStyles.referenceRemoveButton}
