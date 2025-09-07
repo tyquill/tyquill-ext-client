@@ -450,7 +450,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             } else if (completedArticle.status === 'failed') {
               setGenerationStatus('failed');
               setGenerating(false);
-              // showError('초안 생성 실패', '생성 중 오류가 발생했습니다.');
+              const serverMsg = (completedArticle as any)?.errorMessage as string | undefined;
+              const hint = '생성 중 오류가 발생했습니다. (참고 자료/키메시지 길이를 줄이고 다시 시도해 주세요)';
+              setGenerationError(serverMsg || hint);
+              showError('초안 생성 실패', serverMsg || hint);
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
