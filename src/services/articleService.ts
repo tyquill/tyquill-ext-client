@@ -49,6 +49,27 @@ export interface GenerateArticleV2Dto {
 }
 
 /**
+ * V3 API 아티클 생성 DTO (PDF 지원)
+ */
+export interface GenerateArticleV3Dto {
+    topic: string;
+    keyInsight: string;
+    scrapWithOptionalComment?: ScrapWithOptionalComment[];
+    generationParams?: string;
+    articleStructureTemplate?: TemplateSection[];
+    writingStyleId?: number;
+    uploadWithUsagePrompt?: UploadWithUsagePromptDto[];
+}
+
+/**
+ * 업로드 파일과 사용 프롬프트 DTO
+ */
+export interface UploadWithUsagePromptDto {
+    uploadedFileId: number;
+    usagePrompt: string;
+}
+
+/**
  * 아티클 업데이트 DTO
  */
 export interface UpdateArticleDto {
@@ -111,6 +132,16 @@ export interface ArticleStatusV2Response {
     content?: string;
     createdAt: string;
 }
+
+/**
+ * V3 API 비동기 생성 응답 (PDF 지원)
+ */
+export type GenerateArticleV3Response = GenerateArticleV2Response;
+
+/**
+ * V3 API 상태 확인 응답 (PDF 지원)
+ */
+export type ArticleStatusV3Response = ArticleStatusV2Response;
 
 /**
  * 아카이브 응답 타입
@@ -326,6 +357,78 @@ export class ArticleService {
         }
 
         throw new Error(`Article generation timeout after ${maxAttempts} attempts`);
+    }
+
+    // ========== V3 API (PDF 지원) ==========
+
+    /**
+     * V3: AI로 아티클 비동기 생성 (PDF 지원)
+     * POST /api/v3/articles/generate
+     */
+    async generateArticleV3(generateData: GenerateArticleV3Dto): Promise<GenerateArticleV3Response> {
+        return this.apiRequest('/v3/articles/generate', {
+            method: 'POST',
+            body: JSON.stringify(generateData),
+        });
+    }
+
+    /**
+     * V3: 아티클 생성 상태 확인
+     * GET /api/v3/articles/:id/status
+     */
+    async getArticleStatusV3(articleId: number): Promise<ArticleStatusV3Response> {
+        return this.apiRequest(`/v3/articles/${articleId}/status`, {
+            method: 'GET',
+        });
+    }
+
+    /**
+     * V3: 현재 사용자의 아티클 목록 조회 (PDF 정보 포함)
+     * GET /api/v3/articles
+     */
+    async getArticlesV3(): Promise<any[]> {
+        return this.apiRequest('/v3/articles', {
+            method: 'GET',
+        });
+    }
+
+    /**
+     * V3: 폴링을 통한 아티클 완성 대기 (PDF 지원)
+     * @param articleId 대기할 아티클 ID
+     * @param maxAttempts 최대 시도 횟수 (기본: 30회)
+     * @param interval 폴링 간격 (기본: 5초)
+     * @returns 완성된 아티클 정보 또는 타임아웃/에러
+     */
+    async waitForArticleCompletionV3(
+        articleId: number, 
+        maxAttempts: number = 50, 
+        interval: number = 5000
+    ): Promise<ArticleStatusV3Response> {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            try {
+                const status = await this.getArticleStatusV3(articleId);
+                
+                if (status.status === 'completed' || status.status === 'failed') {
+                    return status;
+                }
+
+                // 마지막 시도가 아니면 대기
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                }
+            } catch (error) {
+                console.error(`❌ V3 Status check attempt ${attempt} failed:`, error);
+                
+                // 마지막 시도가 아니면 계속 시도
+                if (attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, interval));
+                    continue;
+                }
+                throw error;
+            }
+        }
+
+        throw new Error(`V3 Article generation timeout after ${maxAttempts} attempts`);
     }
 }
 
