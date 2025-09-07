@@ -329,7 +329,7 @@ export class ArticleService {
      */
     async waitForArticleCompletion(
         articleId: number, 
-        maxAttempts: number = 50, 
+        maxAttempts: number = 60, 
         interval: number = 5000
     ): Promise<ArticleStatusV2Response> {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
