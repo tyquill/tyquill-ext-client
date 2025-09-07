@@ -51,9 +51,9 @@ class UploadService {
       throw new Error('Only PDF files are supported');
     }
 
-    // 서버에서 현재 50MB 제한. 필요 시 조정 가능
-    if (pdfFile.size > 50 * 1024 * 1024) {
-      throw new Error('파일 크기는 50MB 이하여야 합니다.');
+    // 서버에서 현재 30MB 제한. 필요 시 조정 가능
+    if (pdfFile.size > 30 * 1024 * 1024) {
+      throw new Error('파일 크기는 30MB 이하여야 합니다.');
     }
 
     return this.uploadFile(pdfFile, {

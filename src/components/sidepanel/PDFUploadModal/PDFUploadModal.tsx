@@ -46,8 +46,8 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      showError('파일 크기 초과', '50MB 이하의 파일만 업로드 가능합니다.');
+    if (file.size > 30 * 1024 * 1024) {
+      showError('파일 크기 초과', '30MB 이하의 파일만 업로드 가능합니다.');
       return;
     }
 
@@ -171,7 +171,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
                     ? 'PDF 파일을 여기에 놓아주세요'
                     : 'PDF 파일을 드래그하거나 클릭하여 선택'}
                 </div>
-                <div className={styles.dropzoneSubtext}>최대 50MB</div>
+                <div className={styles.dropzoneSubtext}>최대 30MB</div>
               </>
             )}
             <input
