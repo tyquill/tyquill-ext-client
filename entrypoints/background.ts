@@ -29,6 +29,18 @@ export default defineBackground(() => {
     // console.log('Message received:', request);
     
 
+    if (request.action === 'scrapExtracted') {
+      handleScrapExtracted(request.data)
+        .then(response => {
+          sendResponse({ success: true, data: response });
+        })
+        .catch(error => {
+          console.error('❌ Background scrapExtracted error:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+      return true; // async
+    }
+
     if (request.action === 'clipAndScrapCurrentPage') {
       handleClipAndScrapCurrentPage(sender)
         .then(response => {
@@ -253,6 +265,36 @@ export default defineBackground(() => {
       console.error('❌ Background: Clip for style failed:', error);
       throw error;
     }
+  }
+
+  /**
+   * LinkedIn 버튼이 보낸 컨테이너 텍스트를 API로 저장
+   */
+  async function handleScrapExtracted(data: { content: string; title?: string; url?: string }) {
+    if (!data?.content || !data.content.trim()) {
+      throw new Error('Empty content');
+    }
+
+    const pickTitle = () => (data.title && data.title.trim()) || 'Linkedin 피드';
+
+    const scrapResult = {
+      content: data.content,
+      metadata: {
+        title: pickTitle(),
+        url: data.url || '',
+      },
+      selectionOnly: false,
+      timestamp: new Date().toISOString(),
+    } as any;
+
+    const tags: string[] = [];
+    const result = await scrapService.quickScrap(scrapResult, '', tags);
+
+    try {
+      browser.runtime.sendMessage({ action: 'scrapCreated', data: result });
+    } catch {}
+
+    return result;
   }
 
   // 플로팅 버튼 표시 상태 관리

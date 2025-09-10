@@ -3,6 +3,8 @@ import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 import { WebClipper } from '../utils/webClipper';
+import { initLinkedInInjector } from '../utils/linkedinInjector';
+import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
@@ -68,6 +70,25 @@ const App: React.FC = () => {
 
     return () => {
       document.removeEventListener('DOMContentLoaded', showFloatingButton);
+    };
+  }, []);
+
+  // LinkedIn 피드 컨트롤 메뉴에 Tyquill 버튼 주입 (기본 동작만 유지)
+  useEffect(() => {
+    if (!window.location.hostname.includes('linkedin.com')) return;
+
+    const cleanup = initLinkedInInjector();
+
+    const handleClick = async () => {
+      try {
+        await clipAndScrapCurrentPage();
+      } catch (e) {}
+    };
+    window.addEventListener('tyquill:li-button-click', handleClick as EventListener);
+
+    return () => {
+      cleanup();
+      window.removeEventListener('tyquill:li-button-click', handleClick as EventListener);
     };
   }, []);
 
