@@ -5,9 +5,15 @@ import FloatingButton from '../components/content/FloatingButton/FloatingButton'
 import { WebClipper } from '../utils/webClipper';
 import { initLinkedInInjector } from '../utils/linkedinInjector';
 import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
+import { initThreadsInjector } from '../utils/threadsInjector';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
+  const isThreads = (typeof window !== 'undefined') && (
+    window.location.hostname.includes('threads.net') ||
+    window.location.hostname.includes('threads.com') ||
+    window.location.href.startsWith('https://www.instagram.com/threads/')
+  );
 
   // Background Script로부터의 메시지 처리
   useEffect(() => {
@@ -92,9 +98,23 @@ const App: React.FC = () => {
     };
   }, []);
 
+  // Threads 피드 카드에 Tyquill 버튼 주입
+  useEffect(() => {
+    if (!isThreads) return;
+    let cleanup: (() => void) | undefined;
+    try {
+      console.log('[Tyquill][App] initThreadsInjector() start');
+      cleanup = initThreadsInjector();
+      console.log('[Tyquill][App] initThreadsInjector() done');
+    } catch {}
+    return () => {
+      try { cleanup && cleanup(); } catch {}
+    };
+  }, [isThreads]);
+
   return (
     <div id="tyquill-content-root">
-      <FloatingButton />
+      {!isThreads && <FloatingButton />}
       
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
       <div id="tyquill-content-components" style={{ display: 'none' }}>

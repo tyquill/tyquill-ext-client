@@ -42,6 +42,18 @@ browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.Mes
     return true;
   }
 
+  if (request.action === 'proxyImage') {
+    handleProxyImage(request.url)
+      .then((dataUrl) => {
+        sendResponse({ success: true, dataUrl });
+      })
+      .catch((error) => {
+        console.error('❌ Background proxyImage error:', error);
+        sendResponse({ success: false, error: error?.message || String(error) });
+      });
+    return true;
+  }
+
   if (request.action === 'clipAndScrapCurrentPage') {
     handleClipAndScrapCurrentPage(sender)
       .then(response => {
@@ -432,3 +444,34 @@ browser.runtime.onInstalled.addListener(async () => {
 browser.runtime.setUninstallURL('https://tally.so/r/nGZK7z');
 
 export {}; 
+
+/**
+ * 이미지 프록시: 외부 Origin에서 CORP/Referer 정책으로 차단되는 이미지를
+ * background fetch로 불러 data URL로 반환
+ */
+async function handleProxyImage(url: string): Promise<string> {
+  if (!url) throw new Error('Empty URL');
+  try {
+    const resp = await fetch(url, {
+      method: 'GET',
+      // 이미지 호스팅의 Referrer 정책을 우회
+      referrerPolicy: 'no-referrer',
+      // 모드/크리덴셜은 기본값 유지 (이미지 대부분 공개)
+    } as RequestInit);
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}`);
+    }
+    const blob = await resp.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    return dataUrl;
+  } catch (e) {
+    // 최후 폴백: wsrv.nl 프록시 시도
+    const wsrv = `https://wsrv.nl/?url=${encodeURIComponent(url)}`;
+    return wsrv;
+  }
+}

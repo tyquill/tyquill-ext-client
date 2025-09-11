@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
+import { browser } from 'wxt/browser';
 
 interface MarkdownRendererProps {
   content: string;
@@ -6,13 +7,14 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className }) => {
-  if (!content) return <div className={className}></div>;
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  if (!content) return <div className={className} ref={containerRef}></div>;
 
   // 볼드/이탤릭/취소선 텍스트 처리 헬퍼 함수 (개선된 패턴)
   const processTextFormatting = (text: string) => {
     return text
       // 이미지 처리: ![alt](url "optional title") → <img>
-      .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto; display: inline-block;" />')
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g, '<img src="$2" alt="$1" referrerpolicy="no-referrer" loading="lazy" style="max-width: 100%; height: auto; display: inline-block;" />')
       // 볼드 처리: **text** (한글과 특수문자 포함하여 더 넓게 매칭)
       .replace(/\*\*([^*\n]+?)\*\*/g, '<strong>$1</strong>')
       // 이탤릭 처리: *text* (볼드와 겹치지 않도록 개선)
@@ -33,7 +35,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
       // 멀티라인 이미지: ![alt...\n\n...](url)
       .replace(/!\[([\s\S]*?)\]\(\s*([^)\s]+)(?:\s+"[^"]*")?\s*\)/g, (_m, alt: string, url: string) => {
         const collapsedAlt = (alt as string).replace(/\s+/g, ' ').trim();
-        return `<img src="${url}" alt="${collapsedAlt}" style="max-width: 100%; height: auto; display: inline-block;" />`;
+        return `<img src="${url}" alt="${collapsedAlt}" referrerpolicy="no-referrer" loading="lazy" style="max-width: 100%; height: auto; display: inline-block;" />`;
       })
       // 멀티라인 링크: [text...\n\n...](url) - 이미지가 아닌 경우만 (! 로 시작하지 않는 경우)
       .replace(/(?<!\!)\[([^\[\]]*(?:\n[^\[\]]*)*?)\]\(\s*([^\)]+?)\s*\)/g, (_m, text: string, url: string) => {
@@ -182,8 +184,57 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
     return elements;
   };
 
+  useEffect(() => {
+    const root = containerRef.current;
+    if (!root) return;
+    const imgs = Array.from(root.querySelectorAll('img')) as HTMLImageElement[];
+    imgs.forEach((img) => {
+      try { img.setAttribute('referrerpolicy', 'no-referrer'); } catch {}
+      try { img.setAttribute('loading', 'lazy'); } catch {}
+
+      const originalSrc = img.getAttribute('data-tyquill-original-src') || img.getAttribute('src') || '';
+      if (!img.getAttribute('data-tyquill-original-src') && originalSrc) {
+        img.setAttribute('data-tyquill-original-src', originalSrc);
+      }
+
+      const onError = async () => {
+        if ((img as any)._tyquillImgBusy) return;
+        (img as any)._tyquillImgBusy = true;
+        try {
+          const triedProxy = img.getAttribute('data-tyquill-proxy-tried') === '1';
+          const triedWsrv = img.getAttribute('data-tyquill-wsrv-tried') === '1';
+          const src0 = img.getAttribute('data-tyquill-original-src') || img.src || '';
+          if (!src0) return;
+
+          if (!triedWsrv) {
+            img.setAttribute('data-tyquill-wsrv-tried', '1');
+            const wsrv = `https://wsrv.nl/?url=${encodeURIComponent(src0)}`;
+            img.src = wsrv;
+            (img as any)._tyquillImgBusy = false;
+            return;
+          }
+
+          if (!triedProxy) {
+            img.setAttribute('data-tyquill-proxy-tried', '1');
+            try {
+              const resp = await browser.runtime.sendMessage({ action: 'proxyImage', url: src0 });
+              if (resp?.success && resp?.dataUrl) {
+                img.src = resp.dataUrl;
+              }
+            } catch {}
+          }
+        } finally {
+          (img as any)._tyquillImgBusy = false;
+        }
+      };
+
+      img.removeEventListener('error', onError as any);
+      img.addEventListener('error', onError as any, { once: false });
+    });
+  });
+
   return (
-    <div className={className}>
+    <div className={className} ref={containerRef}>
       {renderMarkdown(content)}
     </div>
   );
