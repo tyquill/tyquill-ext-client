@@ -1,7 +1,7 @@
 // LinkedIn feed control menu에 Tyquill 버튼을 주입하는 유틸
 import { browser } from 'wxt/browser';
+import { WHITE_LOGO_URL, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT } from './constants';
 
-const WHITE_LOGO_URL = 'https://4bvbvpozg7fnspb5.public.blob.vercel-storage.com/white-logo.svg';
 // 대상 부모 컨테이너: feed-shared-control-menu display-flex
 //   feed-shared-update-v2__control-menu absolute text-align-right
 //   feed-shared-update-v2--with-hide-post
@@ -50,9 +50,9 @@ function createTyquillButton(): HTMLButtonElement {
 function queryControlMenus(root: ParentNode = document): Element[] {
   // 각 후보 컨테이너를 따로 찾은 후 합집합
   const nodes = new Set<Element>();
-  root.querySelectorAll('.feed-shared-control-menu.display-flex').forEach(n => nodes.add(n));
-  root.querySelectorAll('.feed-shared-update-v2__control-menu.absolute.text-align-right').forEach(n => nodes.add(n));
-  root.querySelectorAll('.feed-shared-update-v2--with-hide-post').forEach(n => nodes.add(n));
+  LINKEDIN_SELECTORS.controlMenus.forEach((sel) => {
+    root.querySelectorAll(sel).forEach(n => nodes.add(n));
+  });
   const all = Array.from(nodes);
   return all.filter(isAllowedContainer);
 }
@@ -120,35 +120,7 @@ function ensureStylesInjected(): void {
   if (document.getElementById('tyquill-li-action-styles')) return;
   const style = document.createElement('style');
   style.id = 'tyquill-li-action-styles';
-  style.textContent = `
-    /* LinkedIn tertiary-muted 버튼 토큰을 활용한 상태 스타일 */
-    [data-tyquill="li-action"] {
-      color: var(--artdeco-button-tertiary-muted-static-color, var(--color-label));
-      background-color: var(--color-background-transparent);
-      border: none;
-      border-radius: var(--corner-radius-full, 999px);
-      transition: background-color var(--duration-xfast, 84ms) var(--ease-standard, cubic-bezier(.34,0,.21,1));
-    }
-    [data-tyquill="li-action"]:hover {
-      background-color: var(--artdeco-button-tertiary-muted-hover-background-color, var(--color-background-action-transparent-hover, rgba(0,0,0,0.08)));
-      color: var(--color-label-hover, inherit);
-    }
-    [data-tyquill="li-action"]:active {
-      background-color: var(--color-background-action-transparent-active, rgba(0,0,0,0.12));
-      color: var(--color-label-active, inherit);
-    }
-    [data-tyquill="li-action"]:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px var(--color-border-focus, var(--teal-70));
-      background-color: var(--color-background-focus, var(--teal-50-a30));
-    }
-
-    /* Tyquill 버튼이 있는 카드에서는 팔로우 버튼을 좌측으로 여백 이동 */
-    .feed-shared-update-v2:has([data-tyquill="li-action"]) .update-components-actor__follow-button,
-    .feed-shared-update-v2:has([data-tyquill="li-action"]) .update-components-update-v2__follow-button {
-      margin-right: 40px !important;
-    }
-  `;
+  style.textContent = LINKEDIN_STYLE_TEXT;
   document.head.appendChild(style);
 }
 
@@ -324,7 +296,7 @@ function collectContainerMarkdown(container: HTMLElement | null): string {
       '.update-components-actor__follow-button',
       '.update-components-actor__sub-description',
       '.update-components-linkedin-video__container',
-      '.update-v2-social-activity',
+      '.v2-social-activity',
       '.feed-shared-social-action-bar',
       '.artdeco-dropdown',
       'button',

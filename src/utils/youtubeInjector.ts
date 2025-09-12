@@ -1,8 +1,7 @@
 import { browser } from 'wxt/browser';
+import { WHITE_LOGO_URL, YT_SELECTORS, YT_STYLE_TEXT } from './constants';
 
 type CleanupFn = () => void;
-
-const WHITE_LOGO_URL = 'https://4bvbvpozg7fnspb5.public.blob.vercel-storage.com/white-logo.svg';
 
 function isYouTubeSite(): boolean {
   try {
@@ -85,67 +84,7 @@ function ensureStylesInjected(): void {
   if (document.getElementById('tyquill-yt-action-styles')) return;
   const style = document.createElement('style');
   style.id = 'tyquill-yt-action-styles';
-  style.textContent = `
-    /* YouTube action button styles */
-    button.tyquill-yt-action-btn[data-tyquill="yt-action"] {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      height: 36px;
-      padding: 0 16px;
-      border: none;
-      border-radius: 18px;
-      cursor: pointer;
-      background-color: var(--yt-spec-additive-background, rgba(0,0,0,0.05));
-      color: var(--yt-spec-text-primary, currentColor);
-      transition: background-color 150ms ease;
-      /* prevent width change and text wrapping */
-      white-space: nowrap;
-      flex: 0 0 auto;
-      min-width: max-content;
-      box-sizing: border-box;
-    }
-    button.tyquill-yt-action-btn[data-tyquill="yt-action"]:hover {
-      background-color: var(--yt-spec-button-chip-background-hover, rgba(0,0,0,0.1));
-    }
-    button.tyquill-yt-action-btn[data-tyquill="yt-action"]:focus-visible {
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(0,150,136,.35);
-    }
-    button.tyquill-yt-action-btn[data-tyquill="yt-action"] img {
-      width: 16px;
-      height: 16px;
-      display: block;
-      object-fit: contain;
-      flex: 0 0 auto;
-    }
-    button.tyquill-yt-action-btn[data-tyquill="yt-action"] span {
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Media queries retained for OS-level themes; inline style will override if site theme differs */
-    @media (prefers-color-scheme: light) {
-      button.tyquill-yt-action-btn[data-tyquill="yt-action"] img { filter: invert(1) !important; }
-    }
-    @media (prefers-color-scheme: dark) {
-      button.tyquill-yt-action-btn[data-tyquill="yt-action"] img { filter: none !important; }
-      button.tyquill-yt-action-btn[data-tyquill="yt-action"] {
-        background-color: var(--yt-spec-static-overlay-button-secondary, rgba(255,255,255,0.1));
-        color: var(--yt-spec-static-overlay-text-primary, #fff);
-      }
-      button.tyquill-yt-action-btn[data-tyquill="yt-action"]:hover {
-        background-color: var(--yt-spec-static-overlay-button-primary, rgba(255,255,255,0.3));
-      }
-    }
-
-    /* Try to keep spacing consistent when near subscribe button */
-    #owner #subscribe-button:has(+ [data-tyquill="yt-action"]) {
-      margin-right: 8px;
-    }
-  `;
+  style.textContent = YT_STYLE_TEXT;
   document.head.appendChild(style);
 }
 
@@ -160,21 +99,21 @@ function applyIconTheme(target?: ParentNode): void {
 
 function querySubscribeHost(root: ParentNode = document): { owner: Element, subscribe: Element } | null {
   // Primary path: #owner contains #subscribe-button
-  const owner = root.querySelector('#owner') as Element | null;
+  const owner = root.querySelector(YT_SELECTORS.ownerPrimary) as Element | null;
   if (owner) {
-    const subscribe = owner.querySelector('#subscribe-button') as Element | null;
+    const subscribe = owner.querySelector(YT_SELECTORS.subscribeButton) as Element | null;
     if (subscribe) return { owner, subscribe };
   }
 
   // Alternative paths observed in templates
-  const ownerAlt = root.querySelector('ytd-watch-metadata #owner') as Element | null;
+  const ownerAlt = root.querySelector(YT_SELECTORS.ownerAlt) as Element | null;
   if (ownerAlt) {
-    const subscribeAlt = ownerAlt.querySelector('#subscribe-button') as Element | null;
+    const subscribeAlt = ownerAlt.querySelector(YT_SELECTORS.subscribeAlt) as Element | null;
     if (subscribeAlt) return { owner: ownerAlt, subscribe: subscribeAlt };
   }
 
   // Shorts/watch variations
-  const ownerAny = root.querySelector('ytd-watch-metadata, ytd-reel-player-header-renderer') as Element | null;
+  const ownerAny = root.querySelector(YT_SELECTORS.ownerAny) as Element | null;
   if (ownerAny) {
     const subscribeAny = ownerAny.querySelector('#owner #subscribe-button, #subscribe-button') as Element | null;
     if (subscribeAny) return { owner: ownerAny, subscribe: subscribeAny };

@@ -1,4 +1,5 @@
 import { browser } from 'wxt/browser';
+import { WHITE_LOGO_URL, THREADS_SELECTORS, THREADS_STYLE_TEXT } from './constants';
 
 type CleanupFn = () => void;
 
@@ -20,29 +21,7 @@ function ensureStylesInjected(): void {
   if (document.getElementById('tyquill-threads-action-styles')) return;
   const style = document.createElement('style');
   style.id = 'tyquill-threads-action-styles';
-  style.textContent = `
-    [data-tyquill="threads-action"]{
-      display:inline-flex;align-items:center;justify-content:center;
-      width:var(--x1kdnp2l,36px);height:var(--x1kdnp2l,36px);
-      border:none;border-radius:50%;padding:0;margin-right:var(--x1m69m10,8px);
-      background:transparent;
-      cursor:pointer;
-      transform:translate(var(--tyquill-button-translate-x,-8px), var(--tyquill-button-translate-y,-8px));
-      transition:background-color 150ms ease
-    }
-    [data-tyquill="threads-action"] img, [data-tyquill="threads-action"] svg{width:16px;height:16px;display:block;object-fit:contain;transform:translate(var(--tyquill-icon-translate-x,0px), var(--tyquill-icon-translate-y,0px))}
-    [data-tyquill="threads-action"]:hover{background:var(--hover-overlay, rgba(0,0,0,.06))}
-    [data-tyquill="threads-action"]:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(0,150,136,.35)}
-
-    /* Color scheme adjustments: dark → white, light → gray */
-    @media (prefers-color-scheme: dark) {
-      [data-tyquill="threads-action"] img, [data-tyquill="threads-action"] svg { filter: none; opacity: 1; }
-    }
-    @media (prefers-color-scheme: light) {
-      /* Convert white source to mid-gray ~ #808080 */
-      [data-tyquill="threads-action"] img, [data-tyquill="threads-action"] svg { filter: invert(0.5); opacity: 1; }
-    }
-  `;
+  style.textContent = THREADS_STYLE_TEXT;
   document.head.appendChild(style);
 }
 
@@ -74,7 +53,7 @@ function createInlineTyquillSVG(): SVGElement {
 
 function createTyquillIconElement(): HTMLElement | SVGElement {
   const img = document.createElement('img');
-  img.src = 'https://4bvbvpozg7fnspb5.public.blob.vercel-storage.com/white-logo.svg';
+  img.src = WHITE_LOGO_URL;
   img.alt = 'Tyquill';
   img.style.display = 'block';
   img.style.objectFit = 'contain';
@@ -116,7 +95,7 @@ function createTyquillButton(): HTMLDivElement {
 
 // 사용자 제시 셀렉터에 부합하는 버튼 목록 컨테이너에 직접 주입 (클래스 의존 우선순위는 낮음)
 function injectIntoExplicitButtonLists(root: ParentNode = document): void {
-  const selector = 'div.x6s0dn4.xamitd3.x40hh3e.x78zum5.x1q0g3np.x1xdureb.x1fc57z9.x1hm9lzh.xvijh9v';
+  const selector = THREADS_SELECTORS.explicitButtonList;
   const containers = (root as Document | Element).querySelectorAll?.(selector);
   containers?.forEach((el) => {
     if (!(el instanceof Element)) return;
@@ -273,7 +252,7 @@ function getPostRootFromButton(el: Element): HTMLElement {
 function findAncestorWithContentArea(el: Element): HTMLElement | null {
   let cur: HTMLElement | null = el as HTMLElement;
   while (cur && cur !== document.body) {
-    if (cur.querySelector('div.x1xdureb.xkbb5z.x13vxnyz')) return cur;
+    if (cur.querySelector(THREADS_SELECTORS.contentArea)) return cur;
     cur = cur.parentElement;
   }
   return null;
@@ -316,7 +295,7 @@ function extractPermalink(root: HTMLElement): string {
 function extractImageMarkdown(root: HTMLElement): string[] {
   const md: string[] = [];
   // 본문 영역 우선 검색
-  const searchRoot = (root.querySelector('div.x1xdureb.xkbb5z.x13vxnyz') as HTMLElement | null) || root;
+  const searchRoot = (root.querySelector(THREADS_SELECTORS.contentArea) as HTMLElement | null) || root;
   const imgs = Array.from(searchRoot.querySelectorAll('img')) as HTMLImageElement[];
   imgs.forEach((img) => {
     // 제외 규칙: Tyquill 아이콘, 프로필 이미지, 액션바 내부, 아주 작은 아이콘
