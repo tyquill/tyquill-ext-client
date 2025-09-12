@@ -1,4 +1,6 @@
 import { browser } from 'wxt/browser';
+import { WHITE_LOGO_URL, X_SELECTORS } from './constants';
+import { X_STYLE_TEXT } from './constants';
 
 type CleanupFn = () => void;
 
@@ -16,40 +18,7 @@ function ensureStylesInjected(): void {
   if (document.getElementById('tyquill-x-action-styles')) return;
   const style = document.createElement('style');
   style.id = 'tyquill-x-action-styles';
-  style.textContent = `
-    /* X custom button and tooltip styles */
-    [data-tyquill="x-action-wrapper"]{display:inline-flex;align-items:center}
-    [data-tyquill="x-action"]{
-      position:relative;display:inline-flex;align-items:center;justify-content:center;
-      /* No fixed size: width/height follow img size */
-      border:none;border-radius:9999px;padding:0;margin:0 2px 0 10px; /* left ~5px, right 2px for natural spacing */
-      background:transparent;cursor:pointer;line-height:0;vertical-align:middle;
-      color: rgb(83, 100, 113);
-    }
-    [data-tyquill="x-action"] img,[data-tyquill="x-action"] svg{display:block;object-fit:contain;width:18px;height:18px}
-    /* Make white-logo.svg appear as gray */
-    [data-tyquill="x-action"] img{ filter: invert(0.5); opacity: 1; }
-    [data-tyquill="x-action"]:focus-visible{outline:none;box-shadow:0 0 0 2px rgba(0,150,136,.35)}
-
-    /* Hover background via pseudo-element, does not affect layout width */
-    [data-tyquill="x-action"]::before{
-      content:""; position:absolute; left:50%; top:50%; width:32px; height:32px; border-radius:9999px;
-      transform:translate(-50%, -50%); background: transparent; transition: background-color 150ms ease;
-      pointer-events:none;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      [data-tyquill="x-action"]:hover::before{background: rgba(255,255,255,0.08)}
-    }
-    @media (prefers-color-scheme: light) {
-      [data-tyquill="x-action"]:hover::before{background: rgba(15,20,25,0.1)}
-    }
-
-    /* Global tooltip element */
-    #tyquill-x-tooltip{position:fixed;left:0;top:0;transform:translate(-9999px,-9999px);opacity:0;pointer-events:none;
-      background: rgba(0,0,0,0.8);color:#fff;font-size:12px;line-height:1;padding:4px 8px;border-radius:4px;white-space:nowrap;
-      transition: opacity 120ms ease, transform 120ms ease; z-index: 9999;}
-  `;
+  style.textContent = X_STYLE_TEXT;
   document.head.appendChild(style);
 }
 
@@ -87,14 +56,14 @@ function hideGlobalTooltip(): void {
 }
 
 function attachTooltipHandlers(target: HTMLElement): void {
-  const delayMs = 120;
+  const delay = 120;
   const enter = () => {
     const text = target.getAttribute('data-tooltip') || '';
     if (!text) return;
     if (tyquillXTooltipTimer) window.clearTimeout(tyquillXTooltipTimer);
     // Pre-position slightly closer (y+6) immediately to avoid teleport
     try { computeAndPlaceTooltip(target, text, 6); } catch {}
-    tyquillXTooltipTimer = window.setTimeout(() => { showGlobalTooltip(target, text); }, delayMs);
+    tyquillXTooltipTimer = window.setTimeout(() => { showGlobalTooltip(target, text); }, delay);
   };
   const leave = () => {
     if (tyquillXTooltipTimer) window.clearTimeout(tyquillXTooltipTimer);
@@ -113,7 +82,7 @@ function attachTooltipHandlers(target: HTMLElement): void {
 
 function createTyquillIconImgFallback(): HTMLImageElement {
   const img = document.createElement('img');
-  img.src = 'https://4bvbvpozg7fnspb5.public.blob.vercel-storage.com/white-logo.svg';
+  img.src = WHITE_LOGO_URL;
   img.alt = 'Tyquill';
   img.style.display = 'block';
   img.style.objectFit = 'contain';
@@ -126,12 +95,7 @@ function createXStyledTyquillIcon(): SVGElement | HTMLElement {
 
 function selectActionBarContainers(root: ParentNode = document): HTMLElement[] {
   // 제공된 부모 요소 셀렉터를 기준으로 각 포스트의 액션 버튼 컨테이너 찾기
-  const selector = [
-    // 기존/변형 패턴: 깊은 경로 내 r-1kkk96v > div
-    '#react-root div.css-175oi2r.r-1kkk96v > div',
-    // article 기반 범용 패턴: 모든 트윗의 액션바 컨테이너
-    'article[data-testid="tweet"] div.css-175oi2r.r-1kkk96v > div'
-  ].join(',');
+  const selector = X_SELECTORS.actionBarContainers.join(',');
   const els = (root as Document | Element).querySelectorAll?.(selector) || [];
   return Array.from(els).filter((n): n is HTMLElement => n instanceof HTMLElement);
 }
@@ -208,7 +172,7 @@ function createTyquillButton(): HTMLDivElement {
 function createActionNodeUsingSiblingTemplate(container: HTMLElement): HTMLElement | null {
   try {
     // 1) Grok 버튼을 우선 템플릿으로 사용
-    const grokButton = container.querySelector('button[aria-label="Grok actions"]') as HTMLButtonElement | null;
+    const grokButton = container.querySelector(X_SELECTORS.grokButton) as HTMLButtonElement | null;
     const preferredWrapper = (grokButton?.parentElement as HTMLElement | null) || null;
 
     // 2) 폴백: 형제 중 우리 주입이 아닌 첫 래퍼(div)와 그 내부 button
