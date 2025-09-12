@@ -157,7 +157,7 @@ const App: React.FC = () => {
 
   return (
     <div id="tyquill-content-root">
-      {!isThreads && !isX && <FloatingButton />}
+      <FloatingButton />
       
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
       <div id="tyquill-content-components" style={{ display: 'none' }}>
