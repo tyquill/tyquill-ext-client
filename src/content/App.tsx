@@ -6,6 +6,7 @@ import { WebClipper } from '../utils/webClipper';
 import { initLinkedInInjector } from '../utils/linkedinInjector';
 import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
 import { initThreadsInjector } from '../utils/threadsInjector';
+import { initYouTubeInjector } from '../utils/youtubeInjector';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
@@ -13,6 +14,10 @@ const App: React.FC = () => {
     window.location.hostname.includes('threads.net') ||
     window.location.hostname.includes('threads.com') ||
     window.location.href.startsWith('https://www.instagram.com/threads/')
+  );
+  const isYouTube = (typeof window !== 'undefined') && (
+    window.location.hostname.includes('youtube.com') ||
+    window.location.hostname.includes('m.youtube.com')
   );
 
   // Background Script로부터의 메시지 처리
@@ -111,6 +116,27 @@ const App: React.FC = () => {
       try { cleanup && cleanup(); } catch {}
     };
   }, [isThreads]);
+
+  // YouTube 동영상 페이지에 Tyquill 버튼 주입 (owner/subscribe 인접)
+  useEffect(() => {
+    if (!isYouTube) return;
+    let cleanup: (() => void) | undefined;
+    try {
+      cleanup = initYouTubeInjector();
+    } catch {}
+
+    const handleClick = async () => {
+      try {
+        await clipAndScrapCurrentPage();
+      } catch (e) {}
+    };
+    window.addEventListener('tyquill:yt-button-click', handleClick as EventListener);
+
+    return () => {
+      try { cleanup && cleanup(); } catch {}
+      window.removeEventListener('tyquill:yt-button-click', handleClick as EventListener);
+    };
+  }, [isYouTube]);
 
   return (
     <div id="tyquill-content-root">
