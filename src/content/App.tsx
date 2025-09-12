@@ -7,6 +7,7 @@ import { initLinkedInInjector } from '../utils/linkedinInjector';
 import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
 import { initThreadsInjector } from '../utils/threadsInjector';
 import { initYouTubeInjector } from '../utils/youtubeInjector';
+import { initXInjector } from '../utils/xInjector';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
@@ -18,6 +19,10 @@ const App: React.FC = () => {
   const isYouTube = (typeof window !== 'undefined') && (
     window.location.hostname.includes('youtube.com') ||
     window.location.hostname.includes('m.youtube.com')
+  );
+  const isX = (typeof window !== 'undefined') && (
+    window.location.hostname.includes('x.com') ||
+    window.location.hostname.includes('twitter.com')
   );
 
   // Background Script로부터의 메시지 처리
@@ -117,6 +122,18 @@ const App: React.FC = () => {
     };
   }, [isThreads]);
 
+  // X(Twitter) 피드 카드에 Tyquill 아이콘 주입
+  useEffect(() => {
+    if (!isX) return;
+    let cleanup: (() => void) | undefined;
+    try {
+      cleanup = initXInjector();
+    } catch {}
+    return () => {
+      try { cleanup && cleanup(); } catch {}
+    };
+  }, [isX]);
+
   // YouTube 동영상 페이지에 Tyquill 버튼 주입 (owner/subscribe 인접)
   useEffect(() => {
     if (!isYouTube) return;
@@ -140,7 +157,7 @@ const App: React.FC = () => {
 
   return (
     <div id="tyquill-content-root">
-      {!isThreads && <FloatingButton />}
+      {!isThreads && !isX && <FloatingButton />}
       
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
       <div id="tyquill-content-components" style={{ display: 'none' }}>
