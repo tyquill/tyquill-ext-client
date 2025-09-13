@@ -7,6 +7,7 @@
 
 import { ScrapResult } from '../utils/webClipper';
 import { globalApiClient } from './globalApiClient';
+import { trackScrapCreatedBridge } from '../analytics/bridge';
 
 /**
  * 스크랩 생성 요청 DTO (기존 서버 엔티티에 맞춤)
@@ -74,6 +75,12 @@ export class ScrapService {
       //   title: scrapData.title,
       //   contentLength: scrapData.content.length,
       // });
+      try {
+        // Avoid double send when running in background service worker
+        if (typeof document !== 'undefined') {
+          await trackScrapCreatedBridge({ source: 'extension' })
+        }
+      } catch {}
 
       const response = await this.apiRequest<ScrapResponse>('/v1/scraps', {
         method: 'POST',

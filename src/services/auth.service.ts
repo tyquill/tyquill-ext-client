@@ -8,6 +8,8 @@
 import { getServerUrl, getApiUrl, getOAuthCallbackUrl, logEnvironmentInfo } from '../config/environment';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { posthogClient } from '../analytics/posthog';
+import { trackLoginBridge } from '../analytics/bridge';
 
 export interface User {
   id: string;
@@ -213,6 +215,29 @@ class AuthService {
       this.notifyStateChange();
 
       // console.log('✅ Authentication successful:', authResponse.user.email);
+
+      // Analytics: identify and track signup (once per user)
+      try {
+        await posthogClient.init();
+        posthogClient.identify(authResponse.user.id, {
+          email: authResponse.user.email,
+          fullName: authResponse.user.fullName,
+          provider: authResponse.user.provider,
+        });
+        // Login event (every login)
+        try {
+          await trackLoginBridge({
+            provider: authResponse.user.provider || 'google',
+            method: 'oauth',
+          })
+        } catch {}
+        await posthogClient.events.trackSignupCompleted(authResponse.user.id, {
+          email: authResponse.user.email,
+          fullName: authResponse.user.fullName,
+          provider: authResponse.user.provider,
+        });
+      } catch {}
+
       return authResponse;
     } catch (error) {
       this.authState.isLoading = false;
@@ -345,6 +370,18 @@ class AuthService {
           // console.log('🔐 Token expired, attempting refresh...');
           await this.refreshToken();
         }
+
+        // Analytics: identify existing user on startup for proper attribution
+        try {
+          if (this.authState.isAuthenticated && this.authState.user?.id) {
+            await posthogClient.init();
+            posthogClient.identify(this.authState.user.id, {
+              email: this.authState.user.email,
+              fullName: this.authState.user.fullName,
+              provider: this.authState.user.provider,
+            });
+          }
+        } catch {}
         
         return true;
       }

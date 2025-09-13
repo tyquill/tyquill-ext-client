@@ -5,6 +5,7 @@
  */
 
 import { globalApiClient } from './globalApiClient';
+import { trackAiDraftCompletedBridge } from '../analytics/bridge';
 
 /**
  * 아티클 생성 DTO
@@ -197,11 +198,13 @@ export class ArticleService {
      * AI로 아티클 생성
      * POST /api/v1/articles/generate
      */
-    async generateArticle(generateData: GenerateArticleDto): Promise<GenerateArticleResponse> {
-        return this.apiRequest('/v1/articles/generate', {
+  async generateArticle(generateData: GenerateArticleDto): Promise<GenerateArticleResponse> {
+        try { await trackAiDraftCompletedBridge({ flow: 'v1', trigger: 'request' }) } catch {}
+        const res = await this.apiRequest<GenerateArticleResponse>('/v1/articles/generate', {
             method: 'POST',
             body: JSON.stringify(generateData),
         });
+        return res;
     }
 
     /**
@@ -294,10 +297,12 @@ export class ArticleService {
      * POST /api/v2/articles/generate
      */
     async generateArticleV2(generateData: GenerateArticleV2Dto): Promise<GenerateArticleV2Response> {
-        return this.apiRequest('/v2/articles/generate', {
+        try { await trackAiDraftCompletedBridge({ flow: 'v2', trigger: 'request' }) } catch {}
+        const res = await this.apiRequest<GenerateArticleV2Response>('/v2/articles/generate', {
             method: 'POST',
             body: JSON.stringify(generateData),
         });
+        return res;
     }
 
     /**
@@ -327,7 +332,7 @@ export class ArticleService {
      * @param interval 폴링 간격 (기본: 5초)
      * @returns 완성된 아티클 정보 또는 타임아웃/에러
      */
-    async waitForArticleCompletion(
+  async waitForArticleCompletion(
         articleId: number, 
         maxAttempts: number = 60, 
         interval: number = 5000
@@ -366,10 +371,12 @@ export class ArticleService {
      * POST /api/v3/articles/generate
      */
     async generateArticleV3(generateData: GenerateArticleV3Dto): Promise<GenerateArticleV3Response> {
-        return this.apiRequest('/v3/articles/generate', {
+        try { await trackAiDraftCompletedBridge({ flow: 'v3', trigger: 'request' }) } catch {}
+        const res = await this.apiRequest<GenerateArticleV3Response>('/v3/articles/generate', {
             method: 'POST',
             body: JSON.stringify(generateData),
         });
+        return res;
     }
 
     /**
