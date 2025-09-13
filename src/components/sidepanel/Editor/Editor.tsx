@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useEditor, EditorContent, useEditorState, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
-import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { htmlToMarkdown, markdownToHtml } from '../../../utils/markdownConverter';
@@ -588,8 +586,8 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
     return markdownToHtml(markdown);
   }, []);
 
-  const editor = useEditor({
-    extensions: [
+  const extensions = useMemo(() => {
+    const list = [
       TextStyle,
       StarterKit.configure({
         // StarterKit이 이미 Heading을 포함하고 있으므로 추가 설정
@@ -597,12 +595,21 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
           levels: [1, 2, 3, 4, 5, 6],
         },
       }),
-      Underline,
       TextAlign.configure({
         types: ['heading', 'paragraph'],
       }),
-      HorizontalRule,
-    ],
+    ];
+    const seen = new Set<string>();
+    return list.filter((ext: any) => {
+      const name = ext?.name as string | undefined;
+      if (name && seen.has(name)) return false;
+      if (name) seen.add(name);
+      return true;
+    });
+  }, []);
+
+  const editor = useEditor({
+    extensions,
     content: convertMarkdownToHtml(content),
     editable: !readOnly,
     onUpdate: ({ editor }) => {
