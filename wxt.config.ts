@@ -4,7 +4,7 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   manifest: {
     name: 'Tyquill',
-    version: '1.3.1',
+    version: '1.3.2',
     description: 'Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다.',
     permissions: [
       'storage',
@@ -26,7 +26,7 @@ export default defineConfig({
     },
     content_security_policy: {
       extension_pages:
-        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' http://localhost:* ws://localhost:* https://us.i.posthog.com https://*.i.posthog.com https://app.posthog.com https://*.posthog.com",
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://us.i.posthog.com https://*.i.posthog.com https://app.posthog.com https://*.posthog.com",
     },
     side_panel: {
       default_path: 'sidepanel.html'
