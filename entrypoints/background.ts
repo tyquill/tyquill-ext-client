@@ -1,7 +1,11 @@
 // Background Service Worker for Tyquill Extension
 import { scrapService } from '../src/services/scrapService';
+import { posthogClient, ensureAnonymousIdentity, EVENT_NAMES } from '../src/analytics/posthog';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+
+// Initialize analytics (no event tracking yet)
+posthogClient.init();
 
 export default defineBackground(() => {
   // 사이드패널 상태 (전역)
@@ -103,6 +107,25 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'analytics:capture') {
+      (async () => {
+        try {
+          await posthogClient.init();
+          await ensureAnonymousIdentity();
+          console.log('[analytics] capture (bg):', request.event, request.properties)
+          posthogClient.capture(request.event, request.properties)
+          // give client some time to flush in MV3
+          await new Promise((r) => setTimeout(r, 250))
+          try { await (posthogClient.get() as any)?.flush?.() } catch {}
+          sendResponse({ success: true })
+        } catch (error) {
+          console.error('❌ Background analytics capture error:', error)
+          sendResponse({ success: false, error: (error as Error)?.message })
+        }
+      })()
+      return true;
+    }
+
   });
 
   /**
@@ -186,6 +209,16 @@ export default defineBackground(() => {
         '', // userComment
         tags // tags
       );
+      // Track scrap created directly from background to ensure delivery
+      try {
+        await posthogClient.init();
+        await ensureAnonymousIdentity();
+        posthogClient.capture(EVENT_NAMES.ACTIVITY_SCRAP_CREATED, { source: 'background' })
+        await new Promise((r) => setTimeout(r, 250))
+        try { await (posthogClient.get() as any)?.flush?.() } catch {}
+      } catch (e) {
+        console.warn('Analytics scrap_created failed (bg):', e)
+      }
       
       // 성공 시 sidepanel에 새로고침 알림
       try {

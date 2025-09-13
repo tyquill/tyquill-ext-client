@@ -24,6 +24,10 @@ export default defineConfig({
       48: '/icon48.png',
       128: '/icon128.png'
     },
+    content_security_policy: {
+      extension_pages:
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' http://localhost:* ws://localhost:* https://us.i.posthog.com https://*.i.posthog.com https://app.posthog.com https://*.posthog.com",
+    },
     side_panel: {
       default_path: 'sidepanel.html'
     },

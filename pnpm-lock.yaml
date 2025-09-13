@@ -11,6 +11,9 @@ importers:
       '@floating-ui/react':
         specifier: ^0.27.13
         version: 0.27.13(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@posthog/core':
+        specifier: ^1.0.2
+        version: 1.0.2
       '@radix-ui/react-dropdown-menu':
         specifier: ^2.1.15
         version: 2.1.15(@types/react-dom@18.3.7(@types/react@18.3.23))(@types/react@18.3.23)(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
@@ -110,6 +113,9 @@ importers:
       marked:
         specifier: ^16.1.1
         version: 16.1.1
+      posthog-js-lite:
+        specifier: ^4.1.1
+        version: 4.1.1
       quill:
         specifier: ^2.0.3
         version: 2.0.3
@@ -735,6 +741,9 @@ packages:
   '@pnpm/npm-conf@2.3.1':
     resolution: {integrity: sha512-c83qWb22rNRuB0UaVCI0uRPNRr8Z0FWnEIvT47jiHAmOIUHbBOg5XvV7pM5x+rKn9HRpjxquDbXYSXr3fAKFcw==}
     engines: {node: '>=12'}
+
+  '@posthog/core@1.0.2':
+    resolution: {integrity: sha512-hWk3rUtJl2crQK0WNmwg13n82hnTwB99BT99/XI5gZSvIlYZ1TPmMZE8H2dhJJ98J/rm9vYJ/UXNzw3RV5HTpQ==}
 
   '@radix-ui/primitive@1.1.2':
     resolution: {integrity: sha512-XnbHrrprsNqZKQhStrSwgRUQzoCI1glLzdw79xiZPoofhGICeZRSQ3dIxAKH1gb3OHfNf4d6f+vAv3kil2eggA==}
@@ -3508,6 +3517,9 @@ packages:
     resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  posthog-js-lite@4.1.1:
+    resolution: {integrity: sha512-0kexCIAGzPdLL4eThryuoTWrhBB+v9FvgF5IY198VzWaA5r5EZCWZDypOQOft42tL+sqrJ/WbBGo+tTmvfUC0g==}
+
   potpack@1.0.2:
     resolution: {integrity: sha512-choctRBIV9EMT9WGAZHn3V7t0Z2pMQyl0EZE6pFc/6ml3ssw7Dlf/oAOvFwjm1HVsqfQN8GfeFyJ+d8tRzqueQ==}
 
@@ -5140,6 +5152,8 @@ snapshots:
       '@pnpm/config.env-replace': 1.1.0
       '@pnpm/network.ca-file': 1.0.2
       config-chain: 1.1.13
+
+  '@posthog/core@1.0.2': {}
 
   '@radix-ui/primitive@1.1.2': {}
 
@@ -8059,6 +8073,8 @@ snapshots:
       nanoid: 3.3.11
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  posthog-js-lite@4.1.1: {}
 
   potpack@1.0.2: {}
 
