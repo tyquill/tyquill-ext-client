@@ -17,6 +17,7 @@ export interface User {
   fullName?: string;
   avatarUrl?: string;
   provider: string;
+  role?: string;
 }
 
 export interface AuthResponse {
