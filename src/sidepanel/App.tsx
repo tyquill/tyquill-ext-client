@@ -50,6 +50,22 @@ const App: React.FC = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
+  // Chrome storage 변경 감지 (언어 설정 동기화)
+  useEffect(() => {
+    const handleStorageChange = (changes: any) => {
+      if (changes['tyquill-language-preference']) {
+        // 언어 설정이 변경되면 sidepanel에서도 동기화
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [initializeLanguage]);
+
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
     if (isAuthenticated) {

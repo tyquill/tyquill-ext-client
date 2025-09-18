@@ -1,5 +1,7 @@
 import React from 'react';
 import styles from '../../options/App.module.css';
+import { useI18n } from '../../hooks/useI18n';
+import { LanguageSelector } from '../common/LanguageSelector';
 
 interface GeneralTabProps {
   settings: {
@@ -9,16 +11,18 @@ interface GeneralTabProps {
 }
 
 const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onSettingChange }) => {
+  const { t } = useI18n();
+
   return (
     <div className={styles.tabContent}>
-      <h2 className={styles.sectionTitle}>일반 설정</h2>
+      <h2 className={styles.sectionTitle}>{t('options_generalSettings')}</h2>
       
       <div className={styles.settingGroup}>
         <div className={styles.settingItem}>
           <div className={styles.settingInfo}>
-            <h3 className={styles.settingLabel}>플로팅 버튼 표시</h3>
+            <h3 className={styles.settingLabel}>{t('options_floatingButtonLabel')}</h3>
             <p className={styles.settingDescription}>
-              웹페이지에서 Tyquill 플로팅 버튼의 표시 여부를 설정합니다
+              {t('options_floatingButtonDescription')}
             </p>
           </div>
           <label className={styles.toggle}>
@@ -31,6 +35,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onSettingChange }) =>
           </label>
         </div>
       </div>
+
     </div>
   );
 };

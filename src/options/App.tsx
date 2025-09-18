@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IoInformationCircle, IoSettingsSharp } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
+import { useI18n } from '../hooks/useI18n';
+import { useLanguageStore } from '../stores/languageStore';
+import { LanguageSelector } from '../components/common/LanguageSelector';
 import styles from './App.module.css';
 import GeneralTab from '../components/options/GeneralTab';
 import AboutTab from '../components/options/AboutTab';
@@ -18,11 +21,34 @@ interface Tab {
 }
 
 const App: React.FC = () => {
+  const { t } = useI18n();
+  const { initializeLanguage } = useLanguageStore();
   const [settings, setSettings] = useState<Settings>({
     floatingButtonVisible: true
   });
 
   const [activeTab, setActiveTab] = useState<TabId>('general');
+
+  // 언어 설정 초기화
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
+
+  // Chrome storage 변경 감지 (언어 설정 동기화)
+  useEffect(() => {
+    const handleStorageChange = (changes: any) => {
+      if (changes['tyquill-language-preference']) {
+        // 언어 설정이 변경되면 options에서도 동기화
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [initializeLanguage]);
 
   // 설정 로드
   useEffect(() => {
@@ -33,7 +59,7 @@ const App: React.FC = () => {
           setSettings(prev => ({ ...prev, ...result.tyquillSettings }));
         }
       } catch (error) {
-        console.error('설정 로드 실패:', error);
+        console.error(t('options_settingsLoadError'), error);
       }
     };
 
@@ -47,7 +73,7 @@ const App: React.FC = () => {
       setSettings(updatedSettings);
       await browser.storage.sync.set({ tyquillSettings: updatedSettings });
     } catch (error) {
-      console.error('설정 저장 실패:', error);
+      console.error(t('options_settingsSaveError'), error);
     }
   }, [settings]);
 
@@ -60,8 +86,8 @@ const App: React.FC = () => {
   }, []);
 
   const tabs: Tab[] = [
-    { id: 'general', label: '일반', icon: IoSettingsSharp },
-    { id: 'about', label: '정보', icon: IoInformationCircle }
+    { id: 'general', label: t('options_generalTab'), icon: IoSettingsSharp },
+    { id: 'about', label: t('options_aboutTab'), icon: IoInformationCircle }
   ];
 
   const renderTabContent = () => {
@@ -87,7 +113,7 @@ const App: React.FC = () => {
         <nav className={styles.sidebar}>
           <div className={styles.sidebarHeader}>
             <h1 className={styles.logo}>Tyquill</h1>
-            <p className={styles.subtitle}>뉴스레터 생성 도구 설정</p>
+            <p className={styles.subtitle}>{t('options_subtitle')}</p>
           </div>
           
           {tabs.map((tab) => (
@@ -95,7 +121,7 @@ const App: React.FC = () => {
               key={tab.id}
               className={`${styles.tabButton} ${activeTab === tab.id ? styles.active : ''}`}
               onClick={() => handleTabChange(tab.id)}
-              aria-label={`${tab.label} 탭으로 이동`}
+              aria-label={tab.id === 'general' ? t('options_generalTabLabel') : t('options_aboutTabLabel')}
             >
               <tab.icon size={20} />
               <span>{tab.label}</span>
@@ -105,6 +131,9 @@ const App: React.FC = () => {
 
         {/* Content Area */}
         <main className={styles.content}>
+          <div className={styles.contentHeader}>
+            <LanguageSelector compact />
+          </div>
           {renderTabContent()}
         </main>
       </div>

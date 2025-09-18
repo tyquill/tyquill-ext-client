@@ -288,6 +288,27 @@ const koTranslations = {
   content_scrapCurrentPage: "현재 페이지 스크랩하기",
   content_mailyEditorNotFound: "maily.so 에디터를 찾을 수 없습니다.",
 
+  // Options Page
+  options_title: "Tyquill",
+  options_subtitle: "뉴스레터 생성 도구 설정",
+  options_generalTab: "일반",
+  options_aboutTab: "정보",
+  options_generalTabLabel: "일반 탭으로 이동",
+  options_aboutTabLabel: "정보 탭으로 이동",
+
+  // General Tab
+  options_generalSettings: "일반 설정",
+  options_floatingButtonTitle: "플로팅 버튼 표시",
+  options_floatingButtonDescription: "웹페이지에서 Tyquill 플로팅 버튼의 표시 여부를 설정합니다",
+  options_settingsLoadError: "설정 로드 실패:",
+  options_settingsSaveError: "설정 저장 실패:",
+
+  // About Tab
+  options_aboutTitle: "Tyquill 정보",
+  options_versionTitle: "버전",
+  options_versionLoadError: "버전 정보를 가져오는데 실패했습니다:",
+  options_description: "Tyquill은 웹사이트에서 리소스를 쉽게 저장하고 전문 뉴스레터 AI에게 초안 생성을 맡길 수 있는 도구입니다.",
+
   // Editor 번역 키들
   editor_bold: "굵게 (Ctrl+B)",
   editor_italic: "기울임 (Ctrl+I)",
@@ -602,6 +623,27 @@ const enTranslations = {
   content_hideFloatingButton: "Hide floating button",
   content_scrapCurrentPage: "Scrap current page",
   content_mailyEditorNotFound: "Cannot find maily.so editor.",
+
+  // Options Page
+  options_title: "Tyquill",
+  options_subtitle: "Newsletter Generation Tool Settings",
+  options_generalTab: "General",
+  options_aboutTab: "About",
+  options_generalTabLabel: "Go to General tab",
+  options_aboutTabLabel: "Go to About tab",
+
+  // General Tab
+  options_generalSettings: "General Settings",
+  options_floatingButtonTitle: "Show Floating Button",
+  options_floatingButtonDescription: "Configure whether to display the Tyquill floating button on web pages",
+  options_settingsLoadError: "Settings load failed:",
+  options_settingsSaveError: "Settings save failed:",
+
+  // About Tab
+  options_aboutTitle: "About Tyquill",
+  options_versionTitle: "Version",
+  options_versionLoadError: "Failed to retrieve version information:",
+  options_description: "Tyquill is a tool that allows you to easily save resources from websites and delegate draft generation to professional newsletter AI.",
 
   // Editor 번역 키들
   editor_bold: "Bold (Ctrl+B)",
