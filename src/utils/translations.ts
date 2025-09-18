@@ -352,8 +352,8 @@ const enTranslations = {
   landingPage_loginError: "An error occurred during login. Please try again.",
 
   menu_scrap: "Scrap",
-  menu_styleManagement: "Style Management",
-  menu_draft: "Generate Draft",
+  menu_styleManagement: "Persona",
+  menu_draft: "Generate",
   menu_archive: "Archive",
   menu_settings: "Settings",
   menu_signOut: "Sign out",
