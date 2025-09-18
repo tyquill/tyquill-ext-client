@@ -645,6 +645,64 @@
   box-sizing: border-box;
 }
 
+/* Modal footer for confirmation buttons */
+.modalFooter {
+  padding: 20px 24px;
+  border-top: 2px solid #000000;
+  background-color: #ffffff;
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.confirmButton {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  background: #000000;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.confirmButton:hover {
+  background: #333333;
+  transform: translateY(-1px);
+}
+
+.cancelButton {
+  padding: 12px 24px;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #000000;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.cancelButton:hover {
+  background: #000000;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
 /* Blocked input feedback */
 @keyframes shake {
   10%, 90% { transform: translateX(-1px); }

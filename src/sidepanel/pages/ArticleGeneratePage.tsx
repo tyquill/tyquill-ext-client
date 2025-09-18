@@ -1199,27 +1199,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             >
               <div className={articleStyles.modalHeader}>
                 <h2 className={articleStyles.modalTitle}>{t('articleGenerate_selectReferenceMaterials')}</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button 
-                    className={articleStyles.modalCloseButton}
-                    onClick={() => toggleScrapModal()}
-                    aria-label={t('articleGenerate_confirmSelection')}
-                  >
-                    <IoCheckmark />
-                  </button>
-                  <button 
-                    className={articleStyles.modalCloseButton}
-                    onClick={() => {
-                      // 취소: 백업으로 복구 후 닫기
-                      clearScraps();
-                      backupSelectedScrapsRef.current.forEach(s => addScrap(s));
-                      setSelectedUploads(JSON.parse(JSON.stringify(backupSelectedUploadsRef.current)));
-                      toggleScrapModal();
-                    }}
-                  >
-                    <IoClose />
-                  </button>
-                </div>
               </div>
               {/* 탭 */}
               <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px 16px' }}>
@@ -1261,7 +1240,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
               <div
                 className={articleStyles.modalContent}
-                style={{ maxHeight: `calc(100vh - ${scrapModalTop + 172}px)` }}
+                style={{ maxHeight: `calc(100vh - ${scrapModalTop + 240}px)` }}
               >
                 {referenceModalTab === 'SCRAP' && (
                   <>
@@ -1321,7 +1300,31 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 )}
               </div>
 
-              
+              {/* Modal Footer with confirmation buttons */}
+              <div className={articleStyles.modalFooter}>
+                <button
+                  className={articleStyles.cancelButton}
+                  onClick={() => {
+                    // 취소: 백업으로 복구 후 닫기
+                    clearScraps();
+                    backupSelectedScrapsRef.current.forEach(s => addScrap(s));
+                    setSelectedUploads(JSON.parse(JSON.stringify(backupSelectedUploadsRef.current)));
+                    toggleScrapModal();
+                  }}
+                >
+                  <IoClose size={16} />
+                  {t('common_cancel')}
+                </button>
+                <button
+                  className={articleStyles.confirmButton}
+                  onClick={() => toggleScrapModal()}
+                >
+                  <IoCheckmark size={16} />
+                  {t('articleGenerate_confirmSelection')}
+                </button>
+              </div>
+
+
             </div>
           </div>
         )}
