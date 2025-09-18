@@ -281,12 +281,12 @@ const koTranslations = {
   articleGenerate_aiAnalysisComplete: "AI 분석 완료",
   articleGenerate_sectionsCreated: "{count}개의 섹션으로 구성을 만들었습니다.",
   articleGenerate_enterTopicAndKeyInsight: "주제와 키메시지를 입력해주세요.",
-  articleGenerate_failedToLoadStyles: "문체 목록을 불러오는데 실패했습니다",
-  articleGenerate_cannotFindActiveTab: "현재 활성 탭을 찾을 수 없습니다",
-  articleGenerate_cannotScrapThisPage: "chrome://, chrome-extension:// 등 브라우저 페이지는 스크랩할 수 없습니다",
-  articleGenerate_minutes: "분",
-  articleGenerate_seconds: "초",
-  articleGenerate_selectReferenceMaterials: "참고 자료 선택",
+
+  // Content Script (FloatingButton)
+  content_scrap: "스크랩",
+  content_hideFloatingButton: "플로팅 버튼 숨기기",
+  content_scrapCurrentPage: "현재 페이지 스크랩하기",
+  content_mailyEditorNotFound: "maily.so 에디터를 찾을 수 없습니다.",
 
   // Editor 번역 키들
   editor_bold: "굵게 (Ctrl+B)",
@@ -596,12 +596,12 @@ const enTranslations = {
   articleGenerate_aiAnalysisComplete: "AI Analysis Complete",
   articleGenerate_sectionsCreated: "Created structure with {count} sections.",
   articleGenerate_enterTopicAndKeyInsight: "Please enter topic and key insight.",
-  articleGenerate_failedToLoadStyles: "Failed to load writing styles",
-  articleGenerate_cannotFindActiveTab: "Cannot find active tab",
-  articleGenerate_cannotScrapThisPage: "Cannot scrap browser pages like chrome://, chrome-extension://, etc.",
-  articleGenerate_minutes: "m",
-  articleGenerate_seconds: "s",
-  articleGenerate_selectReferenceMaterials: "Select Reference Materials",
+
+  // Content Script (FloatingButton)
+  content_scrap: "Scrap",
+  content_hideFloatingButton: "Hide floating button",
+  content_scrapCurrentPage: "Scrap current page",
+  content_mailyEditorNotFound: "Cannot find maily.so editor.",
 
   // Editor 번역 키들
   editor_bold: "Bold (Ctrl+B)",

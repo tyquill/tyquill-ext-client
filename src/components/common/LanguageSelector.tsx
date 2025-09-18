@@ -21,9 +21,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     { code: 'en', label: t('language_english') },
   ];
 
-  const handleLanguageChange = (newLanguage: SupportedLanguage) => {
+  const handleLanguageChange = async (newLanguage: SupportedLanguage) => {
     if (newLanguage !== currentLanguage) {
-      setLanguage(newLanguage);
+      await setLanguage(newLanguage);
     }
   };
 

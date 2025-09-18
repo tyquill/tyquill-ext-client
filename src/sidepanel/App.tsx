@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { useLanguageStore } from '../stores/languageStore';
 import { ToastProvider } from '../hooks/useToast';
 import LandingPage from './pages/LandingPage';
 import Header, { Sidebar } from '../components/sidepanel/Header/Header';
@@ -21,6 +22,7 @@ interface PageState {
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { initializeLanguage } = useLanguageStore();
   const [currentPage, setCurrentPage] = useState<PageState>({ type: 'landing' });
 
   const navigateToMain = () => {
@@ -42,6 +44,11 @@ const App: React.FC = () => {
   const handleNavigateToDetail = (articleId: number) => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
+
+  // 언어 설정 초기화
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
 
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
