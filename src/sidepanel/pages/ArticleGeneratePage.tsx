@@ -778,7 +778,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           <div className={articleStyles.referenceSection}>
             <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_writeStyleSelection')}</h3>
             <div className={styles.formGroup}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div className={tagSelectorStyles.tagFilterContainer} style={{ marginRight: 0, flexGrow: 1 }}>
                   <button
                     ref={styleDropdownButtonRef}
