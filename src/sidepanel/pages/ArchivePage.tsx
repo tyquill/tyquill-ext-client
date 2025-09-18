@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandl
 import { IoTrash, IoRefresh } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
+import { useI18n } from '../../hooks/useI18n';
 import Tooltip from '../../components/common/Tooltip';
 
 interface ArchivePageProps {
@@ -16,6 +17,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   const [articles, setArticles] = useState<ArticleResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { t } = useI18n();
 
   const loadArticles = useCallback(async () => {
     try {
@@ -24,7 +26,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       const response = await articleService.getArticles();
       setArticles(response);
     } catch (error: any) {
-      setError(error.message || '아티클 목록을 불러오는데 실패했습니다.');
+      setError(error.message || t('archivePage_loadError'));
     } finally {
       setLoading(false);
     }
@@ -40,18 +42,18 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   }, [loadArticles]);
 
   const handleDelete = async (id: number) => {
-    if (window.confirm('이 아티클을 삭제하시겠습니까?')) {
+    if (window.confirm(t('archivePage_deleteConfirm'))) {
       try {
         await articleService.deleteArticle(id);
         setArticles(articles.filter(article => article.articleId !== id));
       } catch (err: any) {
-        alert('삭제에 실패했습니다: ' + err.message);
+        alert(t('archivePage_deleteFailed') + ': ' + err.message);
       }
     }
   };
 
   const getPreviewContent = (content: string | undefined) => {
-    if (!content) return '내용이 없습니다.';
+    if (!content) return t('archivePage_noContent');
     
     // 마크다운을 일반 텍스트로 변환
     let text = content
@@ -80,8 +82,8 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.headerControls}>
-            <h1 className={styles.pageTitle}>보관함</h1>
-            <Tooltip content="보관함 새로고침" side='bottom'>
+            <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
+            <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
               <button 
                 className={styles.refreshButton}
                 onClick={loadArticles}
@@ -92,7 +94,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
             </Tooltip>
           </div>
         </div>
-        <div className={styles.loadingContainer}>로딩 중...</div>
+        <div className={styles.loadingContainer}>{t('archivePage_loading')}</div>
       </div>
     );
   }
@@ -102,8 +104,8 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       <div className={styles.page}>
         <div className={styles.pageHeader}>
           <div className={styles.headerControls}>
-            <h1 className={styles.pageTitle}>보관함</h1>
-            <Tooltip content="보관함 새로고침" side='bottom'>
+            <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
+            <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
               <button 
                 className={styles.refreshButton}
                 onClick={loadArticles}
@@ -114,7 +116,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
             </Tooltip>
           </div>
         </div>
-        <div className={styles.errorContainer}>오류: {error}</div>
+        <div className={styles.errorContainer}>{t('archivePage_error')}: {error}</div>
       </div>
     );
   }
@@ -123,8 +125,8 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div className={styles.headerControls}>
-          <h1 className={styles.pageTitle}>보관함</h1>
-          <Tooltip content="보관함 새로고침" side='bottom'>
+          <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
+          <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
             <button 
               className={styles.refreshButton}
               onClick={loadArticles}
@@ -139,9 +141,9 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       <div className={styles.archiveList}>
         {articles.length === 0 ? (
           <div className={styles.emptyContainer}>
-            <div className={styles.emptyMessage}>보관함이 비어 있습니다</div>
+            <div className={styles.emptyMessage}>{t('archivePage_emptyMessage')}</div>
             <div className={styles.emptySubMessage}>
-              초안 생성 페이지에서 첫 번째 초안을 만들어 보세요!
+              {t('archivePage_createFirstDraft')}
             </div>
           </div>
         ) : (
@@ -154,7 +156,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
             >
               <div className={styles.archiveGrid}>
                 <div className={styles.archiveContent}>
-                  <div className={styles.archiveTitle}>{article.title || '제목 없음'}</div>
+                  <div className={styles.archiveTitle}>{article.title || t('archivePage_noTitle')}</div>
                   <div className={styles.archiveInfo}>
                     <span>{new Date(article.createdAt).toLocaleString('ko-KR', {
                       year: 'numeric',
@@ -180,7 +182,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
                   </div>
                 </div>
                 <div className={styles.archiveActions}>
-                  <Tooltip content="삭제">
+                  <Tooltip content={t('archivePage_deleteTooltip')}>
                     <button
                       className={styles.actionButton}
                       onClick={(e) => {

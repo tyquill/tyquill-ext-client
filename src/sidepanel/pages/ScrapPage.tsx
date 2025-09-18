@@ -8,6 +8,7 @@ import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
 import { useToastHelpers } from '../../hooks/useToast';
 import { useAuth } from '../../hooks/useAuth';
+import { useI18n } from '../../hooks/useI18n';
 import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
@@ -19,6 +20,7 @@ import { globalApiClient } from '../../services/globalApiClient';
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { logout } = useAuth();
+  const { t } = useI18n();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
@@ -104,7 +106,7 @@ const ScrapPage: React.FC = () => {
       // console.log('✅ Scraps state updated with', convertedScraps.length, 'items');
     } catch (error: any) {
       // console.error('❌ Failed to load scraps:', error);
-      setScrapsError(error.message || '스크랩을 불러오는데 실패했습니다.');
+      setScrapsError(error.message || t('scrapPage_loadScrapsError'));
       
       if (error.message.includes('Authentication')) {
         setIsAuthenticated(false);
@@ -123,7 +125,7 @@ const ScrapPage: React.FC = () => {
       const items = await libraryItemService.list('UPLOAD');
       setUploads(items);
     } catch (error: any) {
-      setUploadsError(error.message || '업로드 목록을 불러오는데 실패했습니다.');
+      setUploadsError(error.message || t('scrapPage_loadUploadsError'));
       if (error.message?.includes('Authentication')) setIsAuthenticated(false);
     } finally {
       setUploadsLoading(false);
@@ -165,7 +167,7 @@ const ScrapPage: React.FC = () => {
 
       // console.log('✅ 스크랩 완료:', scrapResponse);
       setClipStatus('success');
-      showSuccess('페이지 스크랩 완료', '페이지가 성공적으로 저장되었습니다.');
+      showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
       
       // 스크랩 목록 새로고침
       await loadScraps();
@@ -179,9 +181,9 @@ const ScrapPage: React.FC = () => {
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication required')) {
         setIsAuthenticated(false);
-        showError('인증 만료', '로그인이 만료되었습니다. 다시 로그인해주세요.');
+        showError(t('common_error'), t('scrapPage_authExpired'));
       } else {
-        showError('스크랩 실패', error.message || '페이지 스크랩 중 오류가 발생했습니다.');
+        showError(t('scrapPage_failed'), error.message || t('scrapPage_scrapFailed'));
       }
       
       setClipStatus('error');
@@ -274,7 +276,7 @@ const ScrapPage: React.FC = () => {
       // console.error('❌ Failed to add tag:', error);
       
       // 사용자에게 에러 알림
-      showError('태그 추가 실패', `${error.message || '알 수 없는 오류'}`);
+      showError(t('scrapPage_tagAddFailed'), `${error.message || t('scrapPage_unknownError')}`);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication')) {
@@ -293,7 +295,7 @@ const ScrapPage: React.FC = () => {
       // 현재 스크랩에서 해당 태그의 tagId 찾기
       const currentScrap = scraps.find(scrap => scrap.id === scrapId);
       if (!currentScrap) {
-        throw new Error('스크랩을 찾을 수 없습니다.');
+        throw new Error(t('scrapPage_scrapNotFound'));
       }
 
       // 실제 태그 객체에서 tagId를 찾기 위해 서버에서 태그 정보 조회
@@ -301,7 +303,7 @@ const ScrapPage: React.FC = () => {
       const tagToRemove = scrapTags.find(tag => tag.name === tagName);
       
       if (!tagToRemove) {
-        throw new Error('삭제할 태그를 찾을 수 없습니다.');
+        throw new Error(t('scrapPage_tagNotFound'));
       }
       
       // 서버 API 호출하여 태그 삭제
@@ -316,7 +318,7 @@ const ScrapPage: React.FC = () => {
       // console.error('❌ Failed to remove tag:', error);
       
       // 사용자에게 에러 알림
-      showError('태그 삭제 실패', `${error.message || '알 수 없는 오류'}`);
+      showError(t('scrapPage_tagRemoveFailed'), `${error.message || t('scrapPage_unknownError')}`);
       
       // 인증 에러인 경우 인증 상태 재확인
       if (error.message.includes('Authentication')) {
@@ -334,7 +336,7 @@ const ScrapPage: React.FC = () => {
       await loadUploads();
       setActiveInputId(null);
     } catch (error: any) {
-      showError('태그 추가 실패', `${error.message || '알 수 없는 오류'}`);
+      showError(t('scrapPage_tagAddFailed'), `${error.message || t('scrapPage_unknownError')}`);
       if (error.message?.includes('Authentication')) setIsAuthenticated(false);
     } finally {
       setIsAddingTag(false);
@@ -346,11 +348,11 @@ const ScrapPage: React.FC = () => {
     try {
       const tags = await libraryItemService.getTags(itemId, 'UPLOAD');
       const tag = tags.find(t => t.name === tagName);
-      if (!tag) throw new Error('삭제할 태그를 찾을 수 없습니다.');
+      if (!tag) throw new Error(t('scrapPage_tagNotFound'));
       await libraryItemService.removeTag(itemId, 'UPLOAD', tag.tagId);
       await loadUploads();
     } catch (error: any) {
-      showError('태그 삭제 실패', `${error.message || '알 수 없는 오류'}`);
+      showError(t('scrapPage_tagRemoveFailed'), `${error.message || t('scrapPage_unknownError')}`);
       if (error.message?.includes('Authentication')) setIsAuthenticated(false);
     }
   }, [loadUploads, showError]);
@@ -393,9 +395,9 @@ const ScrapPage: React.FC = () => {
     try {
       setIsRefreshing(true);
       await Promise.all([loadScraps(), loadUploads()]);
-      showSuccess('새로고침 완료', '목록이 업데이트되었습니다.');
+      showSuccess(t('common_success'), t('scrapPage_listRefreshSuccess'));
     } catch (error: any) {
-      showError('새로고침 실패', error.message || '목록 새로고침에 실패했습니다.');
+      showError(t('common_error'), error.message || t('scrapPage_listRefreshFailed'));
     } finally {
       setIsRefreshing(false);
     }
@@ -429,12 +431,12 @@ const ScrapPage: React.FC = () => {
     if (isAuthenticated) {
       try {
         await logout();
-        showSuccess('로그아웃', '성공적으로 로그아웃되었습니다.');
+        showSuccess(t('menu_signOut'), t('scrapPage_logoutSuccess'));
       } catch (error) {
-        showError('로그아웃 실패', '로그아웃 처리 중 오류가 발생했습니다.');
+        showError(t('menu_signOut'), t('scrapPage_logoutFailed'));
       }
     } else {
-      showWarning('로그인 필요', 'Tyquill에 로그인하여 스크랩 기능을 사용하세요.');
+      showWarning(t('scrapPage_loginRequired'), t('scrapPage_loginWarning'));
     }
   }, [isAuthenticated, logout]);
 
@@ -513,7 +515,7 @@ const ScrapPage: React.FC = () => {
       const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
       await browser.tabs.create({ url });
     } catch (e) {
-      showError('새 탭 열기 실패', '스크랩 뷰어를 여는 중 오류가 발생했습니다.');
+      showError(t('common_error'), t('scrapPage_openViewerError'));
     }
   }, [showError]);
 
@@ -534,7 +536,7 @@ const ScrapPage: React.FC = () => {
               </a>
             </span>
           </div>
-          <Tooltip content="삭제" side='bottom'>
+          <Tooltip content={t('common_delete')} side='bottom'>
             <button onClick={(e) => { e.stopPropagation(); onDelete(); }} className={styles.deleteButton}>
               <IoTrash />
             </button>
@@ -569,7 +571,7 @@ const ScrapPage: React.FC = () => {
                   ref={inputRef}
                   type="text"
                   onKeyDown={(e) => handleKeyDown(e, scrap.id)}
-                  placeholder="태그 입력 후 Enter"
+                  placeholder={t('scrapPage_tagPlaceholder')}
                   className={styles.tagInput}
                   autoFocus
                 />
@@ -587,7 +589,7 @@ const ScrapPage: React.FC = () => {
                     }
                   }}
                 >
-                  추가
+                  {t('common_confirm')}
                 </button>
               </div>
             )}
@@ -603,7 +605,7 @@ const ScrapPage: React.FC = () => {
       const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
       await browser.tabs.create({ url });
     } catch (e) {
-      showError('새 탭 열기 실패', '업로드 뷰어를 여는 중 오류가 발생했습니다.');
+      showError(t('common_error'), t('scrapPage_openUploadViewerError'));
     }
   }, [showError]);
 
@@ -612,17 +614,17 @@ const ScrapPage: React.FC = () => {
       <div className={styles.fixedContent}>
         <div className={styles.addButtonContainer}>
           {!authChecked ? (
-            <div className={styles.loadingAuth}>인증 상태 확인 중...</div>
+            <div className={styles.loadingAuth}>{t('scrapPage_authCheckingStatus')}</div>
           ) : !isAuthenticated ? (
             <div className={styles.authRequired}>
               <div className={styles.authMessage}>
-                🔐 로그인이 필요합니다
+                {t('scrapPage_loginRequired')}
               </div>
               <button 
                 className={`${styles.addButton} ${styles.loginButton}`}
                 onClick={handleLogin}
               >
-                로그인 안내
+                {t('scrapPage_loginGuide')}
               </button>
             </div>
           ) : (
@@ -635,22 +637,22 @@ const ScrapPage: React.FC = () => {
                 {clipStatus === 'success' ? (
                   <>
                     <IoCheckmark size={20} />
-                    저장됨
+                    {t('scrapPage_saved')}
                   </>
                 ) : clipStatus === 'error' ? (
                   <>
                     <IoClose size={20} />
-                    실패
+                    {t('scrapPage_failed')}
                   </>
                 ) : clipStatus === 'loading' || isClipping ? (
                   <>
                     <IoClipboard size={20} />
-                    클리핑 중...
+                    {t('scrapPage_clipping')}
                   </>
                 ) : (
                   <>
                     <IoClipboard size={20} />
-                    페이지 스크랩
+                    {t('scrapPage_pageScrap')}
                   </>
                 )}
               </button>
@@ -660,7 +662,7 @@ const ScrapPage: React.FC = () => {
                 onClick={() => setShowPDFUploadModal(true)}
               >
                 <IoDocument size={20} />
-                PDF
+                {t('scrapPage_pdf')}
               </button>
             </div>
           )}
@@ -677,7 +679,7 @@ const ScrapPage: React.FC = () => {
             onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
           />
           {isAuthenticated && (
-            <Tooltip content="스크랩 목록 새로고침" side='bottom'>
+            <Tooltip content={t('scrapPage_refreshTooltip')} side='bottom'>
               <button
                 className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
                 onClick={handleRefresh}
@@ -698,7 +700,7 @@ const ScrapPage: React.FC = () => {
             if (isInitialLoading) {
               return (
                 <div className={styles.loadingContainer}>
-                  <div className={styles.loadingIndicator}>목록을 불러오는 중...</div>
+                  <div className={styles.loadingIndicator}>{t('scrapPage_loadingList')}</div>
                 </div>
               );
             }
@@ -708,14 +710,14 @@ const ScrapPage: React.FC = () => {
                   <div className={styles.errorMessage}>
                     {scrapsError || uploadsError}
                   </div>
-                  <button className={styles.retryButton} onClick={handleRefresh}>다시 시도</button>
+                  <button className={styles.retryButton} onClick={handleRefresh}>{t('scrapPage_retryButton')}</button>
                 </div>
               );
             }
             if (combinedItems.length === 0) {
               return (
                 <div className={styles.emptyContainer}>
-                  <div className={styles.emptyMessage}>아직 스크랩 또는 업로드가 없습니다.</div>
+                  <div className={styles.emptyMessage}>{t('scrapPage_emptyMessage')}</div>
                 </div>
               );
             }
@@ -730,9 +732,9 @@ const ScrapPage: React.FC = () => {
                       try {
                         await scrapService.deleteScrap(parseInt(scrap.id));
                         await loadScraps();
-                        showSuccess('스크랩 삭제', '스크랩이 성공적으로 삭제되었습니다.');
+                        showSuccess(t('common_delete'), t('scrapPage_deleteScrapSuccess'));
                       } catch (error: any) {
-                        showError('삭제 실패', error?.message || '스크랩 삭제에 실패했습니다.');
+                        showError(t('common_delete'), error?.message || t('scrapPage_deleteScrapFailed'));
                       }
                     }}
                   />
@@ -763,7 +765,7 @@ const ScrapPage: React.FC = () => {
                           <span className={styles.titleText}>{u.title}</span>
                         </div>
                       )}
-                      <Tooltip content="삭제" side='bottom'>
+                      <Tooltip content={t('common_delete')} side='bottom'>
                         <button
                           onClick={async (e) => {
                             e.stopPropagation();
@@ -772,13 +774,13 @@ const ScrapPage: React.FC = () => {
                             setUploads((curr) => curr.filter((it) => it.id !== u.id));
                             try {
                               await globalApiClient.delete(`/v1/uploaded-files/${u.id}`);
-                              showSuccess('삭제 완료', '업로드가 삭제되었습니다.');
+                              showSuccess(t('common_delete'), t('scrapPage_deleteUploadSuccess'));
                               // 백그라운드에서 최신 목록 동기화
                               // void loadUploads();
                             } catch (e: any) {
                               // 실패 시 롤백
                               setUploads(prevUploads);
-                              showError('삭제 실패', e?.message || '업로드 삭제에 실패했습니다.');
+                              showError(t('common_delete'), e?.message || t('scrapPage_deleteUploadFailed'));
                             }
                           }}
                           className={styles.deleteButton}
@@ -816,7 +818,7 @@ const ScrapPage: React.FC = () => {
                               ref={inputRef}
                               type="text"
                               onKeyDown={(e) => handleUploadKeyDown(e, u.id)}
-                              placeholder="태그 입력 후 Enter"
+                              placeholder={t('scrapPage_tagPlaceholder')}
                               className={styles.tagInput}
                               autoFocus
                             />
@@ -834,7 +836,7 @@ const ScrapPage: React.FC = () => {
                                 }
                               }}
                             >
-                              추가
+                              {t('scrapPage_add')}
                             </button>
                           </div>
                         )}

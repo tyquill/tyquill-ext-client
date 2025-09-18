@@ -5,7 +5,8 @@ export default defineConfig({
   manifest: {
     name: 'Tyquill',
     version: '1.3.2',
-    description: 'Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다.',
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     permissions: [
       'storage',
       'sidePanel',

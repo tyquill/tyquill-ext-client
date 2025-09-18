@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IoChevronDown, IoChevronUp, IoClose } from 'react-icons/io5';
+import { useI18n } from '../../../hooks/useI18n';
 import styles from './TagSelector.module.css';
 
 interface TagSelectorProps {
@@ -15,6 +16,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
   onTagSelect,
   onTagRemove
 }) => {
+  const { t } = useI18n();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLButtonElement>(null);
 
@@ -55,7 +57,7 @@ export const TagSelector: React.FC<TagSelectorProps> = ({
         ref={dropdownRef}
         tabIndex={-1}
       >
-        태그 선택
+        {t('tagSelector_selectTags')}
         {isDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
       </button>
       

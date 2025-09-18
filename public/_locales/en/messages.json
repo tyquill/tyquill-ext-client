@@ -1,0 +1,237 @@
+{
+  "extDescription": {
+    "message": "Tyquill helps you reduce repetitive tasks in newsletter writing and focus on creative work."
+  },
+
+  "landingPage_title": {
+    "message": "The Easiest Newsletter Generation Tool"
+  },
+  "landingPage_description": {
+    "message": "Save resources from websites and let professional newsletter AI generate drafts. You can transfer them to the editor in just 1 second."
+  },
+  "landingPage_supportedPlatforms": {
+    "message": "Supported Platforms"
+  },
+  "landingPage_comingSoon": {
+    "message": "Coming Soon"
+  },
+  "landingPage_loginLoading": {
+    "message": "Signing in..."
+  },
+  "landingPage_startWithGoogle": {
+    "message": "Start with Google"
+  },
+  "landingPage_loginSuccess": {
+    "message": "Login successful"
+  },
+  "landingPage_welcomeMessage": {
+    "message": "Welcome to Tyquill!"
+  },
+  "landingPage_loginFailed": {
+    "message": "Login failed"
+  },
+  "landingPage_loginError": {
+    "message": "An error occurred during login. Please try again."
+  },
+
+  "menu_scrap": {
+    "message": "Scrap"
+  },
+  "menu_styleManagement": {
+    "message": "Style Management"
+  },
+  "menu_draft": {
+    "message": "Generate Draft"
+  },
+  "menu_archive": {
+    "message": "Archive"
+  },
+  "menu_settings": {
+    "message": "Settings"
+  },
+  "menu_signOut": {
+    "message": "Sign out"
+  },
+  "menu_signingOut": {
+    "message": "Signing out..."
+  },
+
+  "scrapPage_clipCurrentPage": {
+    "message": "Clip Current Page"
+  },
+  "scrapPage_uploadPDF": {
+    "message": "Upload PDF"
+  },
+  "scrapPage_refresh": {
+    "message": "Refresh"
+  },
+  "scrapPage_filterByTag": {
+    "message": "Filter by Tag"
+  },
+  "scrapPage_allTags": {
+    "message": "All Tags"
+  },
+  "scrapPage_noScraps": {
+    "message": "No saved scraps"
+  },
+  "scrapPage_loadingError": {
+    "message": "An error occurred while loading scraps"
+  },
+  "scrapPage_retry": {
+    "message": "Retry"
+  },
+  "scrapPage_scraps": {
+    "message": "Scraps"
+  },
+  "scrapPage_uploads": {
+    "message": "Uploads"
+  },
+  "scrapPage_deleteConfirm": {
+    "message": "Are you sure you want to delete?"
+  },
+  "scrapPage_deleteSuccess": {
+    "message": "Deleted successfully"
+  },
+  "scrapPage_deleteFailed": {
+    "message": "Delete failed"
+  },
+  "scrapPage_clipSuccess": {
+    "message": "Page saved successfully"
+  },
+  "scrapPage_clipFailed": {
+    "message": "Failed to save page"
+  },
+
+  "archivePage_title": {
+    "message": "Archive"
+  },
+  "archivePage_searchPlaceholder": {
+    "message": "Search by title or keywords"
+  },
+  "archivePage_noArticles": {
+    "message": "No articles generated yet"
+  },
+  "archivePage_createFirst": {
+    "message": "Create your first newsletter"
+  },
+  "archivePage_loadError": {
+    "message": "An error occurred while loading articles"
+  },
+
+  "stylePage_title": {
+    "message": "Style Management"
+  },
+  "stylePage_createNew": {
+    "message": "Add New Style"
+  },
+  "stylePage_name": {
+    "message": "Style Name"
+  },
+  "stylePage_description": {
+    "message": "Description"
+  },
+  "stylePage_examples": {
+    "message": "Examples"
+  },
+  "stylePage_addExample": {
+    "message": "Add Example"
+  },
+  "stylePage_save": {
+    "message": "Save"
+  },
+  "stylePage_cancel": {
+    "message": "Cancel"
+  },
+  "stylePage_delete": {
+    "message": "Delete"
+  },
+  "stylePage_edit": {
+    "message": "Edit"
+  },
+  "stylePage_noStyles": {
+    "message": "No styles registered"
+  },
+
+  "draftPage_title": {
+    "message": "Generate Draft"
+  },
+  "draftPage_topic": {
+    "message": "Topic"
+  },
+  "draftPage_topicPlaceholder": {
+    "message": "Enter newsletter topic"
+  },
+  "draftPage_keyInsight": {
+    "message": "Key Insight"
+  },
+  "draftPage_keyInsightPlaceholder": {
+    "message": "Enter the key message to deliver to readers"
+  },
+  "draftPage_additionalPrompt": {
+    "message": "Additional Instructions"
+  },
+  "draftPage_additionalPromptPlaceholder": {
+    "message": "Enter any additional instructions for AI"
+  },
+  "draftPage_selectScraps": {
+    "message": "Select Scraps"
+  },
+  "draftPage_selectStyle": {
+    "message": "Select Style"
+  },
+  "draftPage_generate": {
+    "message": "Generate"
+  },
+  "draftPage_generating": {
+    "message": "Generating..."
+  },
+  "draftPage_generateSuccess": {
+    "message": "Newsletter generated successfully"
+  },
+  "draftPage_generateError": {
+    "message": "An error occurred during generation"
+  },
+  "draftPage_noSelectedScraps": {
+    "message": "No scraps selected"
+  },
+  "draftPage_atLeastOneScrap": {
+    "message": "Please select at least one scrap"
+  },
+
+  "common_loading": {
+    "message": "Loading..."
+  },
+  "common_error": {
+    "message": "Error"
+  },
+  "common_success": {
+    "message": "Success"
+  },
+  "common_save": {
+    "message": "Save"
+  },
+  "common_cancel": {
+    "message": "Cancel"
+  },
+  "common_delete": {
+    "message": "Delete"
+  },
+  "common_edit": {
+    "message": "Edit"
+  },
+  "common_copy": {
+    "message": "Copy"
+  },
+  "common_copied": {
+    "message": "Copied"
+  },
+  "common_export": {
+    "message": "Export"
+  },
+  "common_close": {
+    "message": "Close"
+  },
+  "common_confirm": {
+    "message": "Confirm"
+  }
+}

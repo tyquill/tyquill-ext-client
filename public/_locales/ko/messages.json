@@ -1,0 +1,237 @@
+{
+  "extDescription": {
+    "message": "Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다."
+  },
+
+  "landingPage_title": {
+    "message": "가장 쉬운 뉴스레터 생성 도구"
+  },
+  "landingPage_description": {
+    "message": "웹사이트에서 리소스를 저장하고, 전문 뉴스레터 AI에게 초안을 생성을 맡기세요. 1초만에 에디터로 옮겨넣을 수 있습니다."
+  },
+  "landingPage_supportedPlatforms": {
+    "message": "지원하는 플랫폼"
+  },
+  "landingPage_comingSoon": {
+    "message": "추가 예정"
+  },
+  "landingPage_loginLoading": {
+    "message": "로그인 중..."
+  },
+  "landingPage_startWithGoogle": {
+    "message": "Google로 시작하기"
+  },
+  "landingPage_loginSuccess": {
+    "message": "로그인 성공"
+  },
+  "landingPage_welcomeMessage": {
+    "message": "Tyquill에 오신 것을 환영합니다!"
+  },
+  "landingPage_loginFailed": {
+    "message": "로그인 실패"
+  },
+  "landingPage_loginError": {
+    "message": "로그인 중 오류가 발생했습니다. 다시 시도해 주세요."
+  },
+
+  "menu_scrap": {
+    "message": "스크랩"
+  },
+  "menu_styleManagement": {
+    "message": "문체 관리"
+  },
+  "menu_draft": {
+    "message": "초안 생성"
+  },
+  "menu_archive": {
+    "message": "보관함"
+  },
+  "menu_settings": {
+    "message": "설정"
+  },
+  "menu_signOut": {
+    "message": "로그아웃"
+  },
+  "menu_signingOut": {
+    "message": "로그아웃 중..."
+  },
+
+  "scrapPage_clipCurrentPage": {
+    "message": "현재 페이지 클립"
+  },
+  "scrapPage_uploadPDF": {
+    "message": "PDF 업로드"
+  },
+  "scrapPage_refresh": {
+    "message": "새로고침"
+  },
+  "scrapPage_filterByTag": {
+    "message": "태그로 필터링"
+  },
+  "scrapPage_allTags": {
+    "message": "모든 태그"
+  },
+  "scrapPage_noScraps": {
+    "message": "저장된 스크랩이 없습니다"
+  },
+  "scrapPage_loadingError": {
+    "message": "스크랩을 불러오는 중 오류가 발생했습니다"
+  },
+  "scrapPage_retry": {
+    "message": "다시 시도"
+  },
+  "scrapPage_scraps": {
+    "message": "스크랩"
+  },
+  "scrapPage_uploads": {
+    "message": "업로드"
+  },
+  "scrapPage_deleteConfirm": {
+    "message": "정말로 삭제하시겠습니까?"
+  },
+  "scrapPage_deleteSuccess": {
+    "message": "삭제되었습니다"
+  },
+  "scrapPage_deleteFailed": {
+    "message": "삭제 실패"
+  },
+  "scrapPage_clipSuccess": {
+    "message": "페이지를 성공적으로 저장했습니다"
+  },
+  "scrapPage_clipFailed": {
+    "message": "페이지 저장 실패"
+  },
+
+  "archivePage_title": {
+    "message": "보관함"
+  },
+  "archivePage_searchPlaceholder": {
+    "message": "제목, 키워드로 검색"
+  },
+  "archivePage_noArticles": {
+    "message": "아직 생성된 기사가 없습니다"
+  },
+  "archivePage_createFirst": {
+    "message": "첫 번째 뉴스레터를 생성해보세요"
+  },
+  "archivePage_loadError": {
+    "message": "기사를 불러오는 중 오류가 발생했습니다"
+  },
+
+  "stylePage_title": {
+    "message": "문체 관리"
+  },
+  "stylePage_createNew": {
+    "message": "새 문체 추가"
+  },
+  "stylePage_name": {
+    "message": "문체 이름"
+  },
+  "stylePage_description": {
+    "message": "설명"
+  },
+  "stylePage_examples": {
+    "message": "예시"
+  },
+  "stylePage_addExample": {
+    "message": "예시 추가"
+  },
+  "stylePage_save": {
+    "message": "저장"
+  },
+  "stylePage_cancel": {
+    "message": "취소"
+  },
+  "stylePage_delete": {
+    "message": "삭제"
+  },
+  "stylePage_edit": {
+    "message": "편집"
+  },
+  "stylePage_noStyles": {
+    "message": "등록된 문체가 없습니다"
+  },
+
+  "draftPage_title": {
+    "message": "초안 생성"
+  },
+  "draftPage_topic": {
+    "message": "주제"
+  },
+  "draftPage_topicPlaceholder": {
+    "message": "뉴스레터 주제를 입력하세요"
+  },
+  "draftPage_keyInsight": {
+    "message": "핵심 인사이트"
+  },
+  "draftPage_keyInsightPlaceholder": {
+    "message": "독자에게 전달할 핵심 메시지를 입력하세요"
+  },
+  "draftPage_additionalPrompt": {
+    "message": "추가 지침"
+  },
+  "draftPage_additionalPromptPlaceholder": {
+    "message": "AI에게 전달할 추가 지침이 있다면 입력하세요"
+  },
+  "draftPage_selectScraps": {
+    "message": "스크랩 선택"
+  },
+  "draftPage_selectStyle": {
+    "message": "문체 선택"
+  },
+  "draftPage_generate": {
+    "message": "생성하기"
+  },
+  "draftPage_generating": {
+    "message": "생성 중..."
+  },
+  "draftPage_generateSuccess": {
+    "message": "뉴스레터가 성공적으로 생성되었습니다"
+  },
+  "draftPage_generateError": {
+    "message": "생성 중 오류가 발생했습니다"
+  },
+  "draftPage_noSelectedScraps": {
+    "message": "선택된 스크랩이 없습니다"
+  },
+  "draftPage_atLeastOneScrap": {
+    "message": "최소 1개 이상의 스크랩을 선택해주세요"
+  },
+
+  "common_loading": {
+    "message": "로딩 중..."
+  },
+  "common_error": {
+    "message": "오류"
+  },
+  "common_success": {
+    "message": "성공"
+  },
+  "common_save": {
+    "message": "저장"
+  },
+  "common_cancel": {
+    "message": "취소"
+  },
+  "common_delete": {
+    "message": "삭제"
+  },
+  "common_edit": {
+    "message": "편집"
+  },
+  "common_copy": {
+    "message": "복사"
+  },
+  "common_copied": {
+    "message": "복사됨"
+  },
+  "common_export": {
+    "message": "내보내기"
+  },
+  "common_close": {
+    "message": "닫기"
+  },
+  "common_confirm": {
+    "message": "확인"
+  }
+}

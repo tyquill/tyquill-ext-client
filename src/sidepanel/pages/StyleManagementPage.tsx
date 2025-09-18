@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { IoTrash, IoClipboard, IoAdd, IoCreate, IoRefresh, IoCheckmark, IoClose, IoInformationCircleOutline } from 'react-icons/io5';
 import { writingStyleService, WritingStyle, ScrapedExample } from '../../services/writingStyleService';
 import { useToastHelpers } from '../../hooks/useToast';
+import { useI18n } from '../../hooks/useI18n';
 import { clipCurrentPageForStyle } from '../../utils/scrapHelper';
 import Tooltip from '../../components/common/Tooltip';
 import styles from './StyleManagementPage.module.css';
@@ -18,6 +19,7 @@ const StyleManagementPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
   const { showSuccess, showError } = useToastHelpers();
+  const { t } = useI18n();
 
   useEffect(() => {
     fetchStyles();
@@ -29,7 +31,7 @@ const StyleManagementPage: React.FC = () => {
       const styles = await writingStyleService.getWritingStyles();
       setStylesList(styles);
     } catch (error) {
-      showError('문체 목록을 불러오는데 실패했습니다.');
+      showError(t('stylePage_loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -42,9 +44,9 @@ const StyleManagementPage: React.FC = () => {
       setIsRefreshing(true);
       const updatedStyles = await writingStyleService.getWritingStyles();
       setStylesList(updatedStyles);
-      showSuccess('새로고침 완료', '문체 목록이 업데이트되었습니다.');
+      showSuccess(t('stylePage_refreshSuccess'), t('stylePage_refreshSuccessMessage'));
     } catch (error) {
-      showError('새로고침 실패', '문체 목록 새로고침에 실패했습니다.');
+      showError(t('stylePage_refreshError'), t('stylePage_refreshErrorMessage'));
     } finally {
       setIsRefreshing(false);
     }
@@ -57,23 +59,23 @@ const StyleManagementPage: React.FC = () => {
       const scrapResult = await clipCurrentPageForStyle();
       if (scrapResult && scrapResult.content) {
         if (scrapedExamples.length >= 5) {
-          showError('예시는 최대 5개까지 추가할 수 있습니다.');
+          showError(t('stylePage_maxExamples'));
           return;
         }
         const newExample: ScrapedExample = {
-          title: scrapResult.metadata?.title || scrapResult.title || '스크랩된 페이지',
+          title: scrapResult.metadata?.title || scrapResult.title || t('stylePage_scrapResult'),
           content: scrapResult.content,
           url: scrapResult.metadata?.url || scrapResult.url || '',
         };
         setScrapedExamples(prev => [...prev, newExample]);
-        showSuccess('현재 페이지가 문체 예시로 추가되었습니다.');
+        showSuccess(t('stylePage_scrapAddedSuccess'));
         setShowCreateForm(true);
       } else {
-        throw new Error('스크랩 결과가 없습니다.');
+        throw new Error(t('stylePage_noScrapResult'));
       }
     } catch (error) {
-      console.error('스크랩 실패:', error);
-      showError(`현재 페이지 스크랩에 실패했습니다: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('Scraping failed:', error);
+      showError(`${t('stylePage_scrapFailedPrefix')} ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsScraping(false);
     }
@@ -81,31 +83,31 @@ const StyleManagementPage: React.FC = () => {
 
   const handleAddStyle = async () => {
     if (!newStyleName.trim()) {
-      showError('문체 이름을 입력해주세요.');
+      showError(t('stylePage_pleaseEnterName'));
       return;
     }
     if (scrapedExamples.length === 0) {
-      showError('먼저 예시를 스크랩해주세요.');
+      showError(t('stylePage_pleaseScrapFirst'));
       return;
     }
     try {
       setSaving(true);
       const newStyle = await writingStyleService.addWritingStyle(newStyleName, scrapedExamples);
-      showSuccess('새로운 문체가 추가되었습니다.');
+      showSuccess(t('stylePage_styleAdded'));
       setNewStyleName('');
       setScrapedExamples([]);
       setShowCreateForm(false);
       // 로컬 상태 업데이트로 즉시 반영
       setStylesList(prev => [newStyle, ...prev]);
     } catch (error) {
-      showError('문체 추가에 실패했습니다.');
+      showError(t('stylePage_styleAddError'));
     } finally {
       setSaving(false);
     }
   };
 
   const handleDeleteStyle = async (id: number) => {
-    if (window.confirm('정말로 이 문체를 삭제하시겠습니까?')) {
+    if (window.confirm(t('stylePage_confirmDelete'))) {
       try {
         // 삭제 중 상태 설정
         setDeletingIds(prev => new Set(prev).add(id));
@@ -115,9 +117,9 @@ const StyleManagementPage: React.FC = () => {
         
         // 성공 시 로컬 상태에서 제거
         setStylesList(prev => prev.filter(style => style.id !== id));
-        showSuccess('문체가 삭제되었습니다.');
+        showSuccess(t('stylePage_styleDeleteSuccess'));
       } catch (error) {
-        showError('문체 삭제에 실패했습니다.');
+        showError(t('stylePage_styleDeleteError'));
       } finally {
         // 삭제 중 상태 해제
         setDeletingIds(prev => {
@@ -146,10 +148,10 @@ const StyleManagementPage: React.FC = () => {
       <div className={pageStyles.page}>
         <div className={pageStyles.pageHeader}>
           <div className={pageStyles.headerControls}>
-            <h1 className={pageStyles.pageTitle}>문체 관리</h1>
+            <h1 className={pageStyles.pageTitle}>{t('stylePage_title')}</h1>
           </div>
           <p className={pageStyles.pageSubtitle}>
-            문체는 문장의 개성적 특색을 의미합니다. 기존에 작성한 글이나 마음에 드는 문체로 작성된 글을 스크랩해 미리 문체를 저장해두고, 초안을 생성할 때 이를 적용할 수 있습니다.
+            {t('stylePage_styleDescription')}
           </p>
         </div>
         
@@ -160,7 +162,7 @@ const StyleManagementPage: React.FC = () => {
             className={styles.newStyleButton}
           >
             <IoAdd size={16} />
-            새 문체 만들기
+            {t('stylePage_newStyleCreate')}
           </button>
         )}
 
@@ -170,10 +172,10 @@ const StyleManagementPage: React.FC = () => {
             <div className={styles.createHeader}>
               <h3 className={styles.createTitle}>
                 <IoCreate size={20} />
-                새 문체 만들기
+                {t('stylePage_newStyleCreating')}
               </h3>
               <div className={styles.createActions}>
-                <Tooltip content={saving ? '저장 중...' : '저장'}>
+                <Tooltip content={saving ? t('stylePage_savingTooltip') : t('stylePage_saveTooltip')}>
                   <button
                     type="button"
                     onClick={handleAddStyle}
@@ -183,7 +185,7 @@ const StyleManagementPage: React.FC = () => {
                     <IoCheckmark size={18} />
                   </button>
                 </Tooltip>
-                <Tooltip content="취소">
+                <Tooltip content={t('stylePage_cancelTooltip')}>
                   <button
                     type="button"
                     onClick={handleCancelCreate}
@@ -199,13 +201,13 @@ const StyleManagementPage: React.FC = () => {
             <div className={styles.createForm}>
               {/* 문체 이름 입력 */}
               <div className={styles.inputGroup}>
-                <label className={styles.inputLabel}>문체 이름</label>
+                <label className={styles.inputLabel}>{t('stylePage_name')}</label>
                 <input
                   type="text"
                   value={newStyleName}
                   onChange={(e) => setNewStyleName(e.target.value)}
                   className={styles.input}
-                  placeholder="예: 내 브런치, 기술 블로그, 스토리텔링"
+                  placeholder={t('stylePage_namePlaceholder')}
                   autoFocus
                 />
               </div>
@@ -214,11 +216,11 @@ const StyleManagementPage: React.FC = () => {
               <div className={styles.examplesGroup}>
                 <div className={styles.examplesHeader}>
                   <label className={styles.inputLabel}>
-                    예시 ({scrapedExamples.length}/5)
+                    {t('stylePage_exampleCount')} ({scrapedExamples.length}/5)
                   </label>
                   <div style={{display: 'flex', gap: '8px'}}>
                     {scrapedExamples.length < 5 && (
-                      <Tooltip content="현재 페이지 내용을 스크랩해 문체 예시로 추가합니다.">
+                      <Tooltip content={t('stylePage_scrapCurrentPageTooltip')}>
                         <button
                         type="button"
                         onClick={handleScrapeCurrentPage}
@@ -228,12 +230,12 @@ const StyleManagementPage: React.FC = () => {
                             {isScraping ? (
                               <>
                                 <div className={styles.spinner}></div>
-                                스크랩 중...
+                                {t('stylePage_scrapInProgress')}
                               </>
                             ) : (
                               <>
                                 <IoClipboard size={14} />
-                                현재 페이지 예시로 추가
+                                {t('stylePage_addCurrentPageExample')}
                               </>
                             )}
                           </button>
@@ -245,18 +247,18 @@ const StyleManagementPage: React.FC = () => {
                         className={styles.clearAllButton}
                         onClick={() => setScrapedExamples([])}
                       >
-                        모두 제거
+                        {t('stylePage_removeAll')}
                       </button>
                     )}
                   </div>
                 </div>
                 <div className={styles.examplesHelp}>
-                  chrome:// 등 일부 페이지에서는 동작하지 않을 수 있습니다.
+                  {t('stylePage_restrictedPagesWarning')}
                 </div>
                 
                 {scrapedExamples.length === 0 ? (
                   <div className={styles.emptyExamples}>
-                    <p>스크랩된 예시가 없습니다.</p>
+                    <p>{t('stylePage_noScrapedExamples')}</p>
                   </div>
                 ) : (
                   <div className={styles.examplesList}>
@@ -285,14 +287,14 @@ const StyleManagementPage: React.FC = () => {
         <section className={styles.stylesSection}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleGroup}>
-              <h2 className={styles.sectionTitle}>저장된 문체</h2>
+              <h2 className={styles.sectionTitle}>{t('stylePage_savedStyles')}</h2>
               <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                <Tooltip content="이 섹션에서 저장된 문체를 확인하고 관리할 수 있어요.">
-                  <button type="button" className={styles.infoIconButton} aria-label="섹션 안내">
+                <Tooltip content={t('stylePage_infoSectionTooltip')}>
+                  <button type="button" className={styles.infoIconButton} aria-label={t('stylePage_sectionInfo')}>
                     <IoInformationCircleOutline size={16} />
                   </button>
                 </Tooltip>
-              <Tooltip content="문체 목록 새로고침" side='bottom'>
+              <Tooltip content={t('stylePage_refreshTooltip')} side='bottom'>
                 <button 
                   className={`${pageStyles.refreshButton} ${isRefreshing ? pageStyles.loading : ''}`}
                   onClick={handleRefresh}
@@ -308,7 +310,7 @@ const StyleManagementPage: React.FC = () => {
           {isLoading ? (
             <div className={styles.loadingState}>
               <div className={styles.spinner}></div>
-              <p>문체 목록을 불러오는 중...</p>
+              <p>{t('stylePage_loadingStyles')}</p>
             </div>
           ) : stylesList.length > 0 ? (
             <div className={styles.stylesGrid}>
@@ -322,7 +324,7 @@ const StyleManagementPage: React.FC = () => {
                         handleDeleteStyle(style.id);
                       }}
                       className={`${styles.deleteButton} ${deletingIds.has(style.id) ? styles.deleting : ''}`}
-                      aria-label="문체 삭제"
+                      aria-label={t('stylePage_deleteStyleLabel')}
                       type="button"
                       disabled={deletingIds.has(style.id)}
                     >
@@ -337,7 +339,7 @@ const StyleManagementPage: React.FC = () => {
                   <div className={styles.styleCardContent}>
                     <div className={styles.styleExamples}>
                       <span className={styles.examplesCount}>
-                        {style.examples.length}개의 예시
+                        {style.examples.length}{t('stylePage_exampleCountSuffix')}
                       </span>
                       <div className={styles.examplePreview}>
                         {style.examples.slice(0, 2).map((ex, index) => (
@@ -351,7 +353,7 @@ const StyleManagementPage: React.FC = () => {
                         ))}
                         {style.examples.length > 2 && (
                           <span className={styles.moreExamples}>
-                            +{style.examples.length - 2}개 더
+                            +{style.examples.length - 2}{t('stylePage_moreExamples')}
                           </span>
                         )}
                       </div>
@@ -373,9 +375,9 @@ const StyleManagementPage: React.FC = () => {
           ) : (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon}>📝</div>
-              <h3 className={styles.emptyTitle}>저장된 문체가 없습니다</h3>
+              <h3 className={styles.emptyTitle}>{t('stylePage_noSavedStyles')}</h3>
               <p className={styles.emptyDescription}>
-                좋아하는 글의 문체를 스크랩하고 저장하여 나만의 문체 라이브러리를 시작해보세요.
+                {t('stylePage_emptyDescription')}
               </p>
               {!showCreateForm && (
                 <button
@@ -384,7 +386,7 @@ const StyleManagementPage: React.FC = () => {
                   className={styles.emptyActionButton}
                 >
                   <IoAdd size={16} />
-                  첫 번째 문체 만들기
+                  {t('stylePage_firstStyleCreate')}
                 </button>
               )}
             </div>
