@@ -1,6 +1,7 @@
 // LinkedIn feed control menu에 Tyquill 버튼을 주입하는 유틸
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT } from './constants';
+import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
 
 // 대상 부모 컨테이너: feed-shared-control-menu display-flex
 //   feed-shared-update-v2__control-menu absolute text-align-right
@@ -130,6 +131,21 @@ async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
   const author = extractSenderName(container);
   const title = author ? `Linkedin 피드 | ${author}` : 'Linkedin 피드';
   const permalink = extractPermalink(container) || window.location.href;
+
+  // Track scraping event
+  try {
+    await trackPlatformContentScrapedBridge({
+      platform: 'linkedin',
+      content_type: 'feed_post',
+      has_author: !!author,
+      has_images: false, // LinkedIn 이미지 추출은 현재 미구현
+      content_length: content.length,
+      image_count: 0,
+      url: permalink,
+      has_content: !!content.trim()
+    });
+  } catch {}
+
   if (!content.trim()) {
     window.dispatchEvent(new CustomEvent('tyquill:li-button-click'));
     return;

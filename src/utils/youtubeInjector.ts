@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, YT_SELECTORS, YT_STYLE_TEXT } from './constants';
+import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
 
 type CleanupFn = () => void;
 
@@ -219,6 +220,21 @@ async function doScrapFromYouTubeButton(): Promise<boolean> {
     const url = window.location.href;
     const main = extractDescription();
     const content = normalizeText(main);
+
+    // Track scraping event
+    try {
+      await trackPlatformContentScrapedBridge({
+        platform: 'youtube',
+        content_type: 'video',
+        has_author: !!title && title !== 'YouTube',
+        has_images: false, // YouTube 썸네일은 현재 미추출
+        content_length: content.length,
+        image_count: 0,
+        url: url,
+        has_content: !!content.trim(),
+        video_title: title
+      });
+    } catch {}
 
     if (!content.trim()) return false;
 

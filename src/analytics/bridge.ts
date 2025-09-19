@@ -34,6 +34,8 @@ const EVENT_NAMES = {
   ARCHIVE_EDIT_CANCELLED: 'archive_edit_cancelled',
   ARCHIVE_FULLSCREEN_EDITOR_OPENED: 'archive_fullscreen_editor_opened',
   ARCHIVE_VERSION_CHANGED: 'archive_version_changed',
+  // Platform Scraping Events
+  PLATFORM_CONTENT_SCRAPED: 'platform_content_scraped',
 } as const
 
 export async function captureInBackground(event: string, properties?: Record<string, any>): Promise<void> {
@@ -157,5 +159,10 @@ export async function trackArchiveFullscreenEditorOpenedBridge(properties?: Reco
 
 export async function trackArchiveVersionChangedBridge(properties?: Record<string, any>): Promise<void> {
   return captureInBackground(EVENT_NAMES.ARCHIVE_VERSION_CHANGED, properties)
+}
+
+// Platform Scraping Event Tracking Functions
+export async function trackPlatformContentScrapedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.PLATFORM_CONTENT_SCRAPED, properties)
 }
 

@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, X_SELECTORS } from './constants';
 import { X_STYLE_TEXT } from './constants';
+import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
 
 type CleanupFn = () => void;
 
@@ -457,6 +458,20 @@ async function doScrapFromXButton(buttonEl: Element): Promise<void> {
   if (images.length > 0) {
     content = content ? `${content}\n\n${images.join('\n')}` : images.join('\n');
   }
+
+  // Track scraping event
+  try {
+    await trackPlatformContentScrapedBridge({
+      platform: 'x',
+      content_type: 'post',
+      has_author: !!author,
+      has_images: images.length > 0,
+      content_length: content.length,
+      image_count: images.length,
+      url: url
+    });
+  } catch {}
+
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
