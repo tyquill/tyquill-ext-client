@@ -78,6 +78,7 @@
     "getTranslation": true,
     "htmlToMarkdown": true,
     "initLinkedInInjector": true,
+    "initRedditInjector": true,
     "initThreadsInjector": true,
     "initXInjector": true,
     "initYouTubeInjector": true,

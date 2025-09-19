@@ -40,6 +40,7 @@ declare global {
   const getTranslation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations')['getTranslation']
   const htmlToMarkdown: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['htmlToMarkdown']
   const initLinkedInInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/linkedinInjector')['initLinkedInInjector']
+  const initRedditInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/redditInjector')['initRedditInjector']
   const initThreadsInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/threadsInjector')['initThreadsInjector']
   const initXInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/xInjector')['initXInjector']
   const initYouTubeInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/youtubeInjector')['initYouTubeInjector']
