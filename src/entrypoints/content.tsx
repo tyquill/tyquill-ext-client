@@ -1,13 +1,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from '../src/content/App';
-import { posthogClient } from '../src/analytics/posthog';
+import App from '../content/App';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
   main() {
-    // Initialize analytics (no event tracking yet)
-    posthogClient.init();
+    // WXT Analytics는 자동 초기화됨
 
     const root = document.createElement('div');
     root.id = 'tyquill-content-root';

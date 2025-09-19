@@ -2,6 +2,8 @@ import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  srcDir: 'src',
+  modules: ['@wxt-dev/analytics/module'],
   manifest: {
     name: 'Tyquill',
     version: '1.3.2',
@@ -27,7 +29,7 @@ export default defineConfig({
     },
     content_security_policy: {
       extension_pages:
-        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://us.i.posthog.com https://*.i.posthog.com https://app.posthog.com https://*.posthog.com",
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com",
     },
     side_panel: {
       default_path: 'sidepanel.html'

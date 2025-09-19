@@ -20,6 +20,19 @@ import { browser } from 'wxt/browser';
 import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
 import { libraryItemService, LibraryItemDto } from '../../services/libraryItemService';
 import { useI18n } from '../../hooks/useI18n';
+import {
+  trackArticleTopicSetBridge,
+  trackArticleKeyMessageSetBridge,
+  trackArticleStyleSelectedBridge,
+  trackArticleStyleCreateClickedBridge,
+  trackArticleSectionAddedBridge,
+  trackArticleSectionRemovedBridge,
+  trackArticleSectionAnalyzeClickedBridge,
+  trackArticleReferenceAddedBridge,
+  trackArticleReferenceRemovedBridge,
+  trackArticleReferenceModalOpenedBridge,
+  trackArticleGenerationStartedBridge
+} from '../../analytics/bridge';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -231,13 +244,27 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     return () => window.removeEventListener('resize', updateTopOffset);
   }, [isScrapModalOpen]);
 
-  const handleScrapSelect = (scrap: ScrapResponse) => {
+  const handleScrapSelect = async (scrap: ScrapResponse) => {
     const isSelected = selectedScraps.find(s => s.scrapId === scrap.scrapId);
-    
+
     if (isSelected) {
       removeScrap(scrap.scrapId);
+      try {
+        await trackArticleReferenceRemovedBridge({
+          reference_type: 'scrap',
+          reference_id: scrap.scrapId,
+          from: 'modal'
+        })
+      } catch {}
     } else {
       addScrap(scrap);
+      try {
+        await trackArticleReferenceAddedBridge({
+          reference_type: 'scrap',
+          reference_id: scrap.scrapId,
+          from: 'modal'
+        })
+      } catch {}
     }
   };
 
@@ -245,8 +272,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     updateScrapOpinion(id, opinion);
   };
 
-  const handleRemoveScrap = (id: number) => {
+  const handleRemoveScrap = async (id: number) => {
     removeScrap(id);
+    try {
+      await trackArticleReferenceRemovedBridge({
+        reference_type: 'scrap',
+        reference_id: id,
+        from: 'inline'
+      })
+    } catch {}
   };
 
   const handleGenerateTemplateFromPage = async () => {
@@ -328,13 +362,26 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     setTemplateTitle(sectionId, newTitle);
   };
 
-  const addSection = (parentId?: string) => {
+  const addSection = async (parentId?: string) => {
     const newTitle = parentId ? t('articleGenerate_newSubsection') : t('articleGenerate_newSection');
     addTemplateSection(parentId, newTitle);
+
+    try {
+      await trackArticleSectionAddedBridge({
+        is_subsection: !!parentId,
+        parent_id: parentId || null
+      })
+    } catch {}
   };
 
-  const removeSection = (sectionId: string) => {
+  const removeSection = async (sectionId: string) => {
     removeTemplateSection(sectionId);
+
+    try {
+      await trackArticleSectionRemovedBridge({
+        section_id: sectionId
+      })
+    } catch {}
   };
 
   // 섹션 구조를 평탄화하여 렌더링하는 함수 (ID 기반)
@@ -354,6 +401,19 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   };
 
   const handleGenerateArticle = async () => {
+    // 초안 생성 시작 이벤트 추적
+    try {
+      await trackArticleGenerationStartedBridge({
+        has_topic: !!topic,
+        has_key_insight: !!keyInsight,
+        has_template: !!templateStructure && templateStructure.length > 0,
+        template_sections_count: templateStructure ? templateStructure.length : 0,
+        selected_scraps_count: selectedScraps.length,
+        selected_uploads_count: selectedUploads.length,
+        writing_style_id: selectedWritingStyleId,
+        is_custom_style: !!selectedWritingStyleId
+      })
+    } catch {}
     // templateStructure에서 섹션별 아이디어 수집
     const collectIdeas = (sections: TemplateSection[]): Record<string, string> => {
       const ideas: Record<string, string> = {};
@@ -503,12 +563,29 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }, 380);
   };
 
-  const toggleUploadSelection = (upload: LibraryItemDto) => {
+  const toggleUploadSelection = async (upload: LibraryItemDto) => {
     setSelectedUploads(prev => {
       const exists = prev.find(u => u.uploadedFileId === upload.id);
       if (exists) return prev.filter(u => u.uploadedFileId !== upload.id);
       return [...prev, { uploadedFileId: upload.id, title: upload.title, usagePrompt: '' }];
     });
+
+    const isSelected = selectedUploads.find(u => u.uploadedFileId === upload.id);
+    try {
+      if (isSelected) {
+        await trackArticleReferenceRemovedBridge({
+          reference_type: 'pdf',
+          reference_id: upload.id,
+          from: 'modal'
+        })
+      } else {
+        await trackArticleReferenceAddedBridge({
+          reference_type: 'pdf',
+          reference_id: upload.id,
+          from: 'modal'
+        })
+      }
+    } catch {}
   };
 
   const setUploadUsagePrompt = (uploadedFileId: number, value: string) => {
@@ -625,6 +702,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               className={styles.formInput}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
+              onBlur={async () => {
+                if (topic && topic.trim()) {
+                  try {
+                    await trackArticleTopicSetBridge({
+                      topic_length: topic.length,
+                      has_content: true
+                    })
+                  } catch {}
+                }
+              }}
               placeholder={t('articleGenerate_topicFormPlaceholder')}
             />
           </div>
@@ -642,6 +729,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 // 자동 높이 조정
                 e.target.style.height = 'auto';
                 e.target.style.height = e.target.scrollHeight + 'px';
+              }}
+              onBlur={async () => {
+                if (keyInsight && keyInsight.trim()) {
+                  try {
+                    await trackArticleKeyMessageSetBridge({
+                      message_length: keyInsight.length,
+                      has_content: true
+                    })
+                  } catch {}
+                }
               }}
               onInput={(e) => {
                 // 입력 시에도 높이 조정
@@ -667,8 +764,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   {t('articleGenerate_addSection')}
                 </button>
                 
-                  <button 
-                  onClick={() => toggleAnalysisConfirmModal()}
+                  <button
+                  onClick={async () => {
+                    toggleAnalysisConfirmModal();
+                    try {
+                      await trackArticleSectionAnalyzeClickedBridge({
+                        from: 'section_header'
+                      })
+                    } catch {}
+                  }}
                   disabled={isAnalyzing}
                   className={`${articleStyles.sectionButton} ${isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                 >
@@ -796,10 +900,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
                     <div
                       className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
                         setWritingStyleId(null);
                         setIsStyleDropdownOpen(false);
+                        try {
+                          await trackArticleStyleSelectedBridge({
+                            style_id: null,
+                            style_name: 'default'
+                          })
+                        } catch {}
                       }}
                     >
                       {t('articleGenerate_defaultNewsletterStyle')}
@@ -808,10 +918,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       <div
                         key={ws.id}
                         className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
                           setWritingStyleId(ws.id);
                           setIsStyleDropdownOpen(false);
+                          try {
+                            await trackArticleStyleSelectedBridge({
+                              style_id: ws.id,
+                              style_name: ws.name
+                            })
+                          } catch {}
                         }}
                       >
                         {ws.name}
@@ -821,7 +937,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 </div>
                 <Tooltip content={t('articleGenerate_goToStyleManagement')}>
                   <button
-                    onClick={() => onNavigate('style-management')}
+                    onClick={async () => {
+                      onNavigate('style-management');
+                      try {
+                        await trackArticleStyleCreateClickedBridge({
+                          from: 'article_generation_page'
+                        })
+                      } catch {}
+                    }}
                     className={articleStyles.sectionButton}
                     style={{ flexShrink: 0 }}
                   >
@@ -836,14 +959,20 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           {/* 참고 자료 */}
           <div className={articleStyles.referenceSection}>
           <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_referenceMaterials')}</h3>
-          <button 
+          <button
             className={articleStyles.addReferenceButton}
-            onClick={() => {
+            onClick={async () => {
               // 모달 열기 전에 현재 선택 상태 백업
               backupSelectedScrapsRef.current = [...selectedScraps];
               backupSelectedUploadsRef.current = JSON.parse(JSON.stringify(selectedUploads));
               setReferenceModalTab('SCRAP');
               toggleScrapModal();
+              try {
+                await trackArticleReferenceModalOpenedBridge({
+                  existing_scraps_count: selectedScraps.length,
+                  existing_uploads_count: selectedUploads.length
+                })
+              } catch {}
             }}
           >
             <IoAdd size={16} />
@@ -941,9 +1070,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                           {(u.usagePrompt?.length || 0)}/75
                         </div>
                       </div>
-                      <button 
+                      <button
                         className={articleStyles.referenceRemoveButton}
-                        onClick={() => setSelectedUploads(prev => prev.filter(x => x.uploadedFileId !== u.uploadedFileId))}
+                        onClick={async () => {
+                          setSelectedUploads(prev => prev.filter(x => x.uploadedFileId !== u.uploadedFileId))
+                          try {
+                            await trackArticleReferenceRemovedBridge({
+                              reference_type: 'pdf',
+                              reference_id: u.uploadedFileId,
+                              from: 'inline'
+                            })
+                          } catch {}
+                        }}
                       >
                         ×
                       </button>

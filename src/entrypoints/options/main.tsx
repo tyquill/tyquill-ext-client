@@ -1,11 +1,9 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from '../../src/options/App';
-import { posthogClient } from '../../src/analytics/posthog';
-import { useLanguageStore } from '../../src/stores/languageStore';
+import App from '../../options/App';
+import { useLanguageStore } from '../../stores/languageStore';
 
-// Initialize analytics (no event tracking yet)
-posthogClient.init();
+// WXT Analytics는 자동 초기화됨
 
 // Initialize language store
 useLanguageStore.getState().initializeLanguage();

@@ -1,10 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import EditorApp from '../../src/components/editor/EditorApp';
-import { posthogClient } from '../../src/analytics/posthog';
+import EditorApp from '../../components/editor/EditorApp';
 
-// Initialize analytics (no event tracking yet)
-posthogClient.init();
+// WXT Analytics는 자동 초기화됨
 
 const container = document.getElementById('root');
 if (container) {

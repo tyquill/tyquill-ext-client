@@ -17,4 +17,22 @@ declare module '#imports' {
   export { injectScript, ScriptPublicPath, InjectScriptOptions } from 'wxt/utils/inject-script';
   export { InvalidMatchPattern, MatchPattern } from 'wxt/utils/match-patterns';
   export { fakeBrowser } from 'wxt/testing';
+  export { analytics } from '#analytics';
+  export { default as ErrorBoundary } from '../src/components/ErrorBoundary';
+  export { Toast, ToastType, ToastProps } from '../src/components/Toast';
+  export { ToastContainer } from '../src/components/ToastContainer';
+  export { useAuth, UseAuthReturn } from '../src/hooks/useAuth';
+  export { useI18n, t } from '../src/hooks/useI18n';
+  export { ToastProvider, useToast, useToastHelpers } from '../src/hooks/useToast';
+  export { animations, createBounceAnimation, getReducedMotion, getAnimation } from '../src/utils/animations';
+  export { WHITE_LOGO_URL, X_SELECTORS, X_STYLE_TEXT, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT, YT_SELECTORS, YT_STYLE_TEXT, THREADS_SELECTORS, THREADS_STYLE_TEXT } from '../src/utils/constants';
+  export { initLinkedInInjector } from '../src/utils/linkedinInjector';
+  export { htmlToMarkdown, markdownToHtml, markdownToPlainTextPreview } from '../src/utils/markdownConverter';
+  export { default as markdownRenderer } from '../src/utils/markdownRenderer';
+  export { clipAndScrapCurrentPage, clipCurrentPageForStyle, initialScrapState, scrapStateHelpers, ScrapStatus, ScrapState } from '../src/utils/scrapHelper';
+  export { initThreadsInjector } from '../src/utils/threadsInjector';
+  export { translations, getTranslation, TranslationKey } from '../src/utils/translations';
+  export { WebClipper, WebClipper, webClipper, quickClip, clipSelection, clipMinimal, PageMetadata, ScrapResult, ClipperOptions } from '../src/utils/webClipper';
+  export { initXInjector } from '../src/utils/xInjector';
+  export { initYouTubeInjector } from '../src/utils/youtubeInjector';
 }

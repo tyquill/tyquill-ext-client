@@ -16,6 +16,7 @@ import Tooltip from '../../components/common/Tooltip';
 import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
 import { libraryItemService, type LibraryItemDto } from '../../services/libraryItemService';
 import { globalApiClient } from '../../services/globalApiClient';
+import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
 const ScrapPage: React.FC = () => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
@@ -659,7 +660,15 @@ const ScrapPage: React.FC = () => {
               
               <button
                 className={`${styles.addButton} ${scrapStyles.pdfUploadButton}`}
-                onClick={() => setShowPDFUploadModal(true)}
+                onClick={async () => {
+                  setShowPDFUploadModal(true);
+                  try {
+                    await trackPDFUploadModalOpenedBridge({
+                      from: 'scrap_page',
+                      existing_uploads_count: uploads.length
+                    })
+                  } catch {}
+                }}
               >
                 <IoDocument size={20} />
                 {t('scrapPage_pdf')}

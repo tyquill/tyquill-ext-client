@@ -7,7 +7,7 @@
 
 import { ScrapResult } from '../utils/webClipper';
 import { globalApiClient } from './globalApiClient';
-import { trackScrapCreatedBridge } from '../analytics/bridge';
+import { trackScrapCreatedBridge, trackTagAddedBridge, trackTagRemovedBridge } from '../analytics/bridge';
 
 /**
  * 스크랩 생성 요청 DTO (기존 서버 엔티티에 맞춤)
@@ -198,6 +198,16 @@ export class ScrapService {
         body: JSON.stringify({ name: tagName }),
       });
 
+      try {
+        if (typeof document !== 'undefined') {
+          await trackTagAddedBridge({
+            scrapId,
+            tagName,
+            source: 'extension'
+          })
+        }
+      } catch {}
+
       // console.log('✅ Tag added successfully:', {
       //   tagId: response.tagId,
       //   name: response.name,
@@ -244,6 +254,16 @@ export class ScrapService {
       await this.apiRequest<void>(`/v1/scraps/${scrapId}/tags/${tagId}`, {
         method: 'DELETE',
       });
+
+      try {
+        if (typeof document !== 'undefined') {
+          await trackTagRemovedBridge({
+            scrapId,
+            tagId,
+            source: 'extension'
+          })
+        }
+      } catch {}
 
       // console.log('✅ Tag removed successfully from scrap:', { scrapId, tagId });
     } catch (error) {

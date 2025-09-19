@@ -3,6 +3,7 @@ import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 import { useI18n } from '../../../hooks/useI18n';
+import { trackSidepanelOpenedBridge, trackSidepanelClosedBridge } from '../../../analytics/bridge';
 import styles from './FloatingButton.module.css';
 import { BsBook } from 'react-icons/bs';
 import { IoClose } from 'react-icons/io5';
@@ -407,11 +408,29 @@ const FloatingButton: React.FC = () => {
   const openSidePanel = useCallback(async () => {
     await browser.runtime.sendMessage({ action: 'openSidePanel' });
     setIsSidePanelOpen(true);
+
+    try {
+      if (typeof document !== 'undefined') {
+        await trackSidepanelOpenedBridge({
+          source: 'floating_button',
+          page_url: window.location.href
+        })
+      }
+    } catch {}
   }, []);
 
   const closeSidePanel = useCallback(async () => {
     await browser.runtime.sendMessage({ action: 'closeSidePanel' });
     setIsSidePanelOpen(false);
+
+    try {
+      if (typeof document !== 'undefined') {
+        await trackSidepanelClosedBridge({
+          source: 'floating_button',
+          page_url: window.location.href
+        })
+      }
+    } catch {}
   }, []);
 
   // 스크랩 처리

@@ -3,6 +3,7 @@ import { IoClose, IoCloudUpload, IoDocument, IoAdd } from 'react-icons/io5';
 import styles from './PDFUploadModal.module.css';
 import { uploadService } from '../../../services/uploadService';
 import { useToastHelpers } from '../../../hooks/useToast';
+import { trackPDFUploadSuccessBridge, trackPDFUploadFailedBridge } from '../../../analytics/bridge';
 
 interface PDFUploadModalProps {
   isOpen: boolean;
@@ -107,11 +108,30 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
       );
 
       showSuccess('업로드 완료', `${selectedFile.name}이 성공적으로 업로드되었습니다.`);
+
+      // PDF 업로드 성공 이벤트 추적
+      trackPDFUploadSuccessBridge({
+        file_name: selectedFile.name,
+        file_size: selectedFile.size,
+        title: title.trim(),
+        has_description: description.trim().length > 0
+      });
+
       resetForm();
       onUploadSuccess();
       onClose();
     } catch (error: any) {
       console.error('PDF upload error:', error);
+
+      // PDF 업로드 실패 이벤트 추적
+      trackPDFUploadFailedBridge({
+        file_name: selectedFile.name,
+        file_size: selectedFile.size,
+        title: title.trim(),
+        error_message: error.message || '알 수 없는 오류',
+        has_description: description.trim().length > 0
+      });
+
       showError('업로드 실패', error.message || 'PDF 업로드 중 오류가 발생했습니다.');
     } finally {
       setIsUploading(false);

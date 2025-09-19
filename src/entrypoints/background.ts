@@ -1,11 +1,10 @@
 // Background Service Worker for Tyquill Extension
-import { scrapService } from '../src/services/scrapService';
-import { posthogClient, ensureAnonymousIdentity, EVENT_NAMES } from '../src/analytics/posthog';
+import { scrapService } from '../services/scrapService';
+import { trackScrapCreatedBridge, captureInBackground } from '../analytics/bridge';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 
-// Initialize analytics (no event tracking yet)
-posthogClient.init();
+// WXT Analytics는 자동 초기화됨
 
 export default defineBackground(() => {
   // Side panel state (global)
@@ -110,13 +109,8 @@ export default defineBackground(() => {
     if (request.action === 'analytics:capture') {
       (async () => {
         try {
-          await posthogClient.init();
-          await ensureAnonymousIdentity();
           console.log('[analytics] capture (bg):', request.event, request.properties)
-          posthogClient.capture(request.event, request.properties)
-          // give client some time to flush in MV3
-          await new Promise((r) => setTimeout(r, 250))
-          try { await (posthogClient.get() as any)?.flush?.() } catch {}
+          await captureInBackground(request.event, request.properties)
           sendResponse({ success: true })
         } catch (error) {
           console.error('❌ Background analytics capture error:', error)
@@ -211,11 +205,7 @@ export default defineBackground(() => {
       );
       // Track scrap created directly from background to ensure delivery
       try {
-        await posthogClient.init();
-        await ensureAnonymousIdentity();
-        posthogClient.capture(EVENT_NAMES.ACTIVITY_SCRAP_CREATED, { source: 'background' })
-        await new Promise((r) => setTimeout(r, 250))
-        try { await (posthogClient.get() as any)?.flush?.() } catch {}
+        await trackScrapCreatedBridge({ source: 'background' })
       } catch (e) {
         console.warn('Analytics scrap_created failed (bg):', e)
       }
