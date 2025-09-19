@@ -7,9 +7,10 @@ import { useToastHelpers } from '../../../hooks/useToast';
 interface ExportButtonProps {
   title: string;
   content: string;
+  onExportSuccess?: (platform: string) => void;
 }
 
-const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
+const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuccess }) => {
   const { showSuccess, showError } = useToastHelpers();
   const [isMailyPage, setIsMailyPage] = useState(false);
   
@@ -285,6 +286,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content }) => {
         });
 
         showSuccess('내보내기 완료', 'maily.so 페이지에 내용이 붙여넣어졌습니다.');
+        onExportSuccess?.('maily');
       } else {
         showError('내보내기 실패', '현재 탭을 찾을 수 없습니다.');
       }

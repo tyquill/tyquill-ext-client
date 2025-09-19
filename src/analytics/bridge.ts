@@ -26,6 +26,14 @@ const EVENT_NAMES = {
   PDF_UPLOAD_MODAL_OPENED: 'pdf_upload_modal_opened',
   PDF_UPLOAD_SUCCESS: 'pdf_upload_success',
   PDF_UPLOAD_FAILED: 'pdf_upload_failed',
+  // Archive Detail Events
+  ARCHIVE_CONTENT_COPIED: 'archive_content_copied',
+  ARCHIVE_EXPORTED: 'archive_exported',
+  ARCHIVE_EDIT_STARTED: 'archive_edit_started',
+  ARCHIVE_EDIT_SAVED: 'archive_edit_saved',
+  ARCHIVE_EDIT_CANCELLED: 'archive_edit_cancelled',
+  ARCHIVE_FULLSCREEN_EDITOR_OPENED: 'archive_fullscreen_editor_opened',
+  ARCHIVE_VERSION_CHANGED: 'archive_version_changed',
 } as const
 
 export async function captureInBackground(event: string, properties?: Record<string, any>): Promise<void> {
@@ -120,5 +128,34 @@ export async function trackPDFUploadSuccessBridge(properties?: Record<string, an
 
 export async function trackPDFUploadFailedBridge(properties?: Record<string, any>): Promise<void> {
   return captureInBackground(EVENT_NAMES.PDF_UPLOAD_FAILED, properties)
+}
+
+// Archive Detail Event Tracking Functions
+export async function trackArchiveContentCopiedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_CONTENT_COPIED, properties)
+}
+
+export async function trackArchiveExportedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_EXPORTED, properties)
+}
+
+export async function trackArchiveEditStartedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_EDIT_STARTED, properties)
+}
+
+export async function trackArchiveEditSavedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_EDIT_SAVED, properties)
+}
+
+export async function trackArchiveEditCancelledBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_EDIT_CANCELLED, properties)
+}
+
+export async function trackArchiveFullscreenEditorOpenedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_FULLSCREEN_EDITOR_OPENED, properties)
+}
+
+export async function trackArchiveVersionChangedBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.ARCHIVE_VERSION_CHANGED, properties)
 }
 

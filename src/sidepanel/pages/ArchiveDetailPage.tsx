@@ -18,6 +18,15 @@ import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 import { useI18n } from '../../hooks/useI18n';
+import {
+  trackArchiveContentCopiedBridge,
+  trackArchiveExportedBridge,
+  trackArchiveEditStartedBridge,
+  trackArchiveEditSavedBridge,
+  trackArchiveEditCancelledBridge,
+  trackArchiveFullscreenEditorOpenedBridge,
+  trackArchiveVersionChangedBridge
+} from '../../analytics/bridge';
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -245,12 +254,23 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   }, [countEditor, currentArchive?.content, article?.content, editContent, isEditing]);
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     // 편집기 페이지가 열려있으면 편집 모드 진입 방지
     if (isEditorPageOpen) {
       alert(t('archiveDetailPage_editingInPageEditorAlert'));
       return;
     }
+
+    try {
+      await trackArchiveEditStartedBridge({
+        article_id: article?.articleId,
+        version_number: selectedVersionNumber,
+        has_versions: (article?.archives?.length || 0) > 0,
+        character_count: characterCount.characters,
+        word_count: characterCount.words
+      });
+    } catch {}
+
     setIsEditing(true);
   };
 
@@ -281,16 +301,31 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       };
       
       setArticle(normalizedResponse);
-      
+
       // 새로운 버전이 생성되었는지 확인하고 최신 버전으로 전환
+      let newVersionNumber = null;
       if (normalizedResponse.archives && normalizedResponse.archives.length > 0) {
         const latestArchive = normalizedResponse.archives[0]; // 이미 정렬된 상태
+        newVersionNumber = latestArchive.versionNumber;
         setSelectedVersionNumber(latestArchive.versionNumber);
         setCurrentArchive(latestArchive);
         setEditTitle(latestArchive.title);
         setEditContent(latestArchive.content);
       }
-      
+
+      // 저장 완료 이벤트 추적
+      try {
+        await trackArchiveEditSavedBridge({
+          article_id: article.articleId,
+          previous_version: selectedVersionNumber,
+          new_version: newVersionNumber,
+          content_changed: normalizedContent !== (currentArchive?.content || article.content),
+          title_changed: editTitle !== (currentArchive?.title || article.title),
+          character_count_before: characterCount.characters,
+          character_count_after: editContent.length
+        });
+      } catch {}
+
       setIsEditing(false);
     } catch (err: any) {
       setError(err.message || t('archiveDetailPage_saveArticleError'));
@@ -299,7 +334,16 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    try {
+      await trackArchiveEditCancelledBridge({
+        article_id: article?.articleId,
+        version_number: selectedVersionNumber,
+        had_changes: editTitle !== (currentArchive?.title || article?.title) ||
+                     editContent !== (currentArchive?.content || article?.content)
+      });
+    } catch {}
+
     if (currentArchive) {
       setEditTitle(currentArchive.title);
       setEditContent(currentArchive.content);
@@ -312,7 +356,17 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   const handleOpenFullscreenEditor = async () => {
     if (!article) return;
-    
+
+    try {
+      await trackArchiveFullscreenEditorOpenedBridge({
+        article_id: article.articleId,
+        version_number: selectedVersionNumber,
+        character_count: characterCount.characters,
+        word_count: characterCount.words,
+        from_edit_mode: isEditing
+      });
+    } catch {}
+
     // 편집기로 전달할 데이터 준비
     const editorData = {
       articleId: article.articleId,
@@ -321,14 +375,14 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       originalTitle: currentArchive?.title || article.title,
       originalContent: currentArchive?.content || article.content
     };
-    
+
     // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
     const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
     await browser.storage.local.set({
       [sessionKey]: editorData
     });
     const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
-    
+
     // 새 탭에서 편집기 열기
     browser.tabs.create({
       url: editorUrl,
@@ -336,11 +390,23 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     });
   };
 
-  const handleVersionSelect = (versionNumber: number) => {
+  const handleVersionSelect = async (versionNumber: number) => {
     if (!article || !article.archives) return;
-    
+
     const selectedArchive = article.archives.find(archive => archive.versionNumber === versionNumber);
     if (selectedArchive) {
+      const previousVersion = selectedVersionNumber;
+
+      try {
+        await trackArchiveVersionChangedBridge({
+          article_id: article.articleId,
+          previous_version: previousVersion,
+          new_version: versionNumber,
+          total_versions: article.archives.length,
+          was_editing: isEditing
+        });
+      } catch {}
+
       setSelectedVersionNumber(versionNumber);
       setCurrentArchive(selectedArchive);
       setEditTitle(selectedArchive.title);
@@ -483,17 +549,39 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
                 <Tooltip content={t('archiveDetailPage_exportToMaily')} side='top'>
-                  <ExportButton 
+                  <ExportButton
                     title={currentArchive?.title || article.title}
                     content={currentArchive?.content || article.content}
+                    onExportSuccess={async (platform) => {
+                      try {
+                        await trackArchiveExportedBridge({
+                          article_id: article.articleId,
+                          version_number: selectedVersionNumber,
+                          platform,
+                          character_count: characterCount.characters,
+                          word_count: characterCount.words
+                        });
+                      } catch {}
+                    }}
                   />
                 </Tooltip>
                 <Tooltip content={t('archiveDetailPage_copyToClipboard')} side='top'>
-                  <CopyButton 
+                  <CopyButton
                     title={currentArchive?.title || article.title}
                     content={currentArchive?.content || article.content}
-                    />
-                  </Tooltip>
+                    onCopySuccess={async () => {
+                      try {
+                        await trackArchiveContentCopiedBridge({
+                          article_id: article.articleId,
+                          version_number: selectedVersionNumber,
+                          character_count: characterCount.characters,
+                          word_count: characterCount.words,
+                          copy_format: 'rich_text'
+                        });
+                      } catch {}
+                    }}
+                  />
+                </Tooltip>
                 <Tooltip content={isEditorPageOpen ? t('archiveDetailPage_editingInPageEditorTooltip') : t('archiveDetailPage_editDraft')}>
                   <button 
                     className={detailStyles.primaryActionButton} 
