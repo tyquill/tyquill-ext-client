@@ -17,8 +17,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const { setLanguage } = useLanguageStore();
 
   const languages: { code: SupportedLanguage; label: string }[] = [
-    { code: 'ko', label: t('language_korean') },
     { code: 'en', label: t('language_english') },
+    { code: 'ko', label: t('language_korean') },
   ];
 
   const handleLanguageChange = async (newLanguage: SupportedLanguage) => {
@@ -48,23 +48,17 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   return (
     <div className={`${styles.languageSelector} ${className || ''}`}>
-      <label className={styles.label}>
-        <IoLanguage size={14} className={styles.labelIcon} />
-        {t('language_selector_label')}
-      </label>
-      <div className={styles.buttonGroup}>
+      <select
+        value={currentLanguage}
+        onChange={(e) => handleLanguageChange(e.target.value as SupportedLanguage)}
+        className={styles.select}
+      >
         {languages.map((lang) => (
-          <button
-            key={lang.code}
-            onClick={() => handleLanguageChange(lang.code)}
-            className={`${styles.languageButton} ${
-              currentLanguage === lang.code ? styles.active : ''
-            }`}
-          >
+          <option key={lang.code} value={lang.code}>
             {lang.label}
-          </button>
+          </option>
         ))}
-      </div>
+      </select>
     </div>
   );
 };

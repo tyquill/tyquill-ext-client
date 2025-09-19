@@ -3,7 +3,6 @@ import { IoInformationCircle, IoSettingsSharp } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
 import { useI18n } from '../hooks/useI18n';
 import { useLanguageStore } from '../stores/languageStore';
-import { LanguageSelector } from '../components/common/LanguageSelector';
 import styles from './App.module.css';
 import GeneralTab from '../components/options/GeneralTab';
 import AboutTab from '../components/options/AboutTab';
@@ -131,9 +130,6 @@ const App: React.FC = () => {
 
         {/* Content Area */}
         <main className={styles.content}>
-          <div className={styles.contentHeader}>
-            <LanguageSelector compact />
-          </div>
           {renderTabContent()}
         </main>
       </div>

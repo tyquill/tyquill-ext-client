@@ -2,10 +2,17 @@ import React, { useState, useEffect } from 'react';
 import styles from '../../options/App.module.css';
 import { browser } from 'wxt/browser';
 import { useI18n } from '../../hooks/useI18n';
+import { useLanguageStore } from '../../stores/languageStore';
 
 const AboutTab: React.FC = () => {
   const { t } = useI18n();
+  const { initializeLanguage } = useLanguageStore();
   const [version, setVersion] = useState<string>('');
+
+  // Initialize language store
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
 
   useEffect(() => {
     const getManifestVersion = () => {
@@ -16,7 +23,7 @@ const AboutTab: React.FC = () => {
           setVersion(manifest.version);
         }
       } catch (error) {
-        console.error(t('options_versionError'), error);
+        console.error(t('options_versionLoadError'), error);
         setVersion('1.1.2'); // fallback
       }
     };
@@ -30,13 +37,13 @@ const AboutTab: React.FC = () => {
       
       <div className={styles.aboutSection}>
         <div className={styles.versionInfo}>
-          <h3 className={styles.versionTitle}>{t('options_version')}</h3>
+          <h3 className={styles.versionTitle}>{t('options_versionTitle')}</h3>
           <p className={styles.versionNumber}>{version}</p>
         </div>
 
         <div className={styles.description}>
           <p>
-            {t('options_aboutDescription')}
+            {t('options_description')}
           </p>
         </div>
 

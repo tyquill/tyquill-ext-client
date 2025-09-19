@@ -20,7 +20,7 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onSettingChange }) =>
       <div className={styles.settingGroup}>
         <div className={styles.settingItem}>
           <div className={styles.settingInfo}>
-            <h3 className={styles.settingLabel}>{t('options_floatingButtonLabel')}</h3>
+            <h3 className={styles.settingLabel}>{t('options_floatingButtonTitle')}</h3>
             <p className={styles.settingDescription}>
               {t('options_floatingButtonDescription')}
             </p>
@@ -33,6 +33,16 @@ const GeneralTab: React.FC<GeneralTabProps> = ({ settings, onSettingChange }) =>
             />
             <span className={styles.slider}></span>
           </label>
+        </div>
+
+        <div className={styles.settingItem}>
+          <div className={styles.settingInfo}>
+            <h3 className={styles.settingLabel}>{t('options_languageTitle')}</h3>
+            <p className={styles.settingDescription}>
+              {t('options_languageDescription')}
+            </p>
+          </div>
+          <LanguageSelector />
         </div>
       </div>
 

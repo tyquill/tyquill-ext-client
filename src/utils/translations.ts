@@ -299,6 +299,8 @@ const koTranslations = {
   options_generalSettings: "일반 설정",
   options_floatingButtonTitle: "플로팅 버튼 표시",
   options_floatingButtonDescription: "웹페이지에서 Tyquill 플로팅 버튼의 표시 여부를 설정합니다",
+  options_languageTitle: "언어 설정",
+  options_languageDescription: "Tyquill에서 사용할 언어를 선택하세요",
   options_settingsLoadError: "설정 로드 실패:",
   options_settingsSaveError: "설정 저장 실패:",
 
@@ -634,6 +636,8 @@ const enTranslations = {
   options_generalSettings: "General Settings",
   options_floatingButtonTitle: "Show Floating Button",
   options_floatingButtonDescription: "Configure whether to display the Tyquill floating button on web pages",
+  options_languageTitle: "Language Settings",
+  options_languageDescription: "Choose the language for Tyquill interface",
   options_settingsLoadError: "Settings load failed:",
   options_settingsSaveError: "Settings save failed:",
 
