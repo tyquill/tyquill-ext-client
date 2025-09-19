@@ -737,9 +737,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             </div>
             
               <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
-                <strong>{t('archiveDetailPage_widthTipContent')}</strong>해서
-                <br />
-                {t('archiveDetailPage_widthTipContent2')}
+                {t('archiveDetailPage_widthTipContent')}
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
