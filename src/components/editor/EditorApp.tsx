@@ -6,6 +6,7 @@ import { markdownToHtml } from '../../utils/markdownConverter';
 import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import { useI18n } from '../../hooks/useI18n';
+import { useLanguageStore } from '../../stores/languageStore';
 import styles from './EditorApp.module.css';
 
 interface EditorData {
@@ -18,6 +19,7 @@ interface EditorData {
 
 const EditorApp: React.FC = () => {
   const { t } = useI18n();
+  const { initializeLanguage } = useLanguageStore();
   const [editorData, setEditorData] = useState<EditorData | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -25,6 +27,11 @@ const EditorApp: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const pageStartTimeRef = useRef<number>(Date.now());
+
+  // 언어 설정 초기화
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
 
   // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
   useEffect(() => {
