@@ -150,7 +150,7 @@ function createTyquillButton(): HTMLButtonElement {
   } catch {}
 
   const label = document.createElement('span');
-  label.textContent = '스크랩';
+  label.textContent = 'Save to Tyquill';
   label.style.fontSize = '14px';
   label.style.lineHeight = '16px';
   label.style.whiteSpace = 'nowrap';

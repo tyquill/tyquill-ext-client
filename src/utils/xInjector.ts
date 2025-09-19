@@ -140,8 +140,8 @@ function createTyquillButton(): HTMLDivElement {
   const el = document.createElement('div');
   el.setAttribute('role', 'button');
   el.setAttribute('tabindex', '0');
-  el.setAttribute('aria-label', 'Tyquill로 스크랩');
-  el.setAttribute('data-tooltip', 'Tyquill로 스크랩');
+  el.setAttribute('aria-label', 'Save to Tyquill');
+  el.setAttribute('data-tooltip', 'Save to Tyquill');
   el.setAttribute('data-tyquill', 'x-action');
 
   const icon = createXStyledTyquillIcon();
@@ -209,8 +209,8 @@ function createActionNodeUsingSiblingTemplate(container: HTMLElement): HTMLEleme
     const button = document.createElement('div');
     button.setAttribute('role', 'button');
     button.setAttribute('tabindex', '0');
-    button.setAttribute('aria-label', 'Tyquill로 스크랩');
-    button.setAttribute('data-tooltip', 'Tyquill로 스크랩');
+    button.setAttribute('aria-label', 'Save to Tyquill');
+    button.setAttribute('data-tooltip', 'Save to Tyquill');
     button.setAttribute('data-tyquill', 'x-action');
 
     // content root 복제
@@ -451,7 +451,7 @@ async function doScrapFromXButton(buttonEl: Element): Promise<void> {
   const root = findPostRootFromAction(buttonEl);
   const author = extractAuthorName(root) || '';
   let content = collectPostText(root, author);
-  const title = author ? `X 포스트 | ${author}` : 'X 포스트';
+  const title = author ? `X Post | ${author}` : 'X Post';
   const url = extractPermalink(root);
   const images = extractImageMarkdown(root);
   if (images.length > 0) {
