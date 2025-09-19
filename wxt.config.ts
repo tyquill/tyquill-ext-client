@@ -6,7 +6,7 @@ export default defineConfig({
   modules: ['@wxt-dev/analytics/module'],
   manifest: {
     name: 'Tyquill',
-    version: '1.3.2',
+    version: '1.3.3',
     description: '__MSG_extDescription__',
     default_locale: 'en',
     permissions: [
