@@ -5,6 +5,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 import styles from './ScrapView.module.css';
 import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 import { FiZoomIn, FiZoomOut, FiDownload } from 'react-icons/fi';
+import { trackPDFDownloadBridge } from '../analytics/bridge';
 
 // PDF.js worker setup - use local worker for Chrome extension
 pdfjs.GlobalWorkerOptions.workerSrc = (globalThis as any).chrome?.runtime?.getURL('pdf.worker.min.js') || '/pdf.worker.min.js';
@@ -190,6 +191,14 @@ const UploadView: React.FC<Props> = ({ id }) => {
                 href={upload.url}
                 download
                 rel="noreferrer"
+                onClick={() => {
+                  trackPDFDownloadBridge({
+                    file_id: id,
+                    file_name: upload.title,
+                    file_size: upload.fileSize,
+                    mime_type: upload.mimeType
+                  });
+                }}
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

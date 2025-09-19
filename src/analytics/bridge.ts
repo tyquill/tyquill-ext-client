@@ -36,6 +36,8 @@ const EVENT_NAMES = {
   ARCHIVE_VERSION_CHANGED: 'archive_version_changed',
   // Platform Scraping Events
   PLATFORM_CONTENT_SCRAPED: 'platform_content_scraped',
+  // PDF Events
+  PDF_DOWNLOAD: 'pdf_download',
   // Page Navigation Events
   PAGE_VIEW: 'page_view',
   PAGE_EXIT: 'page_exit',
@@ -167,6 +169,11 @@ export async function trackArchiveVersionChangedBridge(properties?: Record<strin
 // Platform Scraping Event Tracking Functions
 export async function trackPlatformContentScrapedBridge(properties?: Record<string, any>): Promise<void> {
   return captureInBackground(EVENT_NAMES.PLATFORM_CONTENT_SCRAPED, properties)
+}
+
+// PDF Event Tracking Functions
+export async function trackPDFDownloadBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.PDF_DOWNLOAD, properties)
 }
 
 // Page Navigation Event Tracking Functions
