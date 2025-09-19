@@ -29,7 +29,7 @@ export default defineConfig({
     },
     content_security_policy: {
       extension_pages:
-        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com",
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.amazonaws.com",
     },
     side_panel: {
       default_path: 'sidepanel.html'
@@ -38,7 +38,8 @@ export default defineConfig({
       {
         resources: [
           'webviewer.html',
-          'editor.html'
+          'editor.html',
+          'pdf.worker.min.js'
         ],
         matches: ['<all_urls>']
       }
