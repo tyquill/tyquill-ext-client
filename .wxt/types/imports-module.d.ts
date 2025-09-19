@@ -23,6 +23,7 @@ declare module '#imports' {
   export { ToastContainer } from '../src/components/ToastContainer';
   export { useAuth, UseAuthReturn } from '../src/hooks/useAuth';
   export { useI18n, t } from '../src/hooks/useI18n';
+  export { usePageTracking, PageTrackingOptions } from '../src/hooks/usePageTracking';
   export { ToastProvider, useToast, useToastHelpers } from '../src/hooks/useToast';
   export { animations, createBounceAnimation, getReducedMotion, getAnimation } from '../src/utils/animations';
   export { WHITE_LOGO_URL, X_SELECTORS, X_STYLE_TEXT, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT, YT_SELECTORS, YT_STYLE_TEXT, THREADS_SELECTORS, THREADS_STYLE_TEXT } from '../src/utils/constants';

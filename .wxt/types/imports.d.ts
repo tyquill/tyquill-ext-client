@@ -56,6 +56,7 @@ declare global {
   const useAppConfig: typeof import('wxt/utils/app-config')['useAppConfig']
   const useAuth: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth')['useAuth']
   const useI18n: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useI18n')['useI18n']
+  const usePageTracking: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking')['usePageTracking']
   const useToast: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useToast')['useToast']
   const useToastHelpers: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useToast')['useToastHelpers']
   const webClipper: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['webClipper']
@@ -95,6 +96,9 @@ declare global {
   // @ts-ignore
   export type { UseAuthReturn } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth'
   import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth')
+  // @ts-ignore
+  export type { PageTrackingOptions } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking')
   // @ts-ignore
   export type { ScrapStatus, ScrapState } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper'
   import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')

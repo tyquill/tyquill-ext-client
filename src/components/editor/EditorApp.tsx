@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { browser } from 'wxt/browser';
 import { articleService, UpdateArticleDto } from '../../services/articleService';
 import EditorWrapper from '../sidepanel/Editor/Editor';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
+import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import styles from './EditorApp.module.css';
 
 interface EditorData {
@@ -21,6 +22,7 @@ const EditorApp: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
+  const pageStartTimeRef = useRef<number>(Date.now());
 
   // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
   useEffect(() => {
@@ -41,6 +43,24 @@ const EditorApp: React.FC = () => {
           setEditorData(data);
           setTitle(data.title);
           setContent(data.content);
+
+          // Track fullscreen editor opened event
+          trackArchiveFullscreenEditorOpenedBridge({
+            article_id: data.articleId,
+            article_title: data.title,
+            content_length: data.content.length,
+            has_changes: false
+          }).catch(() => {});
+
+          // Track page view for fullscreen editor
+          pageStartTimeRef.current = Date.now();
+          trackPageViewBridge({
+            page: 'fullscreen_editor',
+            page_detail: data.articleId.toString(),
+            article_id: data.articleId,
+            article_title: data.title,
+            editor_type: 'fullscreen'
+          }).catch(() => {});
           
           // 사용한 데이터 정리
           await browser.storage.local.remove(sessionKey);
@@ -68,11 +88,25 @@ const EditorApp: React.FC = () => {
     loadEditorData();
   }, []);
 
-  // 페이지 언로드 시 편집기 상태 정리
+  // 페이지 언로드 시 편집기 상태 정리 및 페이지 이탈 추적
   useEffect(() => {
     const handleUnload = () => {
       if (editorData) {
         browser.storage.local.remove(`tyquill-editor-open-${editorData.articleId}`);
+
+        // Track page exit
+        const duration = Math.round((Date.now() - pageStartTimeRef.current) / 1000);
+        if (duration > 0) {
+          trackPageExitBridge({
+            page: 'fullscreen_editor',
+            page_detail: editorData.articleId.toString(),
+            article_id: editorData.articleId,
+            duration,
+            has_unsaved_changes: hasChanges,
+            editor_type: 'fullscreen',
+            next_page: 'window_closed'
+          }).catch(() => {});
+        }
       }
     };
 
@@ -85,9 +119,23 @@ const EditorApp: React.FC = () => {
       // 컴포넌트 언마운트 시에도 정리
       if (editorData) {
         browser.storage.local.remove(`tyquill-editor-open-${editorData.articleId}`);
+
+        // Track page exit on component unmount
+        const duration = Math.round((Date.now() - pageStartTimeRef.current) / 1000);
+        if (duration > 0) {
+          trackPageExitBridge({
+            page: 'fullscreen_editor',
+            page_detail: editorData.articleId.toString(),
+            article_id: editorData.articleId,
+            duration,
+            has_unsaved_changes: hasChanges,
+            editor_type: 'fullscreen',
+            next_page: 'component_unmount'
+          }).catch(() => {});
+        }
       }
     };
-  }, [editorData]);
+  }, [editorData, hasChanges]);
 
   // 변경사항 감지
   useEffect(() => {
@@ -119,20 +167,31 @@ const EditorApp: React.FC = () => {
 
   const handleSave = useCallback(async () => {
     if (!editorData) return;
-    
+
     try {
       setSaving(true);
-      
+
       // 저장 전에 콘텐츠 정리
       const normalizedContent = content.replace(/\n{2,}/g, '\n').trim();
-      
+
       const updateData: UpdateArticleDto = {
         title: title.trim(),
         content: normalizedContent,
       };
-      
+
       await articleService.updateArticle(editorData.articleId, updateData);
-      
+
+      // Track save event
+      trackArchiveEditSavedBridge({
+        article_id: editorData.articleId,
+        article_title: title.trim(),
+        content_length: normalizedContent.length,
+        title_changed: title.trim() !== editorData.originalTitle,
+        content_changed: normalizedContent !== editorData.originalContent,
+        editor_type: 'fullscreen',
+        session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
+      }).catch(() => {});
+
       // 저장 성공 시 변경사항 플래그 및 실행 취소 상태 초기화
       setHasChanges(false);
       setCanUndo(false);
@@ -163,9 +222,21 @@ const EditorApp: React.FC = () => {
       const confirmCancel = window.confirm('변경사항이 저장되지 않았습니다. 정말 취소하시겠습니까?');
       if (!confirmCancel) return;
     }
-    
+
+    // Track cancel event
+    if (editorData) {
+      trackArchiveEditCancelledBridge({
+        article_id: editorData.articleId,
+        had_changes: hasChanges,
+        title_changed: title !== editorData.originalTitle,
+        content_changed: content !== editorData.originalContent,
+        editor_type: 'fullscreen',
+        session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
+      }).catch(() => {});
+    }
+
     window.close();
-  }, [hasChanges]);
+  }, [hasChanges, editorData, title, content]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {

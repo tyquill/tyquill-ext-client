@@ -36,6 +36,9 @@ const EVENT_NAMES = {
   ARCHIVE_VERSION_CHANGED: 'archive_version_changed',
   // Platform Scraping Events
   PLATFORM_CONTENT_SCRAPED: 'platform_content_scraped',
+  // Page Navigation Events
+  PAGE_VIEW: 'page_view',
+  PAGE_EXIT: 'page_exit',
 } as const
 
 export async function captureInBackground(event: string, properties?: Record<string, any>): Promise<void> {
@@ -164,5 +167,14 @@ export async function trackArchiveVersionChangedBridge(properties?: Record<strin
 // Platform Scraping Event Tracking Functions
 export async function trackPlatformContentScrapedBridge(properties?: Record<string, any>): Promise<void> {
   return captureInBackground(EVENT_NAMES.PLATFORM_CONTENT_SCRAPED, properties)
+}
+
+// Page Navigation Event Tracking Functions
+export async function trackPageViewBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.PAGE_VIEW, properties)
+}
+
+export async function trackPageExitBridge(properties?: Record<string, any>): Promise<void> {
+  return captureInBackground(EVENT_NAMES.PAGE_EXIT, properties)
 }
 

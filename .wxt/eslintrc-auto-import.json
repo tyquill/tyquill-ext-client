@@ -26,6 +26,7 @@
     "MatchPattern": true,
     "MigrationError": true,
     "PageMetadata": true,
+    "PageTrackingOptions": true,
     "ScrapResult": true,
     "ScrapState": true,
     "ScrapStatus": true,
@@ -93,6 +94,7 @@
     "useAppConfig": true,
     "useAuth": true,
     "useI18n": true,
+    "usePageTracking": true,
     "useToast": true,
     "useToastHelpers": true,
     "webClipper": true
