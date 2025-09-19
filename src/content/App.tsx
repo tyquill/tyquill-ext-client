@@ -9,6 +9,7 @@ import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
 import { initThreadsInjector } from '../utils/threadsInjector';
 import { initYouTubeInjector } from '../utils/youtubeInjector';
 import { initXInjector } from '../utils/xInjector';
+import { initRedditInjector } from '../utils/redditInjector';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
@@ -25,6 +26,10 @@ const App: React.FC = () => {
   const isX = (typeof window !== 'undefined') && (
     window.location.hostname.includes('x.com') ||
     window.location.hostname.includes('twitter.com')
+  );
+  const isReddit = (typeof window !== 'undefined') && (
+    window.location.hostname.includes('reddit.com') ||
+    window.location.hostname.includes('redd.it')
   );
 
   // 언어 설정 초기화
@@ -177,6 +182,18 @@ const App: React.FC = () => {
       window.removeEventListener('tyquill:yt-button-click', handleClick as EventListener);
     };
   }, [isYouTube]);
+
+  // Reddit 포스트 카드에 Tyquill 아이콘 주입
+  useEffect(() => {
+    if (!isReddit) return;
+    let cleanup: (() => void) | undefined;
+    try {
+      cleanup = initRedditInjector();
+    } catch {}
+    return () => {
+      try { cleanup && cleanup(); } catch {}
+    };
+  }, [isReddit]);
 
   return (
     <div id="tyquill-content-root">
