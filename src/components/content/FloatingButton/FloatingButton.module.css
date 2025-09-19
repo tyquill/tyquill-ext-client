@@ -34,6 +34,10 @@
   height: 24px;
   border-radius: 4px;
   pointer-events: none;
+  display: block;
+  margin: 0;
+  flex-shrink: 0;
+  transform: none !important;
 }
 
 /* 단축키 표시 */
