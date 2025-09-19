@@ -9,9 +9,10 @@ import { animations, getAnimation } from '../../../utils/animations';
 interface CopyButtonProps {
   title: string;
   content: string;
+  onCopySuccess?: () => void;
 }
 
-const CopyButton: React.FC<CopyButtonProps> = ({ title, content }) => {
+const CopyButton: React.FC<CopyButtonProps> = ({ title, content, onCopySuccess }) => {
   const { showSuccess, showError } = useToastHelpers();
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -56,10 +57,13 @@ const CopyButton: React.FC<CopyButtonProps> = ({ title, content }) => {
         ]);
         
         showSuccess('복사 완료', '서식이 포함된 형태로 클립보드에 복사되었습니다.');
-        
+
         // Show success animation
         setShowSuccessAnimation(true);
         setTimeout(() => setShowSuccessAnimation(false), 1500);
+
+        // Call success callback
+        onCopySuccess?.();
       } else {
         // 렌더링된 요소를 찾을 수 없는 경우 원본 콘텐츠 복사
         let cleanContent = content;
@@ -77,10 +81,13 @@ const CopyButton: React.FC<CopyButtonProps> = ({ title, content }) => {
         
         await navigator.clipboard.writeText(fullContent);
         showSuccess('복사 완료', '마크다운 형식으로 클립보드에 복사되었습니다.');
-        
+
         // Show success animation
         setShowSuccessAnimation(true);
         setTimeout(() => setShowSuccessAnimation(false), 1500);
+
+        // Call success callback
+        onCopySuccess?.();
       }
     } catch (error) {
       console.error('Copy error:', error);

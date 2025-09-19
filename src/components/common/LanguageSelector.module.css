@@ -1,0 +1,163 @@
+/* Full Language Selector */
+.languageSelector {
+  display: flex;
+  align-items: center;
+}
+
+.select {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  min-width: 120px;
+  transition: all 0.2s ease;
+}
+
+.select:hover {
+  border-color: #d1d5db;
+}
+
+.select:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+.label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.labelIcon {
+  color: #9ca3af;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 4px;
+  background-color: #f3f4f6;
+  padding: 2px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.languageButton {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background-color: transparent;
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 60px;
+}
+
+.languageButton:hover {
+  background-color: #e5e7eb;
+  color: #374151;
+}
+
+.languageButton.active {
+  background-color: #ffffff;
+  color: #3b82f6;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Compact Language Selector */
+.compactSelector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: #f9fafb;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.icon {
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.compactSelect {
+  border: none;
+  background: transparent;
+  color: #374151;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  padding: 2px 4px;
+  min-width: 60px;
+}
+
+.compactSelect:focus {
+  outline: none;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .select {
+    background-color: #374151;
+    color: #f3f4f6;
+    border-color: #4b5563;
+  }
+
+  .select:hover {
+    border-color: #6b7280;
+  }
+
+  .select:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.1);
+  }
+
+  .label {
+    color: #9ca3af;
+  }
+
+  .labelIcon {
+    color: #6b7280;
+  }
+
+  .buttonGroup {
+    background-color: #374151;
+  }
+
+  .languageButton {
+    color: #9ca3af;
+  }
+
+  .languageButton:hover {
+    background-color: #4b5563;
+    color: #d1d5db;
+  }
+
+  .languageButton.active {
+    background-color: #1f2937;
+    color: #60a5fa;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .compactSelector {
+    background-color: #374151;
+  }
+
+  .icon {
+    color: #9ca3af;
+  }
+
+  .compactSelect {
+    color: #f3f4f6;
+  }
+}

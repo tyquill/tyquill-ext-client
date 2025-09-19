@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, THREADS_SELECTORS, THREADS_STYLE_TEXT } from './constants';
+import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
 
 type CleanupFn = () => void;
 
@@ -394,8 +395,24 @@ async function doScrapFromThreadsButton(buttonEl: Element): Promise<void> {
   if (images.length > 0) {
     content = content ? `${content}\n\n${images.join('\n')}` : images.join('\n');
   }
+
+  // Track scraping event
+  try {
+    await trackPlatformContentScrapedBridge({
+      platform: 'threads',
+      content_type: 'post',
+      has_author: !!author,
+      has_images: images.length > 0,
+      content_length: content.length,
+      image_count: images.length,
+      url: url,
+      has_content: !!content.trim()
+    });
+  } catch {}
+
   if (!content.trim()) {
     // 콘텐츠가 없으면 페이지 스크랩으로 폴백하지 않고 종료
+    return;
   }
   try {
     await browser.runtime.sendMessage({

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
+import { useLanguageStore } from '../stores/languageStore';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 import { WebClipper } from '../utils/webClipper';
 import { initLinkedInInjector } from '../utils/linkedinInjector';
@@ -11,6 +12,7 @@ import { initXInjector } from '../utils/xInjector';
 
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
+  const { initializeLanguage } = useLanguageStore();
   const isThreads = (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
     window.location.hostname.includes('threads.com') ||
@@ -25,19 +27,24 @@ const App: React.FC = () => {
     window.location.hostname.includes('twitter.com')
   );
 
+  // 언어 설정 초기화
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
+
   // Background Script로부터의 메시지 처리
   useEffect(() => {
-    const handleMessage = async (request: any, sender: any, sendResponse: any) => {
+    const handleMessage = async (request: any, _sender: any, sendResponse: any) => {
       // console.log('Content Script 메시지 수신:', request);
-      
+
       if (request.type === 'SETTINGS_CHANGED') {
         // console.log('설정 변경 감지:', request.settings);
-        
+
         // 설정 변경 시 CustomEvent를 통해 FloatingButton에 직접 알림
         window.dispatchEvent(new CustomEvent('tyquill-settings-changed', {
           detail: request.settings
         }));
-        
+
         // 응답 보내기 (선택사항)
         if (sendResponse) {
           sendResponse({ success: true });
@@ -71,6 +78,22 @@ const App: React.FC = () => {
       // browser.runtime.onMessage.removeListener(handleMessage); // 이 메서드는 존재하지 않음
     };
   }, []);
+
+  // Chrome storage 변경 감지 (언어 설정 동기화)
+  useEffect(() => {
+    const handleStorageChange = (changes: any) => {
+      if (changes['tyquill-language-preference']) {
+        // 언어 설정이 변경되면 content script에서도 동기화
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [initializeLanguage]);
 
   // DOM이 준비되면 FloatingButton 표시
   useEffect(() => {

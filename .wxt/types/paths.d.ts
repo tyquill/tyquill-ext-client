@@ -5,6 +5,8 @@ declare module "wxt/browser" {
   export type PublicPath =
     | ""
     | "/"
+    | "/_locales/en/messages.json"
+    | "/_locales/ko/messages.json"
     | "/assets/logo.png"
     | "/auth/callback.html"
     | "/background.js"
@@ -15,6 +17,7 @@ declare module "wxt/browser" {
     | "/icon32.png"
     | "/icon48.png"
     | "/options.html"
+    | "/pdf.worker.min.js"
     | "/sidepanel.html"
     | "/webviewer.html"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>

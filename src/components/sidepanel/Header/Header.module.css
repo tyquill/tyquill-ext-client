@@ -37,7 +37,12 @@
   position: relative;
   display: flex;
   align-items: center;
+  gap: 12px;
   z-index: 999999;
+}
+
+.languageSelector {
+  flex-shrink: 0;
 }
 
 /* Avatar Container */
@@ -247,6 +252,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
   position: relative;
   z-index: 1;
 }
@@ -298,6 +305,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 24px;
+  height: 24px;
   position: relative;
   z-index: 1;
   color: #666666;

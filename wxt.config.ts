@@ -2,10 +2,13 @@ import { defineConfig } from 'wxt';
 
 // See https://wxt.dev/api/config.html
 export default defineConfig({
+  srcDir: 'src',
+  modules: ['@wxt-dev/analytics/module'],
   manifest: {
     name: 'Tyquill',
     version: '1.3.2',
-    description: 'Tyquill은 뉴스레터 작성에 관한 소모성 작업을 줄이고 창작에 열중할 수 있게 돕습니다.',
+    description: '__MSG_extDescription__',
+    default_locale: 'en',
     permissions: [
       'storage',
       'sidePanel',
@@ -26,7 +29,7 @@ export default defineConfig({
     },
     content_security_policy: {
       extension_pages:
-        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://us.i.posthog.com https://*.i.posthog.com https://app.posthog.com https://*.posthog.com",
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.amazonaws.com",
     },
     side_panel: {
       default_path: 'sidepanel.html'
@@ -35,7 +38,8 @@ export default defineConfig({
       {
         resources: [
           'webviewer.html',
-          'editor.html'
+          'editor.html',
+          'pdf.worker.min.js'
         ],
         matches: ['<all_urls>']
       }

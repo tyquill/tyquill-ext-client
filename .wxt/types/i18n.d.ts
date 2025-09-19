@@ -72,8 +72,616 @@ declare module "wxt/browser" {
       substitutions?: string | string[],
       options?: GetMessageOptions,
     ): string;
+    /**
+     * "Tyquill helps you reduce repetitive tasks in newsletter writing and focus on creative work."
+     */
     getMessage(
-      messageName: "@@extension_id" | "@@ui_locale" | "@@bidi_dir" | "@@bidi_reversed_dir" | "@@bidi_start_edge" | "@@bidi_end_edge",
+      messageName: "extDescription",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "The Easiest Newsletter Generation Tool"
+     */
+    getMessage(
+      messageName: "landingPage_title",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Save resources from websites and let professional newsletter AI generate drafts. You can transfer them to the editor in just 1 second."
+     */
+    getMessage(
+      messageName: "landingPage_description",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Supported Platforms"
+     */
+    getMessage(
+      messageName: "landingPage_supportedPlatforms",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Coming Soon"
+     */
+    getMessage(
+      messageName: "landingPage_comingSoon",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Signing in..."
+     */
+    getMessage(
+      messageName: "landingPage_loginLoading",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Start with Google"
+     */
+    getMessage(
+      messageName: "landingPage_startWithGoogle",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Login successful"
+     */
+    getMessage(
+      messageName: "landingPage_loginSuccess",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Welcome to Tyquill!"
+     */
+    getMessage(
+      messageName: "landingPage_welcomeMessage",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Login failed"
+     */
+    getMessage(
+      messageName: "landingPage_loginFailed",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "An error occurred during login. Please try again."
+     */
+    getMessage(
+      messageName: "landingPage_loginError",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Scrap"
+     */
+    getMessage(
+      messageName: "menu_scrap",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Style Management"
+     */
+    getMessage(
+      messageName: "menu_styleManagement",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Generate Draft"
+     */
+    getMessage(
+      messageName: "menu_draft",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Archive"
+     */
+    getMessage(
+      messageName: "menu_archive",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Settings"
+     */
+    getMessage(
+      messageName: "menu_settings",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Sign out"
+     */
+    getMessage(
+      messageName: "menu_signOut",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Signing out..."
+     */
+    getMessage(
+      messageName: "menu_signingOut",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Clip Current Page"
+     */
+    getMessage(
+      messageName: "scrapPage_clipCurrentPage",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Upload PDF"
+     */
+    getMessage(
+      messageName: "scrapPage_uploadPDF",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Refresh"
+     */
+    getMessage(
+      messageName: "scrapPage_refresh",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Filter by Tag"
+     */
+    getMessage(
+      messageName: "scrapPage_filterByTag",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "All Tags"
+     */
+    getMessage(
+      messageName: "scrapPage_allTags",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "No saved scraps"
+     */
+    getMessage(
+      messageName: "scrapPage_noScraps",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "An error occurred while loading scraps"
+     */
+    getMessage(
+      messageName: "scrapPage_loadingError",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Retry"
+     */
+    getMessage(
+      messageName: "scrapPage_retry",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Scraps"
+     */
+    getMessage(
+      messageName: "scrapPage_scraps",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Uploads"
+     */
+    getMessage(
+      messageName: "scrapPage_uploads",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Are you sure you want to delete?"
+     */
+    getMessage(
+      messageName: "scrapPage_deleteConfirm",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Deleted successfully"
+     */
+    getMessage(
+      messageName: "scrapPage_deleteSuccess",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Delete failed"
+     */
+    getMessage(
+      messageName: "scrapPage_deleteFailed",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Page saved successfully"
+     */
+    getMessage(
+      messageName: "scrapPage_clipSuccess",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Failed to save page"
+     */
+    getMessage(
+      messageName: "scrapPage_clipFailed",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Archive"
+     */
+    getMessage(
+      messageName: "archivePage_title",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Search by title or keywords"
+     */
+    getMessage(
+      messageName: "archivePage_searchPlaceholder",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "No articles generated yet"
+     */
+    getMessage(
+      messageName: "archivePage_noArticles",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Create your first newsletter"
+     */
+    getMessage(
+      messageName: "archivePage_createFirst",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "An error occurred while loading articles"
+     */
+    getMessage(
+      messageName: "archivePage_loadError",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Style Management"
+     */
+    getMessage(
+      messageName: "stylePage_title",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Add New Style"
+     */
+    getMessage(
+      messageName: "stylePage_createNew",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Style Name"
+     */
+    getMessage(
+      messageName: "stylePage_name",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Description"
+     */
+    getMessage(
+      messageName: "stylePage_description",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Examples"
+     */
+    getMessage(
+      messageName: "stylePage_examples",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Add Example"
+     */
+    getMessage(
+      messageName: "stylePage_addExample",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Save"
+     */
+    getMessage(
+      messageName: "stylePage_save",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Cancel"
+     */
+    getMessage(
+      messageName: "stylePage_cancel",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Delete"
+     */
+    getMessage(
+      messageName: "stylePage_delete",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Edit"
+     */
+    getMessage(
+      messageName: "stylePage_edit",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "No styles registered"
+     */
+    getMessage(
+      messageName: "stylePage_noStyles",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Generate Draft"
+     */
+    getMessage(
+      messageName: "draftPage_title",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Topic"
+     */
+    getMessage(
+      messageName: "draftPage_topic",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Enter newsletter topic"
+     */
+    getMessage(
+      messageName: "draftPage_topicPlaceholder",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Key Insight"
+     */
+    getMessage(
+      messageName: "draftPage_keyInsight",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Enter the key message to deliver to readers"
+     */
+    getMessage(
+      messageName: "draftPage_keyInsightPlaceholder",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Additional Instructions"
+     */
+    getMessage(
+      messageName: "draftPage_additionalPrompt",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Enter any additional instructions for AI"
+     */
+    getMessage(
+      messageName: "draftPage_additionalPromptPlaceholder",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Select Scraps"
+     */
+    getMessage(
+      messageName: "draftPage_selectScraps",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Select Style"
+     */
+    getMessage(
+      messageName: "draftPage_selectStyle",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Generate"
+     */
+    getMessage(
+      messageName: "draftPage_generate",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Generating..."
+     */
+    getMessage(
+      messageName: "draftPage_generating",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Newsletter generated successfully"
+     */
+    getMessage(
+      messageName: "draftPage_generateSuccess",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "An error occurred during generation"
+     */
+    getMessage(
+      messageName: "draftPage_generateError",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "No scraps selected"
+     */
+    getMessage(
+      messageName: "draftPage_noSelectedScraps",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Please select at least one scrap"
+     */
+    getMessage(
+      messageName: "draftPage_atLeastOneScrap",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Loading..."
+     */
+    getMessage(
+      messageName: "common_loading",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Error"
+     */
+    getMessage(
+      messageName: "common_error",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Success"
+     */
+    getMessage(
+      messageName: "common_success",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Save"
+     */
+    getMessage(
+      messageName: "common_save",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Cancel"
+     */
+    getMessage(
+      messageName: "common_cancel",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Delete"
+     */
+    getMessage(
+      messageName: "common_delete",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Edit"
+     */
+    getMessage(
+      messageName: "common_edit",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Copy"
+     */
+    getMessage(
+      messageName: "common_copy",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Copied"
+     */
+    getMessage(
+      messageName: "common_copied",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Export"
+     */
+    getMessage(
+      messageName: "common_export",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Close"
+     */
+    getMessage(
+      messageName: "common_close",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    /**
+     * "Confirm"
+     */
+    getMessage(
+      messageName: "common_confirm",
+      substitutions?: string | string[],
+      options?: GetMessageOptions,
+    ): string;
+    getMessage(
+      messageName: "@@extension_id" | "@@ui_locale" | "@@bidi_dir" | "@@bidi_reversed_dir" | "@@bidi_start_edge" | "@@bidi_end_edge" | "extDescription" | "landingPage_title" | "landingPage_description" | "landingPage_supportedPlatforms" | "landingPage_comingSoon" | "landingPage_loginLoading" | "landingPage_startWithGoogle" | "landingPage_loginSuccess" | "landingPage_welcomeMessage" | "landingPage_loginFailed" | "landingPage_loginError" | "menu_scrap" | "menu_styleManagement" | "menu_draft" | "menu_archive" | "menu_settings" | "menu_signOut" | "menu_signingOut" | "scrapPage_clipCurrentPage" | "scrapPage_uploadPDF" | "scrapPage_refresh" | "scrapPage_filterByTag" | "scrapPage_allTags" | "scrapPage_noScraps" | "scrapPage_loadingError" | "scrapPage_retry" | "scrapPage_scraps" | "scrapPage_uploads" | "scrapPage_deleteConfirm" | "scrapPage_deleteSuccess" | "scrapPage_deleteFailed" | "scrapPage_clipSuccess" | "scrapPage_clipFailed" | "archivePage_title" | "archivePage_searchPlaceholder" | "archivePage_noArticles" | "archivePage_createFirst" | "archivePage_loadError" | "stylePage_title" | "stylePage_createNew" | "stylePage_name" | "stylePage_description" | "stylePage_examples" | "stylePage_addExample" | "stylePage_save" | "stylePage_cancel" | "stylePage_delete" | "stylePage_edit" | "stylePage_noStyles" | "draftPage_title" | "draftPage_topic" | "draftPage_topicPlaceholder" | "draftPage_keyInsight" | "draftPage_keyInsightPlaceholder" | "draftPage_additionalPrompt" | "draftPage_additionalPromptPlaceholder" | "draftPage_selectScraps" | "draftPage_selectStyle" | "draftPage_generate" | "draftPage_generating" | "draftPage_generateSuccess" | "draftPage_generateError" | "draftPage_noSelectedScraps" | "draftPage_atLeastOneScrap" | "common_loading" | "common_error" | "common_success" | "common_save" | "common_cancel" | "common_delete" | "common_edit" | "common_copy" | "common_copied" | "common_export" | "common_close" | "common_confirm",
       substitutions?: string | string[],
       options?: GetMessageOptions,
     ): string;

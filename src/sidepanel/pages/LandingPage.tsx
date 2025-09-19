@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToastHelpers } from '../../hooks/useToast';
+import { useI18n } from '../../hooks/useI18n';
 import styles from './LandingPage.module.css';
 
 interface LandingPageProps {
@@ -10,16 +11,17 @@ interface LandingPageProps {
 const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const { login, isLoading, error, clearError } = useAuth();
   const { showSuccess, showError } = useToastHelpers();
+  const { t } = useI18n();
 
   const handleStartClick = async () => {
     try {
       clearError();
       await login();
-      showSuccess('로그인 성공', 'Tyquill에 오신 것을 환영합니다!');
+      showSuccess(t('landingPage_loginSuccess'), t('landingPage_welcomeMessage'));
       onStart(); // 인증 성공 후 메인 페이지로 이동
     } catch (err: any) {
-      const errorMessage = err?.message || '로그인 중 오류가 발생했습니다. 다시 시도해 주세요.';
-      showError('로그인 실패', errorMessage);
+      const errorMessage = err?.message || t('landingPage_loginError');
+      showError(t('landingPage_loginFailed'), errorMessage);
     }
   };
 
@@ -33,13 +35,15 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
       {/* Core content */}
       <main className={styles.mainContent}>
         <h2 className={styles.title}>
-          가장 쉬운<br />
-          뉴스레터 생성 도구
+          {t('landingPage_title').split('\n').map((line, index) => (
+            <React.Fragment key={index}>
+              {line}
+              {index < t('landingPage_title').split('\n').length - 1 && <br />}
+            </React.Fragment>
+          ))}
         </h2>
         <p className={styles.description}>
-          웹사이트에서 리소스를 저장하고,<br />
-          전문 뉴스레터 AI에게 초안을 생성을 맡기세요.<br />
-          1초만에 에디터로 옮겨넣을 수 있습니다.
+          {t('landingPage_description')}
         </p>
 
         {/* CTA section */}
@@ -47,7 +51,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           
           {/* Supported platforms */}
           <div className={styles.platforms}>
-            <span className={styles.platformsLabel}>지원하는 플랫폼</span>
+            <span className={styles.platformsLabel}>{t('landingPage_supportedPlatforms')}</span>
             <div className={styles.platformsList}>
               <div className={styles.platform}>
                 <img 
@@ -57,7 +61,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 />
               </div>
               <div className={styles.platformComingSoon}>
-                추가 예정
+                {t('landingPage_comingSoon')}
               </div>
             </div>
           </div>
@@ -82,7 +86,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15m3 0l3-3m0 0l-3-3m3 3H9" />
             </svg>
-            <span>{isLoading ? '로그인 중...' : 'Google로 시작하기'}</span>
+            <span>{isLoading ? t('landingPage_loginLoading') : t('landingPage_startWithGoogle')}</span>
           </button>
         </div>
       </main>

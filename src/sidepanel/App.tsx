@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { useLanguageStore } from '../stores/languageStore';
 import { ToastProvider } from '../hooks/useToast';
+import { trackPageViewBridge, trackPageExitBridge } from '../analytics/bridge';
 import LandingPage from './pages/LandingPage';
 import Header, { Sidebar } from '../components/sidepanel/Header/Header';
 import ScrapPage from './pages/ScrapPage';
@@ -21,7 +23,10 @@ interface PageState {
 
 const App: React.FC = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  const { initializeLanguage } = useLanguageStore();
   const [currentPage, setCurrentPage] = useState<PageState>({ type: 'landing' });
+  const previousPageRef = useRef<PageState>({ type: 'landing' });
+  const pageStartTimeRef = useRef<number>(Date.now());
 
   const navigateToMain = () => {
     setCurrentPage({ type: 'scrap' });
@@ -43,6 +48,27 @@ const App: React.FC = () => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
 
+  // 언어 설정 초기화
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
+
+  // Chrome storage 변경 감지 (언어 설정 동기화)
+  useEffect(() => {
+    const handleStorageChange = (changes: any) => {
+      if (changes['tyquill-language-preference']) {
+        // 언어 설정이 변경되면 sidepanel에서도 동기화
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [initializeLanguage]);
+
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
     if (isAuthenticated) {
@@ -51,6 +77,39 @@ const App: React.FC = () => {
       setCurrentPage({ type: 'landing' });
     }
   }, [isAuthenticated]);
+
+  // 페이지 네비게이션 추적
+  useEffect(() => {
+    const currentTime = Date.now();
+    const previousPage = previousPageRef.current;
+
+    // 이전 페이지 이탈 추적 (첫 페이지가 아닌 경우)
+    if (previousPage.type !== currentPage.type || previousPage.draftId !== currentPage.draftId) {
+      const duration = Math.round((currentTime - pageStartTimeRef.current) / 1000);
+
+      // 이전 페이지 이탈 이벤트 (0초 이상인 경우만)
+      if (duration > 0) {
+        trackPageExitBridge({
+          page: previousPage.type,
+          page_detail: previousPage.draftId || null,
+          duration,
+          next_page: currentPage.type
+        }).catch(() => {});
+      }
+    }
+
+    // 현재 페이지 진입 추적
+    trackPageViewBridge({
+      page: currentPage.type,
+      page_detail: currentPage.draftId || null,
+      previous_page: previousPage.type,
+      is_authenticated: isAuthenticated
+    }).catch(() => {});
+
+    // 상태 업데이트
+    previousPageRef.current = currentPage;
+    pageStartTimeRef.current = currentTime;
+  }, [currentPage, isAuthenticated]);
 
   // 사이드패널 닫기 메시지 리스너
   useEffect(() => {
@@ -63,8 +122,19 @@ const App: React.FC = () => {
 
     browser.runtime.onMessage.addListener(messageListener);
 
-    // 사이드패널이 닫힐 때 background에 알리기
+    // 사이드패널이 닫힐 때 background에 알리기 & 최종 페이지 이탈 추적
     const handleBeforeUnload = () => {
+      // 최종 페이지 이탈 추적
+      const duration = Math.round((Date.now() - pageStartTimeRef.current) / 1000);
+      if (duration > 0) {
+        trackPageExitBridge({
+          page: currentPage.type,
+          page_detail: currentPage.draftId || null,
+          duration,
+          next_page: 'sidepanel_closed'
+        }).catch(() => {});
+      }
+
       browser.runtime.sendMessage({ action: 'sidePanelClosed' });
     };
 

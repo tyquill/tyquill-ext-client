@@ -32,12 +32,19 @@
   border-bottom: 1px solid #e5e5e5;
 }
 
+.headerTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
 .logo {
   font-family: 'Playfair Display', serif;
   font-size: 1.75rem;
   font-weight: 900;
   letter-spacing: -0.05em;
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   background: linear-gradient(to right, #000000, #333333);
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -89,12 +96,22 @@
 /* 콘텐츠 영역 */
 .content {
   flex: 1;
-  padding: 2rem;
+  padding: 0;
   overflow-y: auto;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e5e5e5;
+  background: #ffffff;
 }
 
 .tabContent {
   max-width: 600px;
+  padding: 2rem;
 }
 
 .sectionTitle {

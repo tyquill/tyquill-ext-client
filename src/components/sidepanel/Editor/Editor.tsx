@@ -5,6 +5,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { htmlToMarkdown, markdownToHtml } from '../../../utils/markdownConverter';
+import { useI18n } from '../../../hooks/useI18n';
 import { 
   RiBold, 
   RiItalic, 
@@ -42,6 +43,7 @@ interface MenuBarProps {
 }
 
 const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
+  const { t } = useI18n();
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent, tooltipText: string) => {
@@ -77,6 +79,26 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
 
   const handleMouseLeave = () => {
     setTooltip(null);
+  };
+
+  // Pre-compute tooltip texts to avoid build issues
+  const tooltips = {
+    bold: t('editor_bold'),
+    italic: t('editor_italic'),
+    underline: t('editor_underline'),
+    strikethrough: t('editor_strikethrough'),
+    inlineCode: t('editor_inlineCode'),
+    clearFormatting: t('editor_clearFormatting'),
+    clearNode: t('editor_clearNode'),
+    paragraph: t('editor_paragraph'),
+    bulletList: t('editor_bulletList'),
+    orderedList: t('editor_orderedList'),
+    codeBlock: t('editor_codeBlock'),
+    blockquote: t('editor_blockquote'),
+    horizontalRule: t('editor_horizontalRule'),
+    hardBreak: t('editor_hardBreak'),
+    undo: t('editor_undo'),
+    redo: t('editor_redo'),
   };
 
   const editorState = useEditorState({
@@ -120,7 +142,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editorState.canBold}
             className={editorState.isBold ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "굵게 (Ctrl+B)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.bold)}
             onMouseLeave={handleMouseLeave}
           >
             <RiBold size={16} />
@@ -129,7 +151,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editorState.canItalic}
             className={editorState.isItalic ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "기울임 (Ctrl+I)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.italic)}
             onMouseLeave={handleMouseLeave}
           >
             <RiItalic size={16} />
@@ -138,7 +160,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             disabled={!editorState.canUnderline}
             className={editorState.isUnderline ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "밑줄 (Ctrl+U)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.underline)}
             onMouseLeave={handleMouseLeave}
           >
             <RiUnderline size={16} />
@@ -147,7 +169,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
             onClick={() => editor.chain().focus().toggleStrike().run()}
             disabled={!editorState.canStrike}
             className={editorState.isStrike ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "취소선 (텍스트에 선 그어서 지우기)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.strikethrough)}
             onMouseLeave={handleMouseLeave}
           >
             <RiStrikethrough size={16} />
@@ -156,7 +178,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
             onClick={() => editor.chain().focus().toggleCode().run()}
             disabled={!editorState.canCode}
             className={editorState.isCode ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "인라인 코드 (한 줄 코드)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.inlineCode)}
             onMouseLeave={handleMouseLeave}
           >
             <RiCodeLine size={16} />
@@ -168,14 +190,14 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
         <div className={styles.toolbarGroup}>
           <button
             onClick={() => editor.chain().focus().unsetAllMarks().run()}
-            onMouseEnter={(e) => handleMouseEnter(e, "서식 지우기 (텍스트 스타일 제거)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.clearFormatting)}
             onMouseLeave={handleMouseLeave}
           >
             <RiFormatClear size={16} />
           </button>
           <button
             onClick={() => editor.chain().focus().clearNodes().run()}
-            onMouseEnter={(e) => handleMouseEnter(e, "노드 지우기 (블록 요소 제거)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.clearNode)}
             onMouseLeave={handleMouseLeave}
           >
             <RiDeleteBinLine size={16} />
@@ -188,13 +210,13 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().setParagraph().run()}
             className={editorState.isParagraph ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "본문 (일반 텍스트)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.paragraph)}
             onMouseLeave={handleMouseLeave}
           >
             <RiText size={16} />
           </button>
-                     <select
-             value={
+          <select
+            value={
                editorState.isHeading1 ? 'h1' :
                editorState.isHeading2 ? 'h2' :
                editorState.isHeading3 ? 'h3' :
@@ -203,24 +225,24 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
                editorState.isHeading6 ? 'h6' :
                'p'
              }
-             onChange={(e) => {
-               const value = e.target.value;
-               if (value === 'p') {
-                 editor.chain().focus().setParagraph().run();
-               } else {
-                 const level = parseInt(value.replace('h', '')) as 1 | 2 | 3 | 4 | 5 | 6;
-                 editor.chain().focus().toggleHeading({ level }).run();
-               }
-             }}
-             className={styles.headingSelect}
-           >
-            <option value="p">본문</option>
-            <option value="h1">제목 1</option>
-            <option value="h2">제목 2</option>
-            <option value="h3">제목 3</option>
-            <option value="h4">제목 4</option>
-            <option value="h5">제목 5</option>
-            <option value="h6">제목 6</option>
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === 'p') {
+                editor.chain().focus().setParagraph().run();
+              } else {
+                const level = parseInt(value.replace('h', '')) as 1 | 2 | 3 | 4 | 5 | 6;
+                editor.chain().focus().toggleHeading({ level }).run();
+              }
+            }}
+            className={styles.headingSelect}
+          >
+            <option value="p">{t('editor_paragraphOption')}</option>
+            <option value="h1">{t('editor_heading1')}</option>
+            <option value="h2">{t('editor_heading2')}</option>
+            <option value="h3">{t('editor_heading3')}</option>
+            <option value="h4">{t('editor_heading4')}</option>
+            <option value="h5">{t('editor_heading5')}</option>
+            <option value="h6">{t('editor_heading6')}</option>
           </select>
         </div>
       </div>
@@ -231,7 +253,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={editorState.isBulletList ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "글머리 기호 목록 (• 목록)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.bulletList)}
             onMouseLeave={handleMouseLeave}
           >
             <RiListUnordered size={16} />
@@ -239,7 +261,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={editorState.isOrderedList ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "번호 매기기 목록 (1. 2. 3. 목록)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.orderedList)}
             onMouseLeave={handleMouseLeave}
           >
             <RiListOrdered size={16} />
@@ -252,7 +274,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={editorState.isCodeBlock ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "코드 블록 (여러 줄 코드)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.codeBlock)}
             onMouseLeave={handleMouseLeave}
           >
             <RiCodeBoxLine size={16} />
@@ -260,21 +282,21 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={editorState.isBlockquote ? styles.isActive : ''}
-            onMouseEnter={(e) => handleMouseEnter(e, "인용구 (들여쓰기된 텍스트)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.blockquote)}
             onMouseLeave={handleMouseLeave}
           >
             <RiDoubleQuotesL size={16} />
           </button>
           <button
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
-            onMouseEnter={(e) => handleMouseEnter(e, "구분선 (가로선 추가)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.horizontalRule)}
             onMouseLeave={handleMouseLeave}
           >
             <RiSubtractLine size={16} />
           </button>
           <button
             onClick={() => editor.chain().focus().setHardBreak().run()}
-            onMouseEnter={(e) => handleMouseEnter(e, "줄바꿈 (강제 줄바꿈)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.hardBreak)}
             onMouseLeave={handleMouseLeave}
           >
             <RiCornerDownLeftLine size={16} />
@@ -287,7 +309,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editorState.canUndo}
-            onMouseEnter={(e) => handleMouseEnter(e, "실행 취소 (Ctrl+Z)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.undo)}
             onMouseLeave={handleMouseLeave}
           >
             <RiArrowGoBackLine size={16} />
@@ -295,7 +317,7 @@ const MenuBar: React.FC<MenuBarProps> = ({ editor }) => {
           <button
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editorState.canRedo}
-            onMouseEnter={(e) => handleMouseEnter(e, "다시 실행 (Ctrl+Y)")}
+            onMouseEnter={(e) => handleMouseEnter(e, tooltips.redo)}
             onMouseLeave={handleMouseLeave}
           >
             <RiArrowGoForwardLine size={16} />
@@ -567,10 +589,12 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
 const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   content,
   onChange,
-  placeholder = "내용을 입력하세요...",
+  placeholder,
   readOnly = false,
   onHistoryStateChange
 }) => {
+  const { t } = useI18n();
+  const actualPlaceholder = placeholder || t('editor_placeholder');
   const isUpdatingRef = useRef(false);
 
   // Markdown을 HTML로 변환하는 함수 (입력 호환성을 위해)
@@ -734,7 +758,7 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
           pointerEvents: 'none',
           fontSize: '16px'
         }}>
-          {placeholder}
+          {actualPlaceholder}
         </div>
       )}
     </div>

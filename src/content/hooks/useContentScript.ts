@@ -1,15 +1,16 @@
 import { useEffect, useCallback, useState } from 'react';
 import { webClipper } from '../../utils/webClipper';
 import { browser } from 'wxt/browser';
-import { 
-  PageInfo, 
-  ClipResult, 
-  SelectionInfo, 
-  UseContentScriptReturn,
-  ClipOptions 
+import { useI18n } from '../../hooks/useI18n';
+import {
+  PageInfo,
+  ClipResult,
+  SelectionInfo,
+  UseContentScriptReturn
 } from '../types';
 
 export const useContentScript = (): UseContentScriptReturn => {
+  const { t } = useI18n();
   const [isReady, setIsReady] = useState(false);
   const [currentSelection, setCurrentSelection] = useState<SelectionInfo>({
     hasSelection: false,
@@ -151,7 +152,7 @@ export const useContentScript = (): UseContentScriptReturn => {
 
       const editorContainer = document.querySelector('.codex-editor__redactor');
       if (!editorContainer) {
-        throw new Error('maily.so 에디터를 찾을 수 없습니다.');
+        throw new Error(t('content_mailyEditorNotFound'));
       }
 
       let targetElement = editorContainer.querySelector('[contenteditable="true"]');

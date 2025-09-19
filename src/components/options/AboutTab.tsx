@@ -1,9 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../../options/App.module.css';
 import { browser } from 'wxt/browser';
+import { useI18n } from '../../hooks/useI18n';
+import { useLanguageStore } from '../../stores/languageStore';
 
 const AboutTab: React.FC = () => {
+  const { t } = useI18n();
+  const { initializeLanguage } = useLanguageStore();
   const [version, setVersion] = useState<string>('');
+
+  // Initialize language store
+  useEffect(() => {
+    initializeLanguage();
+  }, [initializeLanguage]);
 
   useEffect(() => {
     const getManifestVersion = () => {
@@ -14,7 +23,7 @@ const AboutTab: React.FC = () => {
           setVersion(manifest.version);
         }
       } catch (error) {
-        console.error('버전 정보를 가져오는데 실패했습니다:', error);
+        console.error(t('options_versionLoadError'), error);
         setVersion('1.1.2'); // fallback
       }
     };
@@ -24,25 +33,24 @@ const AboutTab: React.FC = () => {
 
   return (
     <div className={styles.tabContent}>
-      <h2 className={styles.sectionTitle}>Tyquill 정보</h2>
+      <h2 className={styles.sectionTitle}>{t('options_aboutTitle')}</h2>
       
       <div className={styles.aboutSection}>
         <div className={styles.versionInfo}>
-          <h3 className={styles.versionTitle}>버전</h3>
+          <h3 className={styles.versionTitle}>{t('options_versionTitle')}</h3>
           <p className={styles.versionNumber}>{version}</p>
         </div>
 
         <div className={styles.description}>
           <p>
-            Tyquill은 웹사이트에서 리소스를 쉽게 저장하고 
-            전문 뉴스레터 AI에게 초안 생성을 맡길 수 있는 도구입니다.
+            {t('options_description')}
           </p>
         </div>
 
         {/* <div className={styles.links}>
-          <a href="#" className={styles.link}>개인정보처리방침</a>
-          <a href="#" className={styles.link}>이용약관</a>
-          <a href="#" className={styles.link}>지원</a>
+          <a href="#" className={styles.link}>{t('options_privacyPolicy')}</a>
+          <a href="#" className={styles.link}>{t('options_termsOfService')}</a>
+          <a href="#" className={styles.link}>{t('options_support')}</a>
         </div> */}
       </div>
     </div>

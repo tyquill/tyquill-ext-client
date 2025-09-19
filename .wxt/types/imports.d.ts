@@ -2,9 +2,30 @@
 export {}
 declare global {
   const ContentScriptContext: typeof import('wxt/utils/content-script-context')['ContentScriptContext']
+  const ErrorBoundary: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/ErrorBoundary')['default']
   const InvalidMatchPattern: typeof import('wxt/utils/match-patterns')['InvalidMatchPattern']
+  const LINKEDIN_SELECTORS: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['LINKEDIN_SELECTORS']
+  const LINKEDIN_STYLE_TEXT: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['LINKEDIN_STYLE_TEXT']
   const MatchPattern: typeof import('wxt/utils/match-patterns')['MatchPattern']
+  const THREADS_SELECTORS: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['THREADS_SELECTORS']
+  const THREADS_STYLE_TEXT: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['THREADS_STYLE_TEXT']
+  const Toast: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/Toast')['Toast']
+  const ToastContainer: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/ToastContainer')['ToastContainer']
+  const ToastProvider: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useToast')['ToastProvider']
+  const WHITE_LOGO_URL: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['WHITE_LOGO_URL']
+  const WebClipper: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['WebClipper']
+  const X_SELECTORS: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['X_SELECTORS']
+  const X_STYLE_TEXT: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['X_STYLE_TEXT']
+  const YT_SELECTORS: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['YT_SELECTORS']
+  const YT_STYLE_TEXT: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['YT_STYLE_TEXT']
+  const analytics: typeof import('#analytics')['analytics']
+  const animations: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['animations']
   const browser: typeof import('wxt/browser')['browser']
+  const clipAndScrapCurrentPage: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')['clipAndScrapCurrentPage']
+  const clipCurrentPageForStyle: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')['clipCurrentPageForStyle']
+  const clipMinimal: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['clipMinimal']
+  const clipSelection: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['clipSelection']
+  const createBounceAnimation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['createBounceAnimation']
   const createIframeUi: typeof import('wxt/utils/content-script-ui/iframe')['createIframeUi']
   const createIntegratedUi: typeof import('wxt/utils/content-script-ui/integrated')['createIntegratedUi']
   const createShadowRootUi: typeof import('wxt/utils/content-script-ui/shadow-root')['createShadowRootUi']
@@ -14,9 +35,31 @@ declare global {
   const defineUnlistedScript: typeof import('wxt/utils/define-unlisted-script')['defineUnlistedScript']
   const defineWxtPlugin: typeof import('wxt/utils/define-wxt-plugin')['defineWxtPlugin']
   const fakeBrowser: typeof import('wxt/testing')['fakeBrowser']
+  const getAnimation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['getAnimation']
+  const getReducedMotion: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['getReducedMotion']
+  const getTranslation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations')['getTranslation']
+  const htmlToMarkdown: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['htmlToMarkdown']
+  const initLinkedInInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/linkedinInjector')['initLinkedInInjector']
+  const initThreadsInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/threadsInjector')['initThreadsInjector']
+  const initXInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/xInjector')['initXInjector']
+  const initYouTubeInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/youtubeInjector')['initYouTubeInjector']
+  const initialScrapState: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')['initialScrapState']
   const injectScript: typeof import('wxt/utils/inject-script')['injectScript']
+  const markdownRenderer: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownRenderer')['default']
+  const markdownToHtml: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['markdownToHtml']
+  const markdownToPlainTextPreview: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['markdownToPlainTextPreview']
+  const quickClip: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['quickClip']
+  const scrapStateHelpers: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')['scrapStateHelpers']
   const storage: typeof import('wxt/utils/storage')['storage']
+  const t: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useI18n')['t']
+  const translations: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations')['translations']
   const useAppConfig: typeof import('wxt/utils/app-config')['useAppConfig']
+  const useAuth: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth')['useAuth']
+  const useI18n: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useI18n')['useI18n']
+  const usePageTracking: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking')['usePageTracking']
+  const useToast: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useToast')['useToast']
+  const useToastHelpers: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useToast')['useToastHelpers']
+  const webClipper: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')['webClipper']
 }
 // for type re-export
 declare global {
@@ -47,4 +90,22 @@ declare global {
   // @ts-ignore
   export type { ScriptPublicPath, InjectScriptOptions } from 'wxt/utils/inject-script'
   import('wxt/utils/inject-script')
+  // @ts-ignore
+  export type { ToastType, ToastProps } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/Toast'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/Toast')
+  // @ts-ignore
+  export type { UseAuthReturn } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/useAuth')
+  // @ts-ignore
+  export type { PageTrackingOptions } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking')
+  // @ts-ignore
+  export type { ScrapStatus, ScrapState } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')
+  // @ts-ignore
+  export type { TranslationKey } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations')
+  // @ts-ignore
+  export type { WebClipper, PageMetadata, ScrapResult, ClipperOptions } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/webClipper')
 }

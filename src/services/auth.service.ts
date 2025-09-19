@@ -8,7 +8,7 @@
 import { getServerUrl, getApiUrl, getOAuthCallbackUrl, logEnvironmentInfo } from '../config/environment';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
-import { posthogClient } from '../analytics/posthog';
+import { analytics } from '#analytics';
 import { trackLoginBridge } from '../analytics/bridge';
 
 export interface User {
@@ -219,10 +219,9 @@ class AuthService {
 
       // Analytics: identify and track signup (once per user)
       try {
-        await posthogClient.init();
-        posthogClient.identify(authResponse.user.id, {
+        await analytics.identify(authResponse.user.id, {
           email: authResponse.user.email,
-          fullName: authResponse.user.fullName,
+          full_name: authResponse.user.fullName,
           provider: authResponse.user.provider,
         });
         // Login event (every login)
@@ -232,10 +231,10 @@ class AuthService {
             method: 'oauth',
           })
         } catch {}
-        await posthogClient.events.trackSignupCompleted(authResponse.user.id, {
-          email: authResponse.user.email,
-          fullName: authResponse.user.fullName,
-          provider: authResponse.user.provider,
+
+        // Track signup completion (GA4 sign_up event)
+        await analytics.track('sign_up', {
+          method: authResponse.user.provider || 'google',
         });
       } catch {}
 
@@ -375,10 +374,9 @@ class AuthService {
         // Analytics: identify existing user on startup for proper attribution
         try {
           if (this.authState.isAuthenticated && this.authState.user?.id) {
-            await posthogClient.init();
-            posthogClient.identify(this.authState.user.id, {
+            await analytics.identify(this.authState.user.id, {
               email: this.authState.user.email,
-              fullName: this.authState.user.fullName,
+              full_name: this.authState.user.fullName,
               provider: this.authState.user.provider,
             });
           }

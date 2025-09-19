@@ -17,6 +17,16 @@ import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
+import { useI18n } from '../../hooks/useI18n';
+import {
+  trackArchiveContentCopiedBridge,
+  trackArchiveExportedBridge,
+  trackArchiveEditStartedBridge,
+  trackArchiveEditSavedBridge,
+  trackArchiveEditCancelledBridge,
+  trackArchiveFullscreenEditorOpenedBridge,
+  trackArchiveVersionChangedBridge
+} from '../../analytics/bridge';
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -24,6 +34,7 @@ interface ArchiveDetailPageProps {
 }
 
 const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
+  const { t } = useI18n();
   const [article, setArticle] = useState<ArticleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +195,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           setEditContent(normalizedArticle.content);
         }
       } catch (err: any) {
-        setError(err.message || 'Failed to load article');
+        setError(err.message || t('archiveDetailPage_loadArticleError'));
       } finally {
         setLoading(false);
       }
@@ -243,12 +254,23 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   }, [countEditor, currentArchive?.content, article?.content, editContent, isEditing]);
 
-  const handleEdit = () => {
+  const handleEdit = async () => {
     // 편집기 페이지가 열려있으면 편집 모드 진입 방지
     if (isEditorPageOpen) {
-      alert('페이지 편집기에서 편집 중입니다. 페이지 편집기를 먼저 닫아주세요.');
+      alert(t('archiveDetailPage_editingInPageEditorAlert'));
       return;
     }
+
+    try {
+      await trackArchiveEditStartedBridge({
+        article_id: article?.articleId,
+        version_number: selectedVersionNumber,
+        has_versions: (article?.archives?.length || 0) > 0,
+        character_count: characterCount.characters,
+        word_count: characterCount.words
+      });
+    } catch {}
+
     setIsEditing(true);
   };
 
@@ -279,25 +301,49 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       };
       
       setArticle(normalizedResponse);
-      
+
       // 새로운 버전이 생성되었는지 확인하고 최신 버전으로 전환
+      let newVersionNumber = null;
       if (normalizedResponse.archives && normalizedResponse.archives.length > 0) {
         const latestArchive = normalizedResponse.archives[0]; // 이미 정렬된 상태
+        newVersionNumber = latestArchive.versionNumber;
         setSelectedVersionNumber(latestArchive.versionNumber);
         setCurrentArchive(latestArchive);
         setEditTitle(latestArchive.title);
         setEditContent(latestArchive.content);
       }
-      
+
+      // 저장 완료 이벤트 추적
+      try {
+        await trackArchiveEditSavedBridge({
+          article_id: article.articleId,
+          previous_version: selectedVersionNumber,
+          new_version: newVersionNumber,
+          content_changed: normalizedContent !== (currentArchive?.content || article.content),
+          title_changed: editTitle !== (currentArchive?.title || article.title),
+          character_count_before: characterCount.characters,
+          character_count_after: editContent.length
+        });
+      } catch {}
+
       setIsEditing(false);
     } catch (err: any) {
-      setError(err.message || 'Failed to save article');
+      setError(err.message || t('archiveDetailPage_saveArticleError'));
     } finally {
       setSaving(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
+    try {
+      await trackArchiveEditCancelledBridge({
+        article_id: article?.articleId,
+        version_number: selectedVersionNumber,
+        had_changes: editTitle !== (currentArchive?.title || article?.title) ||
+                     editContent !== (currentArchive?.content || article?.content)
+      });
+    } catch {}
+
     if (currentArchive) {
       setEditTitle(currentArchive.title);
       setEditContent(currentArchive.content);
@@ -310,7 +356,17 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   const handleOpenFullscreenEditor = async () => {
     if (!article) return;
-    
+
+    try {
+      await trackArchiveFullscreenEditorOpenedBridge({
+        article_id: article.articleId,
+        version_number: selectedVersionNumber,
+        character_count: characterCount.characters,
+        word_count: characterCount.words,
+        from_edit_mode: isEditing
+      });
+    } catch {}
+
     // 편집기로 전달할 데이터 준비
     const editorData = {
       articleId: article.articleId,
@@ -319,14 +375,14 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       originalTitle: currentArchive?.title || article.title,
       originalContent: currentArchive?.content || article.content
     };
-    
+
     // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
     const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
     await browser.storage.local.set({
       [sessionKey]: editorData
     });
     const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
-    
+
     // 새 탭에서 편집기 열기
     browser.tabs.create({
       url: editorUrl,
@@ -334,11 +390,23 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     });
   };
 
-  const handleVersionSelect = (versionNumber: number) => {
+  const handleVersionSelect = async (versionNumber: number) => {
     if (!article || !article.archives) return;
-    
+
     const selectedArchive = article.archives.find(archive => archive.versionNumber === versionNumber);
     if (selectedArchive) {
+      const previousVersion = selectedVersionNumber;
+
+      try {
+        await trackArchiveVersionChangedBridge({
+          article_id: article.articleId,
+          previous_version: previousVersion,
+          new_version: versionNumber,
+          total_versions: article.archives.length,
+          was_editing: isEditing
+        });
+      } catch {}
+
       setSelectedVersionNumber(versionNumber);
       setCurrentArchive(selectedArchive);
       setEditTitle(selectedArchive.title);
@@ -378,15 +446,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
 
   if (loading) {
-    return <div className={styles.loadingContainer}>로딩 중...</div>;
+    return <div className={styles.loadingContainer}>{t('archiveDetailPage_loading')}</div>;
   }
 
   if (error) {
-    return <div className={styles.errorContainer}>오류: {error}</div>;
+    return <div className={styles.errorContainer}>{t('archiveDetailPage_error')}: {error}</div>;
   }
 
   if (!article) {
-    return <div className={styles.errorContainer}>아티클을 찾을 수 없습니다.</div>;
+    return <div className={styles.errorContainer}>{t('archiveDetailPage_articleNotFound')}</div>;
   }
 
   return (
@@ -405,7 +473,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   style={{width: '100%'}}
                   onChange={(e) => setEditTitle(e.target.value)}
                   className={styles.editTitleInput}
-                  placeholder="제목을 입력하세요"
+                  placeholder={t('archiveDetailPage_titlePlaceholder')}
                 />
               ) : (
                 currentArchive?.title || article.title
@@ -434,12 +502,12 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 borderRadius: '50%',
                 background: 'white'
               }} className={detailStyles.pulse}></div>
-              페이지 편집기에서 편집 중
+              {t('archiveDetailPage_editingInPageEditor')}
             </div>
           )}
           <div className={styles.characterCount} style={{display: 'flex'}}>
-            <span>글자 수: {characterCount.characters}</span>
-            <span style={{ marginLeft: '12px' }}>단어 수: {characterCount.words}</span>
+            <span>{t('archiveDetailPage_characterCount')}: {characterCount.characters}</span>
+            <span style={{ marginLeft: '12px' }}>{t('archiveDetailPage_wordCount')}: {characterCount.words}</span>
           </div>
         </div>
 
@@ -450,7 +518,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
                   <div className={detailStyles.versionSelector} ref={versionDropdownRef}>
-                    <span className={detailStyles.versionLabel}>버전:</span>
+                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
                     <button
                       className={detailStyles.versionDropdownButton}
                       onClick={toggleVersionDropdown}
@@ -480,19 +548,41 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
-                <Tooltip content="maily로 내보내기" side='top'>
-                  <ExportButton 
+                <Tooltip content={t('archiveDetailPage_exportToMaily')} side='top'>
+                  <ExportButton
                     title={currentArchive?.title || article.title}
                     content={currentArchive?.content || article.content}
+                    onExportSuccess={async (platform) => {
+                      try {
+                        await trackArchiveExportedBridge({
+                          article_id: article.articleId,
+                          version_number: selectedVersionNumber,
+                          platform,
+                          character_count: characterCount.characters,
+                          word_count: characterCount.words
+                        });
+                      } catch {}
+                    }}
                   />
                 </Tooltip>
-                <Tooltip content="클립보드 복사" side='top'>
-                  <CopyButton 
+                <Tooltip content={t('archiveDetailPage_copyToClipboard')} side='top'>
+                  <CopyButton
                     title={currentArchive?.title || article.title}
                     content={currentArchive?.content || article.content}
-                    />
-                  </Tooltip>
-                <Tooltip content={isEditorPageOpen ? "페이지 편집기에서 편집 중" : "초안 수정하기"}>
+                    onCopySuccess={async () => {
+                      try {
+                        await trackArchiveContentCopiedBridge({
+                          article_id: article.articleId,
+                          version_number: selectedVersionNumber,
+                          character_count: characterCount.characters,
+                          word_count: characterCount.words,
+                          copy_format: 'rich_text'
+                        });
+                      } catch {}
+                    }}
+                  />
+                </Tooltip>
+                <Tooltip content={isEditorPageOpen ? t('archiveDetailPage_editingInPageEditorTooltip') : t('archiveDetailPage_editDraft')}>
                   <button 
                     className={detailStyles.primaryActionButton} 
                     onClick={handleEdit}
@@ -513,7 +603,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
                   <div className={detailStyles.versionSelector}>
-                    <span className={detailStyles.versionLabel}>버전:</span>
+                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
                     <button
                       className={detailStyles.versionDropdownButton}
                       onClick={toggleVersionDropdown}
@@ -542,7 +632,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
-                <Tooltip content="전체 화면으로 편집">
+                <Tooltip content={t('archiveDetailPage_openFullscreenEditor')}>
                   <button 
                     className={detailStyles.editSecondaryButton}
                     onClick={handleOpenFullscreenEditor}
@@ -551,7 +641,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     <CgArrowsExpandRight size={18} />
                   </button>
                 </Tooltip>
-                <Tooltip content={saving ? '저장 중...' : '저장'}>
+                <Tooltip content={saving ? t('archiveDetailPage_saving') : t('archiveDetailPage_save')}>
                   <button 
                     className={detailStyles.editPrimaryButton}
                     onClick={handleSave}
@@ -560,7 +650,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     <IoCheckmark size={18} />
                   </button>
                 </Tooltip>
-                <Tooltip content="취소">
+                <Tooltip content={t('archiveDetailPage_cancel')}>
                   <button 
                     className={detailStyles.editSecondaryButton}
                     onClick={handleCancel}
@@ -589,7 +679,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     key={`editor-${article.articleId}-${isEditing}`}
                     content={markdownToHtml(editContent)}
                     onChange={setEditContent}
-                    placeholder="내용을 입력하세요..."
+                    placeholder={t('archiveDetailPage_contentPlaceholder')}
                     readOnly={false}
                   />
                 </ErrorBoundary>
@@ -628,7 +718,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-              <div style={{ fontWeight: '600', fontSize: '15px' }}>💡 글을 보기 불편하시다면?</div>
+              <div style={{ fontWeight: '600', fontSize: '15px' }}>{t('archiveDetailPage_widthTipTitle')}</div>
               <button
                 onClick={handleCloseTip}
                 style={{
@@ -647,9 +737,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             </div>
             
               <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
-                <strong>확장 프로그램 왼쪽 경계를 드래그</strong>해서 
-                <br />
-                사이드바 너비를 조절할 수 있습니다.
+                {t('archiveDetailPage_widthTipContent')}
               </div>
               
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
@@ -666,7 +754,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     }}
                     style={{ margin: 0 }}
                   />
-                  다시 보지 않기
+                  {t('archiveDetailPage_dontShowAgain')}
                 </label>
               </div>
           </div>

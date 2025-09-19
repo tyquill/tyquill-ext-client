@@ -2,9 +2,24 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { browser } from 'wxt/browser';
 import { IoClipboard, IoSparkles, IoArchive, IoLogOut, IoSettings } from 'react-icons/io5';
-import { RiFileUserLine } from 'react-icons/ri';
+import { IconBaseProps } from 'react-icons';
+
+function TablerMasksTheater({ size = 20, ...props }: IconBaseProps) {
+  const iconSize = typeof size === 'string' ? parseInt(size) : size || 20;
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={iconSize} height={iconSize} viewBox="0 0 24 24" {...props}>
+      <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2">
+        <path d="M13.192 9h6.616a2 2 0 0 1 1.992 2.183l-.567 6.182A4 4 0 0 1 17.25 21h-1.5a4 4 0 0 1-3.983-3.635l-.567-6.182A2 2 0 0 1 13.192 9M15 13h.01M18 13h.01"></path>
+        <path d="M15 16.5q1.5 1 3 0m-9.368-.518A4 4 0 0 1 8.25 16h-1.5a4 4 0 0 1-3.983-3.635L2.2 6.183A2 2 0 0 1 4.192 4h6.616a2 2 0 0 1 2 2M6 8h.01M9 8h.01"></path>
+        <path d="M6 12q1.146-.765 2.291-.36"></path>
+      </g>
+    </svg>
+  )
+}
 import { IconType } from 'react-icons';
 import { useAuth } from '../../../hooks/useAuth';
+import { useI18n } from '../../../hooks/useI18n';
+import { LanguageSelector } from '../../common/LanguageSelector';
 import styles from './Header.module.css';
 
 interface HeaderProps {}
@@ -17,6 +32,7 @@ interface MenuItem {
 
 const Header: React.FC<HeaderProps> = () => {
   const { user, logout } = useAuth();
+  const { t } = useI18n();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [authState, setAuthState] = useState<any>(null);
@@ -116,6 +132,7 @@ const Header: React.FC<HeaderProps> = () => {
       <div className={styles.spacer}></div>
       
       <div className={styles.userSection}>
+        <LanguageSelector compact className={styles.languageSelector} />
         <motion.div
           ref={avatarRef}
           className={styles.avatarContainer}
@@ -182,7 +199,7 @@ const Header: React.FC<HeaderProps> = () => {
                 <span className={styles.menuItemIcon}>
                   <IoSettings size={16} />
                 </span>
-                <span className={styles.menuItemText}>설정</span>
+                <span className={styles.menuItemText}>{t('menu_settings')}</span>
               </motion.button>
               
               <motion.button
@@ -202,7 +219,7 @@ const Header: React.FC<HeaderProps> = () => {
                   <IoLogOut size={16} />
                 </motion.span>
                 <span className={styles.menuItemText}>
-                  {isLoggingOut ? 'Signing out...' : 'Sign out'}
+                  {isLoggingOut ? t('menu_signingOut') : t('menu_signOut')}
                 </span>
               </motion.button>
             </motion.div>
@@ -242,11 +259,12 @@ const menuItemVariants = {
 };
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => {
+  const { t } = useI18n();
   const menuItems: MenuItem[] = [
-    { key: 'scrap', label: '스크랩', icon: IoClipboard },
-    { key: 'style-management', label: '문체 관리', icon: RiFileUserLine },
-    { key: 'draft', label: '초안 생성', icon: IoSparkles },
-    { key: 'archive', label: '보관함', icon: IoArchive },
+    { key: 'scrap', label: t('menu_scrap'), icon: IoClipboard },
+    { key: 'style-management', label: t('menu_styleManagement'), icon: TablerMasksTheater },
+    { key: 'draft', label: t('menu_draft'), icon: IoSparkles },
+    { key: 'archive', label: t('menu_archive'), icon: IoArchive },
   ];
 
   const handleSettingsClick = () => {
@@ -300,7 +318,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
                 animate={isActive ? { scale: 1.1 } : { scale: 1 }}
                 transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
               >
-                <IconComponent size={20} />
+                <IconComponent size={item.key === 'style-management' ? 26 : 20} />
               </motion.span>
               
               <motion.span 
@@ -342,7 +360,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
           }}
           transition={{ duration: 0.2 }}
         >
-          설정
+          {t('menu_settings')}
         </motion.span>
       </motion.button>
     </motion.div>

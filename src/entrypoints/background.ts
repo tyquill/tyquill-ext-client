@@ -1,14 +1,13 @@
 // Background Service Worker for Tyquill Extension
-import { scrapService } from '../src/services/scrapService';
-import { posthogClient, ensureAnonymousIdentity, EVENT_NAMES } from '../src/analytics/posthog';
+import { scrapService } from '../services/scrapService';
+import { trackScrapCreatedBridge, captureInBackground } from '../analytics/bridge';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 
-// Initialize analytics (no event tracking yet)
-posthogClient.init();
+// WXT Analytics는 자동 초기화됨
 
 export default defineBackground(() => {
-  // 사이드패널 상태 (전역)
+  // Side panel state (global)
   let isSidePanelOpen = false;
 
   browser.runtime.onInstalled.addListener(() => {
@@ -89,7 +88,7 @@ export default defineBackground(() => {
     }
 
     if (request.action === 'closeSidePanel') {
-      // 사이드패널에 닫기 메시지 전달
+      // Send close message to side panel
       isSidePanelOpen = false;
       sendResponse({ success: true });
       return true;
@@ -101,7 +100,7 @@ export default defineBackground(() => {
     }
 
     if (request.action === 'sidePanelClosed') {
-      // 사이드패널이 닫혔음을 알림
+      // Notify that side panel has been closed
       isSidePanelOpen = false;
       sendResponse({ success: true });
       return true;
@@ -110,13 +109,8 @@ export default defineBackground(() => {
     if (request.action === 'analytics:capture') {
       (async () => {
         try {
-          await posthogClient.init();
-          await ensureAnonymousIdentity();
           console.log('[analytics] capture (bg):', request.event, request.properties)
-          posthogClient.capture(request.event, request.properties)
-          // give client some time to flush in MV3
-          await new Promise((r) => setTimeout(r, 250))
-          try { await (posthogClient.get() as any)?.flush?.() } catch {}
+          await captureInBackground(request.event, request.properties)
           sendResponse({ success: true })
         } catch (error) {
           console.error('❌ Background analytics capture error:', error)
@@ -129,7 +123,7 @@ export default defineBackground(() => {
   });
 
   /**
-   * 사이드패널 열기 처리
+   * Handle opening side panel
    */
   async function handleOpenSidePanel(sender: Browser.runtime.MessageSender) {
     try {
@@ -146,14 +140,14 @@ export default defineBackground(() => {
 
 
   /**
-   * 현재 페이지 클리핑 및 스크랩 처리 (Background Script에서 실행)
+   * Handle current page clipping and scraping (executed in Background Script)
    */
   async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSender) {
     try {
-      // 현재 활성 탭 정보 가져오기
+      // Get current active tab info
       let tabId = sender.tab?.id;
-      
-      // Sidepanel에서 요청하는 경우 sender.tab이 없으므로 활성 탭을 쿼리
+
+      // Query active tab if sender.tab is not available (when requested from Sidepanel)
       if (!tabId) {
         const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
         tabId = activeTab?.id;
@@ -165,29 +159,29 @@ export default defineBackground(() => {
 
       const tab = await browser.tabs.get(tabId);
       
-      // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('browser://') || 
+      // URL check - restricted pages cannot be scraped
+      if (tab.url?.startsWith('browser://') ||
           tab.url?.startsWith('browser-extension://') ||
           tab.url?.startsWith('edge://') ||
           tab.url?.startsWith('about:')) {
-        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (browser://, extension:// 등 제한된 페이지)');
+        throw new Error('Cannot scrap this page (restricted pages like browser://, extension://, etc.)');
       }
 
-      // Content Script가 로드되었는지 확인
+      // Check if Content Script is loaded
       try {
         await browser.tabs.sendMessage(tabId, { type: 'PING' });
       } catch (pingError) {
-        // Content script 수동 주입 시도
+        // Try manual content script injection
         await browser.scripting.executeScript({
           target: { tabId: tabId },
           files: ['content-scripts/content.js']
         });
-        
-        // 잠시 대기 후 재시도
+
+        // Wait briefly before retry
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Content Script로 클리핑 요청
+      // Request clipping from Content Script
       const response = await browser.tabs.sendMessage(tabId, {
         type: 'CLIP_PAGE',
         options: { includeMetadata: false }
@@ -197,12 +191,12 @@ export default defineBackground(() => {
         throw new Error(response.error || 'Clipping failed');
       }
 
-      // 스크랩 데이터 생성
+      // Create scrap data
       const scrapResult = {
         ...response.data,
       };
 
-      // 스크랩 생성
+      // Create scrap
       const tags = (scrapResult as any).tags || [];
       const result = await scrapService.quickScrap(
         scrapResult,
@@ -211,23 +205,19 @@ export default defineBackground(() => {
       );
       // Track scrap created directly from background to ensure delivery
       try {
-        await posthogClient.init();
-        await ensureAnonymousIdentity();
-        posthogClient.capture(EVENT_NAMES.ACTIVITY_SCRAP_CREATED, { source: 'background' })
-        await new Promise((r) => setTimeout(r, 250))
-        try { await (posthogClient.get() as any)?.flush?.() } catch {}
+        await trackScrapCreatedBridge({ source: 'background' })
       } catch (e) {
         console.warn('Analytics scrap_created failed (bg):', e)
       }
       
-      // 성공 시 sidepanel에 새로고침 알림
+      // Notify sidepanel to refresh on success
       try {
         browser.runtime.sendMessage({
           action: 'scrapCreated',
           data: result
         });
       } catch (error) {
-        // sidepanel이 열려있지 않을 수 있으므로 에러 무시
+        // Ignore error as sidepanel might not be open
       }
       
       return result;
@@ -239,15 +229,15 @@ export default defineBackground(() => {
   }
 
   /**
-   * 문체 관리를 위한 현재 페이지 클리핑 처리 (Background Script에서 실행)
-   * - 스크랩 API를 호출하지 않고 클리핑만 수행
+   * Handle current page clipping for style management (executed in Background Script)
+   * - Only perform clipping without calling scrap API
    */
   async function handleClipCurrentPageForStyle(sender: Browser.runtime.MessageSender) {
     try {
-      // 현재 활성 탭 정보 가져오기
+      // Get current active tab info
       let tabId = sender.tab?.id;
-      
-      // Sidepanel에서 요청하는 경우 sender.tab이 없으므로 활성 탭을 쿼리
+
+      // Query active tab if sender.tab is not available (when requested from Sidepanel)
       if (!tabId) {
         const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
         tabId = activeTab?.id;
@@ -259,29 +249,29 @@ export default defineBackground(() => {
 
       const tab = await browser.tabs.get(tabId);
       
-      // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('browser://') || 
+      // URL check - restricted pages cannot be scraped
+      if (tab.url?.startsWith('browser://') ||
           tab.url?.startsWith('browser-extension://') ||
           tab.url?.startsWith('edge://') ||
           tab.url?.startsWith('about:')) {
-        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (browser://, extension:// 등 제한된 페이지)');
+        throw new Error('Cannot scrap this page (restricted pages like browser://, extension://, etc.)');
       }
 
-      // Content Script가 로드되었는지 확인
+      // Check if Content Script is loaded
       try {
         await browser.tabs.sendMessage(tabId, { type: 'PING' });
       } catch (pingError) {
-        // Content script 수동 주입 시도
+        // Try manual content script injection
         await browser.scripting.executeScript({
           target: { tabId: tabId },
           files: ['content-scripts/content.js']
         });
-        
-        // 잠시 대기 후 재시도
+
+        // Wait briefly before retry
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Content Script로 클리핑 요청
+      // Request clipping from Content Script
       const response = await browser.tabs.sendMessage(tabId, {
         type: 'CLIP_PAGE',
         options: { includeMetadata: true }
@@ -291,7 +281,7 @@ export default defineBackground(() => {
         throw new Error(response.error || 'Clipping failed');
       }
 
-      // 클리핑 결과만 반환 (스크랩 API 호출하지 않음)
+      // Return only clipping result (without calling scrap API)
       return response.data;
       
     } catch (error) {
@@ -301,14 +291,14 @@ export default defineBackground(() => {
   }
 
   /**
-   * LinkedIn 버튼이 보낸 컨테이너 텍스트를 API로 저장
+   * Save container text sent by LinkedIn button to API
    */
   async function handleScrapExtracted(data: { content: string; title?: string; url?: string }) {
     if (!data?.content || !data.content.trim()) {
       throw new Error('Empty content');
     }
 
-    const pickTitle = () => (data.title && data.title.trim()) || 'Linkedin 피드';
+    const pickTitle = () => (data.title && data.title.trim()) || 'LinkedIn Feed';
 
     const scrapResult = {
       content: data.content,
@@ -330,10 +320,10 @@ export default defineBackground(() => {
     return result;
   }
 
-  // 플로팅 버튼 표시 상태 관리
+  // Floating button visibility state management
   let isFloatingButtonVisible = true;
 
-  // 설정 로드
+  // Load settings
   const loadSettings = async () => {
     try {
       const result = await browser.storage.sync.get(['tyquillSettings']);
@@ -341,55 +331,55 @@ export default defineBackground(() => {
         isFloatingButtonVisible = result.tyquillSettings.floatingButtonVisible;
       }
     } catch (error) {
-      console.error('설정 로드 실패:', error);
+      console.error('Failed to load settings:', error);
     }
   };
 
-  // 설정 변경 감지
+  // Detect settings changes
   browser.storage.onChanged.addListener((changes) => {
     if (changes.tyquillSettings?.newValue?.floatingButtonVisible !== undefined) {
       isFloatingButtonVisible = changes.tyquillSettings.newValue.floatingButtonVisible;
-      
-      // Context Menu 업데이트
+
+      // Update Context Menu
       createContextMenus();
-      
-      // console.log('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
+
+      // console.log('Background: Floating button setting changed:', isFloatingButtonVisible);
     }
   });
 
-  // Context Menu 생성
+  // Create Context Menu
   const createContextMenus = () => {
-    // 기존 메뉴 제거
+    // Remove existing menus
     browser.contextMenus.removeAll();
-    
-    // Tyquill 메뉴 생성
+
+    // Create Tyquill menu
     browser.contextMenus.create({
       id: 'tyquill',
       title: 'Tyquill',
       contexts: ['all']
     });
-    
-    // 플로팅 버튼 표시/숨김 서브메뉴
+
+    // Floating button show/hide submenu
     browser.contextMenus.create({
       id: 'toggleFloatingButton',
       parentId: 'tyquill',
-      title: isFloatingButtonVisible ? '👁️ 버튼 숨기기' : '👁️‍🗨️ 버튼 표시하기',
+      title: isFloatingButtonVisible ? 'Hide Button' : 'Show Button',
       contexts: ['all']
     });
-    
-    // 구분선
+
+    // Separator
     browser.contextMenus.create({
       id: 'separator1',
       parentId: 'tyquill',
       type: 'separator',
       contexts: ['all']
     });
-    
-    // 스크랩 메뉴
+
+    // Scrap menu
     browser.contextMenus.create({
       id: 'scrapCurrentPage',
       parentId: 'tyquill',
-      title: '📋 이 페이지 스크랩',
+      title: 'Scrap This Page',
       contexts: ['all']
     });
   };
@@ -403,20 +393,20 @@ export default defineBackground(() => {
         try {
           const newValue = !isFloatingButtonVisible;
           
-          // 기존 설정을 유지하면서 업데이트
+          // Update while preserving existing settings
           const currentSettings = await browser.storage.sync.get(['tyquillSettings']);
           const updatedSettings = {
             ...currentSettings.tyquillSettings,
             floatingButtonVisible: newValue
           };
-          
+
           await browser.storage.sync.set({
             tyquillSettings: updatedSettings
           });
-          
+
           isFloatingButtonVisible = newValue;
-          
-          // 모든 탭에 설정 변경 알림
+
+          // Notify all tabs of settings change
           const allTabs = await browser.tabs.query({});
           for (const currentTab of allTabs) {
             if (currentTab.id) {
@@ -426,17 +416,17 @@ export default defineBackground(() => {
                   settings: { floatingButtonVisible: newValue }
                 });
               } catch (error) {
-                // Content script가 로드되지 않은 탭은 무시
+                // Ignore tabs without content script loaded
               }
             }
           }
-          
-          // Context Menu 업데이트
+
+          // Update Context Menu
           createContextMenus();
-          
-          // console.log('플로팅 버튼 설정 변경됨:', newValue);
+
+          // console.log('Floating button setting changed:', newValue);
         } catch (error) {
-          console.error('플로팅 버튼 설정 변경 실패:', error);
+          console.error('Failed to change floating button setting:', error);
         }
         break;
         
@@ -444,17 +434,17 @@ export default defineBackground(() => {
         try {
           await handleClipAndScrapCurrentPage({ tab });
         } catch (error) {
-          console.error('스크랩 실패:', error);
+          console.error('Scrap failed:', error);
         }
         break;
     }
   });
 
   browser.runtime.onInstalled.addListener(async () => {
-    // 초기 설정 로드
+    // Load initial settings
     await loadSettings();
-    
-    // Context Menu 생성
+
+    // Create Context Menu
     createContextMenus();
     
     // console.log('Tyquill Extension installed with context menus');

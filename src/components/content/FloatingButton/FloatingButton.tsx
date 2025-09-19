@@ -2,12 +2,14 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { clipAndScrapCurrentPage } from '../../../utils/scrapHelper';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { useI18n } from '../../../hooks/useI18n';
+import { trackSidepanelOpenedBridge, trackSidepanelClosedBridge } from '../../../analytics/bridge';
 import styles from './FloatingButton.module.css';
 import { BsBook } from 'react-icons/bs';
 import { IoClose } from 'react-icons/io5';
 import { IoMdCheckmark } from 'react-icons/io';
 import { motion } from 'framer-motion';
-import Tooltip from '../../common/Tooltip'; // Tooltip 컴포넌트 import
+import Tooltip from '../../common/Tooltip';
 
 // 타입 정의
 type ButtonStyle = {
@@ -47,6 +49,7 @@ type Tool = {
 };
 
 const FloatingButton: React.FC = () => {
+  const { t } = useI18n();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement>(null);
@@ -405,11 +408,29 @@ const FloatingButton: React.FC = () => {
   const openSidePanel = useCallback(async () => {
     await browser.runtime.sendMessage({ action: 'openSidePanel' });
     setIsSidePanelOpen(true);
+
+    try {
+      if (typeof document !== 'undefined') {
+        await trackSidepanelOpenedBridge({
+          source: 'floating_button',
+          page_url: window.location.href
+        })
+      }
+    } catch {}
   }, []);
 
   const closeSidePanel = useCallback(async () => {
     await browser.runtime.sendMessage({ action: 'closeSidePanel' });
     setIsSidePanelOpen(false);
+
+    try {
+      if (typeof document !== 'undefined') {
+        await trackSidepanelClosedBridge({
+          source: 'floating_button',
+          page_url: window.location.href
+        })
+      }
+    } catch {}
   }, []);
 
   // 스크랩 처리
@@ -443,8 +464,8 @@ const FloatingButton: React.FC = () => {
   const toolGroups: ToolGroup[] = [{
     id: 'main', position: 'top',
     tools: [{
-      id: 'scrap', icon: <BsBook size={18} />, label: '스크랩', action: handleScrap,
-      shortcut: '⌘S', tooltip: '현재 페이지 스크랩하기'
+      id: 'scrap', icon: <BsBook size={18} />, label: t('content_scrap'), action: handleScrap,
+      shortcut: '⌘S', tooltip: t('content_scrapCurrentPage')
     }]
   }];
 
@@ -545,7 +566,7 @@ const FloatingButton: React.FC = () => {
           className={styles.closeButton}
           style={closeButtonPosition}
           onClick={handleCloseButtonClick}
-          aria-label="플로팅 버튼 숨기기"
+          aria-label={t('content_hideFloatingButton')}
         >
           <IoClose size={12} />
         </button>

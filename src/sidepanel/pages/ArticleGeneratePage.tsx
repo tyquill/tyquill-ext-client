@@ -19,6 +19,20 @@ import tagSelectorStyles from '../../components/sidepanel/TagSelector/TagSelecto
 import { browser } from 'wxt/browser';
 import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
 import { libraryItemService, LibraryItemDto } from '../../services/libraryItemService';
+import { useI18n } from '../../hooks/useI18n';
+import {
+  trackArticleTopicSetBridge,
+  trackArticleKeyMessageSetBridge,
+  trackArticleStyleSelectedBridge,
+  trackArticleStyleCreateClickedBridge,
+  trackArticleSectionAddedBridge,
+  trackArticleSectionRemovedBridge,
+  trackArticleSectionAnalyzeClickedBridge,
+  trackArticleReferenceAddedBridge,
+  trackArticleReferenceRemovedBridge,
+  trackArticleReferenceModalOpenedBridge,
+  trackArticleGenerationStartedBridge
+} from '../../analytics/bridge';
 
 interface ArticleGeneratePageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -31,13 +45,14 @@ const DEFAULT_MODAL_TOP_OFFSET = 160;
 
 
 
-const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({ 
-  onNavigateToDetail, 
+const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
+  onNavigateToDetail,
   onNavigate,
   currentPage,
-  onRefreshArchiveList 
+  onRefreshArchiveList
 }) => {
   const { showSuccess, showError, showInfo } = useToastHelpers();
+  const { t } = useI18n();
   
   // Zustand 스토어 사용
   const {
@@ -114,7 +129,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         setWritingStyles(styles);
       } catch (error) {
         console.error('Failed to fetch writing styles:', error);
-        showError('저장된 문체 목록을 불러오는데 실패했습니다.');
+        showError(t('articleGenerate_failedToLoadStyles'));
       }
     };
     fetchStyles();
@@ -202,7 +217,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const formatElapsed = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}분 ${remainingSeconds}초`;
+    return `${minutes}${t('articleGenerate_minutes')} ${remainingSeconds}${t('articleGenerate_seconds')}`;
   };
    
   // 스크랩 모달을 헤더 하단에 정확히 맞추기 위한 동적 top 계산
@@ -229,13 +244,27 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     return () => window.removeEventListener('resize', updateTopOffset);
   }, [isScrapModalOpen]);
 
-  const handleScrapSelect = (scrap: ScrapResponse) => {
+  const handleScrapSelect = async (scrap: ScrapResponse) => {
     const isSelected = selectedScraps.find(s => s.scrapId === scrap.scrapId);
-    
+
     if (isSelected) {
       removeScrap(scrap.scrapId);
+      try {
+        await trackArticleReferenceRemovedBridge({
+          reference_type: 'scrap',
+          reference_id: scrap.scrapId,
+          from: 'modal'
+        })
+      } catch {}
     } else {
       addScrap(scrap);
+      try {
+        await trackArticleReferenceAddedBridge({
+          reference_type: 'scrap',
+          reference_id: scrap.scrapId,
+          from: 'modal'
+        })
+      } catch {}
     }
   };
 
@@ -243,8 +272,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     updateScrapOpinion(id, opinion);
   };
 
-  const handleRemoveScrap = (id: number) => {
+  const handleRemoveScrap = async (id: number) => {
     removeScrap(id);
+    try {
+      await trackArticleReferenceRemovedBridge({
+        reference_type: 'scrap',
+        reference_id: id,
+        from: 'inline'
+      })
+    } catch {}
   };
 
   const handleGenerateTemplateFromPage = async () => {
@@ -257,7 +293,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       
       if (!tab?.id) {
-        throw new Error('활성 탭을 찾을 수 없습니다.');
+        throw new Error(t('articleGenerate_cannotFindActiveTab'));
       }
 
       // URL 체크 - 제한된 페이지에서는 스크랩 불가
@@ -265,7 +301,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           tab.url?.startsWith('chrome-extension://') ||
           tab.url?.startsWith('edge://') ||
           tab.url?.startsWith('about:')) {
-        throw new Error('이 페이지에서는 스크랩할 수 없습니다. (chrome://, extension:// 등 제한된 페이지)');
+        throw new Error(t('articleGenerate_cannotScrapThisPage'));
       }
 
       // Content Script가 로드되었는지 확인
@@ -282,7 +318,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      showInfo('페이지 분석 중...', '현재 페이지의 구조를 분석하여 템플릿을 생성하고 있습니다.');
+      showInfo(t('articleGenerate_pageAnalysis'), t('articleGenerate_analysisDescription'));
 
       // 페이지 콘텐츠 스크랩
       const response = await browser.tabs.sendMessage(tab.id, {
@@ -291,7 +327,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       });
 
       if (!response.success) {
-        throw new Error(response.error || '페이지 콘텐츠를 가져오는데 실패했습니다.');
+        throw new Error(response.error || t('articleGenerate_pageContentFetchFailed'));
       }
 
       // 서버에 콘텐츠 분석 요청
@@ -304,15 +340,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       // console.log(sections);
 
       if (!sections || !Array.isArray(sections) || sections.length === 0) {
-        throw new Error('페이지 구조를 분석할 수 없습니다.');
+        throw new Error(t('articleGenerate_cannotAnalyzePageStructure'));
       }
 
       setTemplateStructure(sections);
-      showSuccess('AI 분석 완료', `${sections.length}개의 섹션으로 구성을 만들었습니다.`);
+      showSuccess(t('articleGenerate_aiAnalysisComplete'), t('articleGenerate_sectionsCreated').replace('{count}', sections.length.toString()));
 
     } catch (error: any) {
       console.error('Template generation error:', error);
-      showError('섹션 구성 실패', error.message || '섹션 구성 생성 중 오류가 발생했습니다.');
+      showError(t('articleGenerate_sectionGenerationFailed'), error.message || t('articleGenerate_sectionGenerationError'));
     } finally {
       setAnalyzing(false);
     }
@@ -326,13 +362,26 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     setTemplateTitle(sectionId, newTitle);
   };
 
-  const addSection = (parentId?: string) => {
-    const newTitle = parentId ? '새 하위 섹션' : '새 섹션';
+  const addSection = async (parentId?: string) => {
+    const newTitle = parentId ? t('articleGenerate_newSubsection') : t('articleGenerate_newSection');
     addTemplateSection(parentId, newTitle);
+
+    try {
+      await trackArticleSectionAddedBridge({
+        is_subsection: !!parentId,
+        parent_id: parentId || null
+      })
+    } catch {}
   };
 
-  const removeSection = (sectionId: string) => {
+  const removeSection = async (sectionId: string) => {
     removeTemplateSection(sectionId);
+
+    try {
+      await trackArticleSectionRemovedBridge({
+        section_id: sectionId
+      })
+    } catch {}
   };
 
   // 섹션 구조를 평탄화하여 렌더링하는 함수 (ID 기반)
@@ -352,6 +401,19 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   };
 
   const handleGenerateArticle = async () => {
+    // 초안 생성 시작 이벤트 추적
+    try {
+      await trackArticleGenerationStartedBridge({
+        has_topic: !!topic,
+        has_key_insight: !!keyInsight,
+        has_template: !!templateStructure && templateStructure.length > 0,
+        template_sections_count: templateStructure ? templateStructure.length : 0,
+        selected_scraps_count: selectedScraps.length,
+        selected_uploads_count: selectedUploads.length,
+        writing_style_id: selectedWritingStyleId,
+        is_custom_style: !!selectedWritingStyleId
+      })
+    } catch {}
     // templateStructure에서 섹션별 아이디어 수집
     const collectIdeas = (sections: TemplateSection[]): Record<string, string> => {
       const ideas: Record<string, string> = {};
@@ -371,13 +433,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     if (isTemplateMode) {
       if (!Object.values(structuredIdeas).some((idea: any) => typeof idea === 'string' && idea.trim() !== '')) {
-        showError('입력 오류', '섹션의 아이디어를 하나 이상 입력해주세요.');
+        showError(t('articleGenerate_inputError'), t('articleGenerate_enterSectionIdeas'));
         return;
       }
     } else {
       if (!topic || !keyInsight) {
-        setGenerationError('주제와 키메시지를 입력해주세요.');
-        showError('입력 오류', '주제와 키메시지를 모두 입력해주세요.');
+        setGenerationError(t('articleGenerate_enterTopicAndKeyInsight'));
+        showError(t('articleGenerate_inputError'), t('articleGenerate_enterTopicAndKeyMessage'));
         return;
       }
     }
@@ -404,7 +466,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       // V3 API를 사용한 비동기 생성 (PDF 지원)
       const generateData: GenerateArticleV3Dto = {
-        topic: isTemplateMode ? (templateStructure?.[0]?.title || '섹션 기반 아티클') : topic,
+        topic: isTemplateMode ? (templateStructure?.[0]?.title || t('articleGenerate_sectionBasedArticle')) : topic,
         keyInsight: isTemplateMode ? JSON.stringify(structuredIdeas) : keyInsight,
         scrapWithOptionalComment: selectedScraps.map(scrap => ({
           scrapId: scrap.scrapId,
@@ -426,7 +488,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       articleService.generateArticleV3(generateData)
         .then(async (response) => {
           // 즉시 요청 성공 메시지 표시
-          showInfo('초안 생성 시작', `아티클 생성이 시작되었습니다.${selectedUploads.length > 0 ? ` PDF ${selectedUploads.length}개 파일도 함께 분석합니다.` : ''}`);
+          showInfo(t('articleGenerate_draftGenerationStarted'), `${t('articleGenerate_articleGenerationStarted')}${selectedUploads.length > 0 ? t('articleGenerate_pdfAnalysisIncluded').replace('{count}', selectedUploads.length.toString()) : ''}`);
           
           try {
             // 백그라운드에서 완성 대기 (최대 50회, 5초 간격 = 2.5분)
@@ -434,7 +496,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             
             if (completedArticle.status === 'completed') {
               setGenerationStatus('completed');
-              // showSuccess('초안 생성 완료', '보관함에서 생성된 초안을 확인해 보세요!');
+              // showSuccess(t('articleGenerate_draftGenerationComplete'), t('archivePage_loadError'));
               if (currentPage === 'archive' && onRefreshArchiveList) {
                 onRefreshArchiveList();
               }
@@ -451,29 +513,29 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               setGenerationStatus('failed');
               setGenerating(false);
               const serverMsg = (completedArticle as any)?.errorMessage as string | undefined;
-              const hint = '생성 중 오류가 발생했습니다. (참고 자료/키메시지 길이를 줄이고 다시 시도해 주세요)';
+              const hint = t('articleGenerate_generationHint');
               setGenerationError(serverMsg || hint);
-              showError('초안 생성 실패', serverMsg || hint);
+              showError(t('articleGenerate_draftGenerationFailed'), serverMsg || hint);
             }
           } catch (pollingError) {
             // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
-            console.error('폴링 오류:', pollingError);
+            console.error('Polling error:', pollingError);
             setGenerationStatus('failed');
             setGenerating(false);
-            showError('상태 확인 실패', '생성 상태를 확인할 수 없습니다. 보관함을 직접 확인해주세요.');
+            showError(t('articleGenerate_statusCheckFailed'), t('articleGenerate_checkArchiveManually'));
           }
         })
         .catch(error => {
           setGenerationStatus('failed');
           setGenerating(false);
-          showError('초안 생성 실패', error.message || '초안 생성 요청에 실패했습니다.');
+          showError(t('articleGenerate_draftGenerationFailed'), error.message || t('articleGenerate_requestFailed'));
         });
 
     } catch (error: any) {
-      setGenerationError(error.message || '초안 생성에 실패했습니다.');
+      setGenerationError(error.message || t('articleGenerate_draftGenerationFailedGeneral'));
       setGenerationStatus('failed');
       setGenerating(false);
-      showError('요청 전송 실패', error.message || '요청을 보내는 중 오류가 발생했습니다.');
+      showError(t('articleGenerate_requestSendFailed'), error.message || t('articleGenerate_requestError'));
     }
   };
 
@@ -501,12 +563,29 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }, 380);
   };
 
-  const toggleUploadSelection = (upload: LibraryItemDto) => {
+  const toggleUploadSelection = async (upload: LibraryItemDto) => {
     setSelectedUploads(prev => {
       const exists = prev.find(u => u.uploadedFileId === upload.id);
       if (exists) return prev.filter(u => u.uploadedFileId !== upload.id);
       return [...prev, { uploadedFileId: upload.id, title: upload.title, usagePrompt: '' }];
     });
+
+    const isSelected = selectedUploads.find(u => u.uploadedFileId === upload.id);
+    try {
+      if (isSelected) {
+        await trackArticleReferenceRemovedBridge({
+          reference_type: 'pdf',
+          reference_id: upload.id,
+          from: 'modal'
+        })
+      } else {
+        await trackArticleReferenceAddedBridge({
+          reference_type: 'pdf',
+          reference_id: upload.id,
+          from: 'modal'
+        })
+      }
+    } catch {}
   };
 
   const setUploadUsagePrompt = (uploadedFileId: number, value: string) => {
@@ -608,14 +687,14 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         <div className={articleStyles.scrollableContent}>
           <div className={articleStyles.articlePageHeader} ref={headerRef}>
             <div className={styles.headerControls}>
-              <h1 className={styles.pageTitle}>뉴스레터 초안 생성</h1>
+              <h1 className={styles.pageTitle}>{t('articleGenerate_newsletterDraftGeneration')}</h1>
             </div>
           </div>
           
           <div className={styles.draftForm}>
           <div className={styles.formGroup}>
             <label htmlFor="subject" className={styles.formLabel}>
-              주제
+              {t('articleGenerate_topicLabel')}
             </label>
             <input
               id="subject"
@@ -623,13 +702,23 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               className={styles.formInput}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="뉴스레터의 핵심 주제를 입력하세요"
+              onBlur={async () => {
+                if (topic && topic.trim()) {
+                  try {
+                    await trackArticleTopicSetBridge({
+                      topic_length: topic.length,
+                      has_content: true
+                    })
+                  } catch {}
+                }
+              }}
+              placeholder={t('articleGenerate_topicFormPlaceholder')}
             />
           </div>
 
           <div className={styles.formGroup}>
             <label htmlFor="message" className={styles.formLabel}>
-              키메시지
+              {t('articleGenerate_keyMessageLabel')}
             </label>
             <textarea
               id="message"
@@ -641,13 +730,23 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 e.target.style.height = 'auto';
                 e.target.style.height = e.target.scrollHeight + 'px';
               }}
+              onBlur={async () => {
+                if (keyInsight && keyInsight.trim()) {
+                  try {
+                    await trackArticleKeyMessageSetBridge({
+                      message_length: keyInsight.length,
+                      has_content: true
+                    })
+                  } catch {}
+                }
+              }}
               onInput={(e) => {
                 // 입력 시에도 높이 조정
                 const target = e.target as HTMLTextAreaElement;
                 target.style.height = 'auto';
                 target.style.height = target.scrollHeight + 'px';
               }}
-              placeholder="독자들에게 전달하고 싶은 핵심 메시지를 작성하세요. (예: 이제는 AI 뉴스레터 도구를 이용해, 뉴스레터 작가는 좋은 컨텐츠를 기획하고 소통하는 활동에 더욱 집중할 수 있다.)"
+              placeholder={t('articleGenerate_keyMessageFormPlaceholder')}
               rows={1}
             />
           </div>
@@ -655,23 +754,30 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           {/* 섹션 구성 */}
           <div className={styles.referenceSection}>
             <div className={articleStyles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>섹션 구성</h3>
+              <h3 className={styles.sectionTitle}>{t('articleGenerate_sectionConfiguration')}</h3>
               <div className={articleStyles.sectionActions}>
                 <button 
                   onClick={() => addSection()}
                   className={articleStyles.sectionButton}
                 >
                   <IoAdd size={14} />
-                  섹션 추가
+                  {t('articleGenerate_addSection')}
                 </button>
                 
-                  <button 
-                  onClick={() => toggleAnalysisConfirmModal()}
+                  <button
+                  onClick={async () => {
+                    toggleAnalysisConfirmModal();
+                    try {
+                      await trackArticleSectionAnalyzeClickedBridge({
+                        from: 'section_header'
+                      })
+                    } catch {}
+                  }}
                   disabled={isAnalyzing}
                   className={`${articleStyles.sectionButton} ${isAnalyzing ? articleStyles.sectionButtonDisabled : ''}`}
                 >
                   <FaWandMagicSparkles size={14} />
-                  {isAnalyzing ? '분석 중...' : '현재 페이지 섹션 분석'}
+                  {isAnalyzing ? t('articleGenerate_analyzing') : t('articleGenerate_currentPageSectionAnalysis')}
                 </button>
               </div>
             </div>
@@ -680,10 +786,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <div className={articleStyles.emptyState}>
                 <RiAiGenerate size={24} className={articleStyles.emptyStateIcon} />
                 <p className={articleStyles.emptyStateTitle}>
-                  섹션별로 구성해서 더 체계적인 글을 써 보세요.
+                  {t('articleGenerate_structuredWritingHelp')}
                 </p>
                 <p className={articleStyles.emptyStateSubtitle}>
-                  "섹션 추가" 또는 "현재 페이지 분석"으로 시작해 보세요
+                  {t('articleGenerate_structuredWritingStart')}
                 </p>
               </div>
             )}
@@ -695,17 +801,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <h4 className={articleStyles.sectionTitle}>
                       <TbListDetails size={18} className={articleStyles.sectionTitleIcon} />
-                      섹션 구성
+                      {t('articleGenerate_sectionConfiguration')}
                     </h4>
                     <span className={articleStyles.sectionStatus}>
-                      자동 저장됨
+                      {t('articleGenerate_autoSaved')}
                     </span>
                   </div>
                   <button 
                     onClick={() => clearTemplate()}
                     className={articleStyles.clearButton}
                   >
-                    × 초기화
+                    × {t('articleGenerate_reset')}
                   </button>
                 </div>
                 {flattenSections(templateStructure).map(({ section, level, id, parentId }) => {
@@ -728,7 +834,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         {/* 액션 버튼들 */}
                         <div className={articleStyles.sectionActions}>
                           {!isChild && (
-                            <Tooltip content="하위 섹션 추가">
+                            <Tooltip content={t('articleGenerate_addSubsection')}>
                               <div
                                 onClick={() => addSection(id)}
                                 className={articleStyles.addChildButton}
@@ -738,7 +844,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                             </Tooltip>
                           )}
                           
-                          <Tooltip content="섹션 삭제">
+                          <Tooltip content={t('articleGenerate_deleteSection')}>
                             <div
                               onClick={() => removeSection(id)}
                               className={articleStyles.removeButton}
@@ -766,7 +872,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   className={articleStyles.addSectionButton}
                 >
                   <IoAdd size={16} />
-                  섹션 추가
+                  {t('articleGenerate_addSection')}
                 </button>
               </div>
             )}
@@ -774,9 +880,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
           {/* 문체 선택 섹션 */}
           <div className={articleStyles.referenceSection}>
-            <h3 className={articleStyles.referenceSectionTitle}>문체 선택</h3>
+            <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_writeStyleSelection')}</h3>
             <div className={styles.formGroup}>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <div className={tagSelectorStyles.tagFilterContainer} style={{ marginRight: 0, flexGrow: 1 }}>
                   <button
                     ref={styleDropdownButtonRef}
@@ -787,29 +893,41 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     }}
                   >
                     {selectedWritingStyleId
-                      ? (writingStyles.find((ws) => ws.id === selectedWritingStyleId)?.name || '문체 선택')
-                      : '기본 뉴스레터 문체'}
+                      ? (writingStyles.find((ws) => ws.id === selectedWritingStyleId)?.name || t('articleGenerate_writeStyleSelection'))
+                      : t('articleGenerate_defaultNewsletterStyle')}
                     {isStyleDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
                   </button>
                   <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
                     <div
                       className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
                         setWritingStyleId(null);
                         setIsStyleDropdownOpen(false);
+                        try {
+                          await trackArticleStyleSelectedBridge({
+                            style_id: null,
+                            style_name: 'default'
+                          })
+                        } catch {}
                       }}
                     >
-                      기본 뉴스레터 문체
+                      {t('articleGenerate_defaultNewsletterStyle')}
                     </div>
                     {writingStyles.map((ws) => (
                       <div
                         key={ws.id}
                         className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.stopPropagation();
                           setWritingStyleId(ws.id);
                           setIsStyleDropdownOpen(false);
+                          try {
+                            await trackArticleStyleSelectedBridge({
+                              style_id: ws.id,
+                              style_name: ws.name
+                            })
+                          } catch {}
                         }}
                       >
                         {ws.name}
@@ -817,14 +935,21 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     ))}
                   </div>
                 </div>
-                <Tooltip content="문체 관리 페이지로 이동">
+                <Tooltip content={t('articleGenerate_goToStyleManagement')}>
                   <button
-                    onClick={() => onNavigate('style-management')}
+                    onClick={async () => {
+                      onNavigate('style-management');
+                      try {
+                        await trackArticleStyleCreateClickedBridge({
+                          from: 'article_generation_page'
+                        })
+                      } catch {}
+                    }}
                     className={articleStyles.sectionButton}
                     style={{ flexShrink: 0 }}
                   >
                     <IoAdd size={16} />
-                    새로운 문체
+                    {t('articleGenerate_newStyle')}
                   </button>
                 </Tooltip>
               </div>
@@ -833,19 +958,25 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
           {/* 참고 자료 */}
           <div className={articleStyles.referenceSection}>
-          <h3 className={articleStyles.referenceSectionTitle}>참고 자료</h3>
-          <button 
+          <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_referenceMaterials')}</h3>
+          <button
             className={articleStyles.addReferenceButton}
-            onClick={() => {
+            onClick={async () => {
               // 모달 열기 전에 현재 선택 상태 백업
               backupSelectedScrapsRef.current = [...selectedScraps];
               backupSelectedUploadsRef.current = JSON.parse(JSON.stringify(selectedUploads));
               setReferenceModalTab('SCRAP');
               toggleScrapModal();
+              try {
+                await trackArticleReferenceModalOpenedBridge({
+                  existing_scraps_count: selectedScraps.length,
+                  existing_uploads_count: selectedUploads.length
+                })
+              } catch {}
             }}
           >
             <IoAdd size={16} />
-            참고 자료 추가
+            {t('articleGenerate_addReferenceMaterials')}
           </button>
             
             <div className={articleStyles.referenceList}>
@@ -880,7 +1011,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         overflow: 'hidden',
                         minHeight: '36px',
                       }}
-                      placeholder="이 자료를 어떻게 활용할지 입력해주세요 (최대 75자)"
+                      placeholder={t('articleGenerate_howToUseThisMaterial')}
                     />
                     <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((scrap.opinion?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
                       {(scrap.opinion?.length || 0)}/75
@@ -898,7 +1029,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             {/* 선택된 PDF 요약 표시 및 프롬프트 수정 */}
             {selectedUploads.length > 0 && (
               <div style={{ marginTop: 20 }}>
-                <h4 style={{ margin: 0, fontSize: 14, color: '#374151' }}>선택된 PDF</h4>
+                <h4 style={{ margin: 0, fontSize: 14, color: '#374151' }}>{t('articleGenerate_selectedPDF')}</h4>
                 <div className={articleStyles.referenceList} style={{ marginTop: 8 }}>
                   {selectedUploads.map(u => (
                     <div key={u.uploadedFileId} className={articleStyles.referenceItem}>
@@ -933,15 +1064,24 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                             overflow: 'hidden',
                             minHeight: '36px',
                           }}
-                          placeholder="이 자료를 어떻게 활용할지 입력해주세요 (최대 75자)"
+                          placeholder={t('articleGenerate_howToUseThisMaterial')}
                         />
                         <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((u.usagePrompt?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
                           {(u.usagePrompt?.length || 0)}/75
                         </div>
                       </div>
-                      <button 
+                      <button
                         className={articleStyles.referenceRemoveButton}
-                        onClick={() => setSelectedUploads(prev => prev.filter(x => x.uploadedFileId !== u.uploadedFileId))}
+                        onClick={async () => {
+                          setSelectedUploads(prev => prev.filter(x => x.uploadedFileId !== u.uploadedFileId))
+                          try {
+                            await trackArticleReferenceRemovedBridge({
+                              reference_type: 'pdf',
+                              reference_id: u.uploadedFileId,
+                              from: 'inline'
+                            })
+                          } catch {}
+                        }}
                       >
                         ×
                       </button>
@@ -970,17 +1110,17 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             {generationStatus === 'completed' ? (
               <>
                 <IoCheckmark size={20} />
-                생성 요청 완료
+                {t('articleGenerate_generationRequestComplete')}
               </>
             ) : generationStatus === 'failed' ? (
               <>
                 <IoClose size={20} />
-                실패
+                {t('articleGenerate_failed')}
               </>
             ) : (
               <>
                 <IoSparkles size={20} />
-                초안 생성하기
+                {t('articleGenerate_generateDraft')}
               </>
             )}
           </button>
@@ -999,7 +1139,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         >
           <div className={articleStyles.analysisModal}>
               <div className={articleStyles.modalHeader}>
-                <h2 className={articleStyles.modalTitle}>AI 페이지 분석</h2>
+                <h2 className={articleStyles.modalTitle}>{t('articleGenerate_aiPageAnalysis')}</h2>
                 <button 
                   className={articleStyles.modalCloseButton}
                   onClick={() => toggleAnalysisConfirmModal()}
@@ -1012,11 +1152,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                   <DiscoBallScene />
                   <h3 style={{ margin: '0 0 12px 0', fontSize: '20px', fontWeight: '600' }}>
-                    현재 페이지를 분석하여 섹션을 자동 생성합니다
+                    {t('articleGenerate_analysisExplanation')}
                   </h3>
                   <p style={{ margin: '0 0 20px 0', color: '#666', lineHeight: '1.6', fontSize: '16px' }}>
-                    AI가 현재 페이지의 내용을 분석하여 적절한 섹션 구성을 제안합니다.<br />
-                    분석에는 약 10~30초 정도 소요됩니다.
+                    {t('articleGenerate_analysisDetailExplanation').split('\nBR').map((line, index) => (
+                      <React.Fragment key={index}>
+                        {line}
+                        {index < t('articleGenerate_analysisDetailExplanation').split('\nBR').length - 1 && <br />}
+                      </React.Fragment>
+                    ))}
                   </p>
                   
                   {/* 기존 섹션이 있을 때 경고 메시지 */}
@@ -1031,9 +1175,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       fontSize: '14px',
                       lineHeight: '1.5'
                     }}>
-                      ⚠️ <strong>주의:</strong> 기존에 작성한 섹션이 있는 것 같습니다. 
-                      <br />
-                      AI 분석을 진행하면 현재 섹션 구성은 사라집니다.
+                      {t('articleGenerate_warningExistingSections').split('\nBR').map((line, index) => (
+                        <React.Fragment key={index}>
+                          {line}
+                          {index < t('articleGenerate_warningExistingSections').split('\nBR').length - 1 && <br />}
+                        </React.Fragment>
+                      ))}
                     </div>
                   )}
                   
@@ -1050,7 +1197,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         fontSize: '14px'
                       }}
                     >
-                      취소
+                      {t('common_cancel')}
                     </button>
                     <button
                       onClick={async () => {
@@ -1068,7 +1215,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         fontWeight: '500'
                       }}
                     >
-                      분석 시작
+                      {t('articleGenerate_startAnalysis')}
                     </button>
                   </div>
                 </div>
@@ -1082,7 +1229,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           <div className={articleStyles.analysisModalOverlay} onClick={(e) => e.stopPropagation()}>
             <div className={articleStyles.analysisModal}>
               <div className={articleStyles.modalHeader}>
-                <h2 className={articleStyles.modalTitle}>초안 생성 중</h2>
+                <h2 className={articleStyles.modalTitle}>{t('articleGenerate_draftGenerationInProgress')}</h2>
               </div>
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
@@ -1116,15 +1263,15 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                     <div className={articleStyles.loadingSpinner} />
                   )}
                   <h3 style={{ margin: '12px 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
-                    {generationStatus === 'completed' ? '초안 생성이 완료되었습니다!' : '초안 생성 요청을 처리 중입니다'}
+                    {generationStatus === 'completed' ? t('articleGenerate_draftGenerationComplete') : t('articleGenerate_processingRequest')}
                   </h3>
                   {generationStatus !== 'completed' && (
                     <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
-                      입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.
+                      {t('articleGenerate_estimatedTime')}
                     </p>
                   )}
                   <div style={{ marginTop: 8, color: '#6b7280', fontSize: '13px' }}>
-                    경과 시간: {formatElapsed(elapsedSeconds)}
+                    {t('articleGenerate_elapsedTimeLabel')}: {formatElapsed(elapsedSeconds)}
                   </div>
                 </div>
                 {generationStatus === 'completed' && (
@@ -1147,7 +1294,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         fontWeight: 500
                       }}
                     >
-                      보관함으로 이동
+                      {t('articleGenerate_goToArchive')}
                     </button>
                     <button
                       onClick={() => {
@@ -1165,7 +1312,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         fontSize: '14px'
                       }}
                     >
-                      닫기
+                      {t('common_close')}
                     </button>
                   </div>
                 )}
@@ -1189,28 +1336,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               style={{ maxHeight: `calc(100vh - ${scrapModalTop + 32}px)` }}
             >
               <div className={articleStyles.modalHeader}>
-                <h2 className={articleStyles.modalTitle}>참고 자료 선택</h2>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button 
-                    className={articleStyles.modalCloseButton}
-                    onClick={() => toggleScrapModal()}
-                    aria-label="선택 확정"
-                  >
-                    <IoCheckmark />
-                  </button>
-                  <button 
-                    className={articleStyles.modalCloseButton}
-                    onClick={() => {
-                      // 취소: 백업으로 복구 후 닫기
-                      clearScraps();
-                      backupSelectedScrapsRef.current.forEach(s => addScrap(s));
-                      setSelectedUploads(JSON.parse(JSON.stringify(backupSelectedUploadsRef.current)));
-                      toggleScrapModal();
-                    }}
-                  >
-                    <IoClose />
-                  </button>
-                </div>
+                <h2 className={articleStyles.modalTitle}>{t('articleGenerate_selectReferenceMaterials')}</h2>
               </div>
               {/* 탭 */}
               <div style={{ display: 'flex', gap: 8, padding: '0 16px 12px 16px' }}>
@@ -1218,12 +1344,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   className={articleStyles.sectionButton}
                   style={{ background: referenceModalTab === 'SCRAP' ? '#111827' : '#fff', color: referenceModalTab === 'SCRAP' ? '#fff' : '#111827' }}
                   onClick={() => setReferenceModalTab('SCRAP')}
-                >스크랩</button>
+                >{t('articleGenerate_scraps')}</button>
                 <button
                   className={articleStyles.sectionButton}
                   style={{ background: referenceModalTab === 'PDF' ? '#111827' : '#fff', color: referenceModalTab === 'PDF' ? '#fff' : '#111827' }}
                   onClick={() => setReferenceModalTab('PDF')}
-                >PDF</button>
+                >{t('articleGenerate_pdf')}</button>
               </div>
 
               {/* 스크랩 탭: 태그 + 리스트 */}
@@ -1252,7 +1378,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
               <div
                 className={articleStyles.modalContent}
-                style={{ maxHeight: `calc(100vh - ${scrapModalTop + 172}px)` }}
+                style={{ maxHeight: `calc(100vh - ${scrapModalTop + 240}px)` }}
               >
                 {referenceModalTab === 'SCRAP' && (
                   <>
@@ -1282,7 +1408,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   <>
                     {filteredUploads.length === 0 ? (
                       <div className={articleStyles.emptyState}>
-                        <p className={articleStyles.emptyStateSubtitle}>조건에 맞는 PDF가 없습니다.</p>
+                        <p className={articleStyles.emptyStateSubtitle}>{t('articleGenerate_noPDFsFound')}</p>
                       </div>
                     ) : (
                       filteredUploads.map(upload => {
@@ -1296,7 +1422,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                           >
                             <div className={articleStyles.scrapTitle}>{upload.title}</div>
                             <div className={articleStyles.scrapContent}>
-                              {upload.previewText ? (upload.previewText.length > 100 ? `${upload.previewText.substring(0, 100)}...` : upload.previewText) : '설명이 없습니다.'}
+                              {upload.previewText ? (upload.previewText.length > 100 ? `${upload.previewText.substring(0, 100)}...` : upload.previewText) : t('articleGenerate_noDescription')}
                             </div>
                             <div className={articleStyles.scrapFooter}>
                               <div className={articleStyles.scrapTags}>
@@ -1312,7 +1438,31 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                 )}
               </div>
 
-              
+              {/* Modal Footer with confirmation buttons */}
+              <div className={articleStyles.modalFooter}>
+                <button
+                  className={articleStyles.cancelButton}
+                  onClick={() => {
+                    // 취소: 백업으로 복구 후 닫기
+                    clearScraps();
+                    backupSelectedScrapsRef.current.forEach(s => addScrap(s));
+                    setSelectedUploads(JSON.parse(JSON.stringify(backupSelectedUploadsRef.current)));
+                    toggleScrapModal();
+                  }}
+                >
+                  <IoClose size={16} />
+                  {t('common_cancel')}
+                </button>
+                <button
+                  className={articleStyles.confirmButton}
+                  onClick={() => toggleScrapModal()}
+                >
+                  <IoCheckmark size={16} />
+                  {t('articleGenerate_confirmSelection')}
+                </button>
+              </div>
+
+
             </div>
           </div>
         )}
