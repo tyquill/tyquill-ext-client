@@ -4,6 +4,7 @@ import styles from './PDFUploadModal.module.css';
 import { uploadService } from '../../../services/uploadService';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { trackPDFUploadSuccessBridge, trackPDFUploadFailedBridge } from '../../../analytics/bridge';
+import { useI18n } from '../../../hooks/useI18n';
 
 interface PDFUploadModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
   onClose,
   onUploadSuccess,
 }) => {
+  const { t } = useI18n();
   const { showSuccess, showError } = useToastHelpers();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
@@ -43,12 +45,12 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
 
   const handleFileSelect = (file: File) => {
     if (file.type !== 'application/pdf') {
-      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
+      showError(t('pdfUpload_fileTypeError'), t('pdfUpload_fileTypeErrorMessage'));
       return;
     }
 
     if (file.size > 30 * 1024 * 1024) {
-      showError('파일 크기 초과', '30MB 이하의 파일만 업로드 가능합니다.');
+      showError(t('pdfUpload_fileSizeError'), t('pdfUpload_fileSizeErrorMessage'));
       return;
     }
 
@@ -82,18 +84,18 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
     if (pdfFile) {
       handleFileSelect(pdfFile);
     } else {
-      showError('파일 형식 오류', 'PDF 파일만 업로드 가능합니다.');
+      showError(t('pdfUpload_fileTypeError'), t('pdfUpload_fileTypeErrorMessage'));
     }
   }, []);
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      showError('파일 선택 필요', 'PDF 파일을 선택해주세요.');
+      showError(t('pdfUpload_fileSelectRequired'), t('pdfUpload_fileSelectRequiredMessage'));
       return;
     }
 
     if (!title.trim()) {
-      showError('제목 입력 필요', '제목을 입력해주세요.');
+      showError(t('pdfUpload_titleRequired'), t('pdfUpload_titleRequiredMessage'));
       return;
     }
 
@@ -107,7 +109,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
         description.trim(),
       );
 
-      showSuccess('업로드 완료', `${selectedFile.name}이 성공적으로 업로드되었습니다.`);
+      showSuccess(t('pdfUpload_uploadSuccess'), `${selectedFile.name}${t('pdfUpload_uploadSuccessMessage')}`);
 
       // PDF 업로드 성공 이벤트 추적
       trackPDFUploadSuccessBridge({
@@ -128,11 +130,11 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
         file_name: selectedFile.name,
         file_size: selectedFile.size,
         title: title.trim(),
-        error_message: error.message || '알 수 없는 오류',
+        error_message: error.message || t('pdfUpload_unknownError'),
         has_description: description.trim().length > 0
       });
 
-      showError('업로드 실패', error.message || 'PDF 업로드 중 오류가 발생했습니다.');
+      showError(t('pdfUpload_uploadFailed'), error.message || t('pdfUpload_uploadFailedMessage'));
     } finally {
       setIsUploading(false);
     }
@@ -146,7 +148,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
         <div className={styles.modalHeader}>
           <h2 className={styles.modalTitle}>
             <IoDocument size={20} />
-            PDF 업로드
+            {t('pdfUpload_title')}
           </h2>
           <button
             className={styles.closeButton}
@@ -180,7 +182,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
                     fileInputRef.current?.click();
                   }}
                 >
-                  파일 변경
+                  {t('pdfUpload_changeFile')}
                 </button>
               </div>
             ) : (
@@ -188,10 +190,10 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
                 <IoCloudUpload size={40} className={styles.uploadIcon} />
                 <div className={styles.dropzoneText}>
                   {isDragging
-                    ? 'PDF 파일을 여기에 놓아주세요'
-                    : 'PDF 파일을 드래그하거나 클릭하여 선택'}
+                    ? t('pdfUpload_dropHere')
+                    : t('pdfUpload_dragOrClick')}
                 </div>
-                <div className={styles.dropzoneSubtext}>최대 30MB</div>
+                <div className={styles.dropzoneSubtext}>{t('pdfUpload_maxSize')}</div>
               </>
             )}
             <input
@@ -211,25 +213,25 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
           {/* 메타데이터 입력 영역 */}
           <div className={styles.formGroup}>
             <label className={styles.label}>
-              제목 <span className={styles.required}>*</span>
+              {t('pdfUpload_titleLabel')} <span className={styles.required}>*</span>
             </label>
             <input
               type="text"
               className={styles.input}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="PDF 문서의 제목을 입력하세요"
+              placeholder={t('pdfUpload_titlePlaceholder')}
               disabled={isUploading}
             />
           </div>
 
           <div className={styles.formGroup}>
-            <label className={styles.label}>설명</label>
+            <label className={styles.label}>{t('pdfUpload_descriptionLabel')}</label>
             <textarea
               className={styles.textarea}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="문서에 대한 설명을 입력하세요 (선택사항)"
+              placeholder={t('pdfUpload_descriptionPlaceholder')}
               rows={3}
               disabled={isUploading}
             />
@@ -242,7 +244,7 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
             onClick={handleClose}
             disabled={isUploading}
           >
-            취소
+            {t('pdfUpload_cancel')}
           </button>
           <button
             className={styles.uploadButton}
@@ -252,10 +254,10 @@ export const PDFUploadModal: React.FC<PDFUploadModalProps> = ({
             {isUploading ? (
               <>
                 <span className={styles.spinner} />
-                업로드 중...
+                {t('pdfUpload_uploading')}
               </>
             ) : (
-              '업로드'
+              t('pdfUpload_upload')
             )}
           </button>
         </div>
