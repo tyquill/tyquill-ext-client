@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { globalApiClient } from '../services/globalApiClient';
 import MarkdownRenderer from '../utils/markdownRenderer';
+import { useI18n } from '../hooks/useI18n';
 import styles from './ScrapView.module.css';
 import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 
@@ -20,6 +21,7 @@ interface AnalysisData {
 }
 
 const UploadView: React.FC<Props> = ({ id }) => {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [upload, setUpload] = useState<UploadData | null>(null);
@@ -54,7 +56,7 @@ const UploadView: React.FC<Props> = ({ id }) => {
           setAnalysis(null);
         }
       } catch (e: any) {
-        setError(e?.message || '업로드 파일을 불러오지 못했습니다.');
+        setError(e?.message || 'Failed to load upload file.');
       } finally {
         setLoading(false);
       }
@@ -73,7 +75,7 @@ const UploadView: React.FC<Props> = ({ id }) => {
         const parts = hostname.split('.');
         return parts.length >= 3 ? parts.slice(-2).join('.') : hostname;
       }
-      return '파일';
+      return 'File';
     } catch {
       return '';
     }
@@ -92,9 +94,9 @@ const UploadView: React.FC<Props> = ({ id }) => {
     }
   }, [id]);
 
-  if (loading) return <div style={{ padding: 16 }}>불러오는 중...</div>;
+  if (loading) return <div style={{ padding: 16 }}>{t('common_loading')}</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
-  if (!upload) return <div style={{ padding: 16 }}>데이터가 없습니다.</div>;
+  if (!upload) return <div style={{ padding: 16 }}>No data available.</div>;
 
   return (
     <div className={`${styles.pageBg} ${styles.themeLight}`}>
@@ -106,7 +108,7 @@ const UploadView: React.FC<Props> = ({ id }) => {
               <div className={styles.meta}>
                 <span className={styles.pill}>
                   <span className={styles.pillIcon}><IoLinkOutline size={14} /></span>
-                  <a className={styles.pillLink} href={upload.url} target="_blank" rel="noreferrer">{domain || '원본 파일'}</a>
+                  <a className={styles.pillLink} href={upload.url} target="_blank" rel="noreferrer">{domain || 'Original file'}</a>
                 </span>
                 {upload.createdAt && (
                   <span className={styles.pill}>
@@ -118,10 +120,10 @@ const UploadView: React.FC<Props> = ({ id }) => {
             </div>
             <div className={styles.actions}>
               <a className={`${styles.btn} ${styles.btnPrimary}`} href={upload.url} target="_blank" rel="noreferrer">
-                원본 파일 열기
+                Open Original File
               </a>
               <button className={styles.btn} onClick={refreshAnalysis}>
-                새로고침
+                Refresh
               </button>
             </div>
           </div>
@@ -134,7 +136,7 @@ const UploadView: React.FC<Props> = ({ id }) => {
               <MarkdownRenderer content={analysis.markdown} />
             ) : (
               <div style={{ padding: 12, background: 'var(--surface-elev)', border: '1px solid var(--border-color)', borderRadius: 6, color: 'var(--text-secondary)' }}>
-                아직 분석 결과가 없습니다. 처리 완료 후 이곳에 요약/분석 마크다운이 표시됩니다.
+                No analysis results yet. Summary/analysis markdown will be displayed here after processing is complete.
               </div>
             )}
           </div>

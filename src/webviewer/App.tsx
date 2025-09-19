@@ -1,5 +1,6 @@
 import React, { Suspense, useMemo, useEffect, useRef } from 'react';
 import { trackPageViewBridge, trackPageExitBridge } from '../analytics/bridge';
+import { useI18n } from '../hooks/useI18n';
 
 const ScrapView = React.lazy(() => import('./ScrapView'));
 const UploadView = React.lazy(() => import('./UploadView'));
@@ -20,6 +21,7 @@ const parseViewTarget = (): ViewTarget => {
 };
 
 const ViewerShell: React.FC = () => {
+  const { t } = useI18n();
   const target = useMemo(() => parseViewTarget(), []);
   const pageStartTimeRef = useRef<number>(Date.now());
 
@@ -57,11 +59,11 @@ const ViewerShell: React.FC = () => {
   }, [target]);
 
   if (!target) {
-    return <div style={{ padding: 16, color: 'red' }}>유효하지 않은 요청입니다 (type, id 필요)</div>;
+    return <div style={{ padding: 16, color: 'red' }}>Invalid request (type and id required)</div>;
   }
 
   return (
-    <Suspense fallback={<div style={{ padding: 16 }}>불러오는 중...</div>}>
+    <Suspense fallback={<div style={{ padding: 16 }}>{t('common_loading')}</div>}>
       {target.kind === 'SCRAP' ? (
         <ScrapView id={target.id} />
       ) : (

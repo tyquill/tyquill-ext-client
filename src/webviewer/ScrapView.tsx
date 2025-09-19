@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { scrapService } from '../services/scrapService';
 import MarkdownRenderer from '../utils/markdownRenderer';
+import { useI18n } from '../hooks/useI18n';
 import styles from './ScrapView.module.css';
 import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 
@@ -14,6 +15,7 @@ interface ScrapData {
 }
 
 const ScrapView: React.FC<Props> = ({ id }) => {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scrap, setScrap] = useState<ScrapData | null>(null);
@@ -26,7 +28,7 @@ const ScrapView: React.FC<Props> = ({ id }) => {
         const data = await scrapService.getScrapById(id);
         setScrap({ title: data.title, content: data.content, url: data.url, createdAt: data.createdAt });
       } catch (e: any) {
-        setError(e?.message || '스크랩을 불러오지 못했습니다.');
+        setError(e?.message || 'Failed to load scrap.');
       } finally {
         setLoading(false);
       }
@@ -45,9 +47,9 @@ const ScrapView: React.FC<Props> = ({ id }) => {
     }
   })();
 
-  if (loading) return <div style={{ padding: 16 }}>불러오는 중...</div>;
+  if (loading) return <div style={{ padding: 16 }}>{t('common_loading')}</div>;
   if (error) return <div style={{ padding: 16, color: 'red' }}>{error}</div>;
-  if (!scrap) return <div style={{ padding: 16 }}>데이터가 없습니다.</div>;
+  if (!scrap) return <div style={{ padding: 16 }}>No data available.</div>;
 
   return (
     <div className={`${styles.pageBg} ${styles.themeLight}`}>
@@ -59,7 +61,7 @@ const ScrapView: React.FC<Props> = ({ id }) => {
               <div className={styles.meta}>
                 <span className={styles.pill}>
                   <span className={styles.pillIcon}><IoLinkOutline size={14} /></span>
-                  <a className={styles.pillLink} href={scrap.url} target="_blank" rel="noreferrer">{domain || '원문 링크'}</a>
+                  <a className={styles.pillLink} href={scrap.url} target="_blank" rel="noreferrer">{domain || 'Original link'}</a>
                 </span>
                 {scrap.createdAt && (
                   <span className={styles.pill}>
@@ -71,7 +73,7 @@ const ScrapView: React.FC<Props> = ({ id }) => {
             </div>
             <div className={styles.actions}>
               <a className={`${styles.btn} ${styles.btnPrimary}`} href={scrap.url} target="_blank" rel="noreferrer">
-                원문 보기
+                View Original
               </a>
             </div>
           </div>

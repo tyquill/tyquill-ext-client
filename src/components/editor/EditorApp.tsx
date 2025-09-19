@@ -5,6 +5,7 @@ import EditorWrapper from '../sidepanel/Editor/Editor';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
+import { useI18n } from '../../hooks/useI18n';
 import styles from './EditorApp.module.css';
 
 interface EditorData {
@@ -16,6 +17,7 @@ interface EditorData {
 }
 
 const EditorApp: React.FC = () => {
+  const { t } = useI18n();
   const [editorData, setEditorData] = useState<EditorData | null>(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -37,7 +39,7 @@ const EditorApp: React.FC = () => {
           const data = result[sessionKey];
           
           if (!data) {
-            throw new Error('편집기 데이터를 찾을 수 없습니다.');
+            throw new Error('Editor data not found.');
           }
           
           setEditorData(data);
@@ -76,11 +78,11 @@ const EditorApp: React.FC = () => {
         } catch (error) {
           console.error('Failed to load editor data:', error);
           console.error('Session key:', sessionKey);
-          alert('편집기 데이터를 불러오는데 실패했습니다. 콘솔을 확인해주세요.');
+          alert('Failed to load editor data. Please check the console.');
           window.close();
         }
       } else {
-        alert('편집기 데이터가 없습니다.');
+        alert('No editor data available.');
         window.close();
       }
     };
@@ -153,7 +155,7 @@ const EditorApp: React.FC = () => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasChanges) {
         e.preventDefault();
-        e.returnValue = '변경사항이 저장되지 않았습니다. 정말 떠나시겠습니까?';
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
         return e.returnValue;
       }
     };
@@ -211,7 +213,7 @@ const EditorApp: React.FC = () => {
       
     } catch (error: any) {
       console.error('Save failed:', error);
-      alert(`저장에 실패했습니다: ${error.message || '알 수 없는 오류'}`);
+      alert(`Save failed: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
@@ -219,7 +221,7 @@ const EditorApp: React.FC = () => {
 
   const handleCancel = useCallback(() => {
     if (hasChanges) {
-      const confirmCancel = window.confirm('변경사항이 저장되지 않았습니다. 정말 취소하시겠습니까?');
+      const confirmCancel = window.confirm('You have unsaved changes. Are you sure you want to cancel?');
       if (!confirmCancel) return;
     }
 
@@ -263,7 +265,7 @@ const EditorApp: React.FC = () => {
   if (!editorData) {
     return (
       <div className={styles.loadingContainer}>
-        <div>편집기를 준비하고 있습니다...</div>
+        <div>Preparing editor...</div>
       </div>
     );
   }
@@ -278,7 +280,7 @@ const EditorApp: React.FC = () => {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className={styles.titleInput}
-              placeholder="제목을 입력하세요"
+              placeholder="Enter title"
             />
           </div>
           
@@ -287,20 +289,20 @@ const EditorApp: React.FC = () => {
               onClick={handleSave}
               disabled={saving || !hasChanges}
               className={`${styles.saveButton} ${hasChanges ? styles.hasChanges : ''}`}
-              title="저장 (Ctrl+S)"
+              title="Save (Ctrl+S)"
             >
               <IoSave size={20} />
-              {saving ? '저장 중...' : '저장'}
+              {saving ? 'Saving...' : t('common_save')}
             </button>
             
             <button
               onClick={handleCancel}
               disabled={saving}
               className={styles.cancelButton}
-              title="취소 (Esc)"
+              title="Cancel (Esc)"
             >
               <IoClose size={20} />
-              취소
+              {t('common_cancel')}
             </button>
           </div>
         </div>
@@ -311,7 +313,7 @@ const EditorApp: React.FC = () => {
           <EditorWrapper
             content={markdownToHtml(content)}
             onChange={setContent}
-            placeholder="내용을 입력하세요..."
+            placeholder="Enter content..."
             readOnly={saving}
             onHistoryStateChange={handleHistoryStateChange}
           />
@@ -320,7 +322,7 @@ const EditorApp: React.FC = () => {
 
       {hasChanges && (
         <div className={styles.changesIndicator}>
-          변경사항이 있습니다
+          You have unsaved changes
         </div>
       )}
     </div>
