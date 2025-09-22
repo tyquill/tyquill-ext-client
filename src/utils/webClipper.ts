@@ -60,6 +60,63 @@ export class WebClipper {
   }
 
   /**
+   * Shadow DOM을 포함하여 모든 요소를 수집
+   */
+  private collectAllElementsDeep(root: ParentNode = document): Element[] {
+    const elements: Element[] = [];
+
+    const walk = (node: ParentNode) => {
+      // children을 안전하게 접근 (Document, ShadowRoot, Element 모두 대응)
+      const childElements = (node as any).children ? Array.from((node as any).children) as Element[] : [];
+      for (const el of childElements) {
+        elements.push(el);
+        // open shadow root 내부 순회
+        const shadow = (el as any).shadowRoot as ShadowRoot | null | undefined;
+        if (shadow) {
+          walk(shadow as unknown as ParentNode);
+        }
+        // 자식 요소 순회
+        walk(el as unknown as ParentNode);
+      }
+    };
+
+    // documentElement부터 순회 시작
+    const start = (root as any).documentElement ? (root as any).documentElement as Element : root as Element;
+    if (start) {
+      // 시작 노드 자체도 포함되지 않으므로, 시작 노드의 자식부터 순회
+      walk(start as unknown as ParentNode);
+    }
+
+    return elements;
+  }
+
+  /**
+   * Shadow DOM 포함 전체 트리에서 selector 매칭 요소 수집
+   */
+  private queryAllDeep(selector: string, root: ParentNode = document): Element[] {
+    const all = this.collectAllElementsDeep(root);
+    const results: Element[] = [];
+    for (const el of all) {
+      try {
+        if (el.matches(selector)) {
+          results.push(el);
+        }
+      } catch {
+        // 잘못된 셀렉터 등은 무시
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Shadow DOM 포함 selector 매칭 첫 요소 반환
+   */
+  private queryDeep(selector: string, root: ParentNode = document): Element | null {
+    const results = this.queryAllDeep(selector, root);
+    return results.length > 0 ? results[0] : null;
+  }
+
+  /**
    * 현재 페이지 스크랩
    */
   async clipPage(options?: Partial<ClipperOptions>): Promise<ScrapResult> {
@@ -143,6 +200,11 @@ export class WebClipper {
   private detectMainContent(): Element | null {
     // 우선순위에 따른 셀렉터
     const contentSelectors = [
+      // 뉴스레터/이메일 본문 컨테이너 우선 처리
+      '.email-content',
+      '[class*="email-content"]',
+      '[accesslevel="full"]',
+      '[class*="ContentBodyWrapper"]',
       'article',
       '[role="main"]',
       'main',
@@ -166,9 +228,12 @@ export class WebClipper {
     ];
 
     for (const selector of contentSelectors) {
-      const element = document.querySelector(selector);
-      if (element && this.hasSubstantialContent(element)) {
-        return element;
+      // Shadow DOM 포함 탐색
+      const candidates = this.queryAllDeep(selector);
+      for (const element of candidates) {
+        if (element && this.hasSubstantialContent(element)) {
+          return element;
+        }
       }
     }
 
@@ -182,9 +247,12 @@ export class WebClipper {
   private hasSubstantialContent(element: Element): boolean {
     const text = element.textContent?.trim() || '';
     const wordCount = text.split(/\s+/).length;
-    
+
+    // 본문 힌트가 강하게 매칭되는 경우 임계치를 완화
+    const threshold = this.matchesContentHint(element) ? 20 : 50;
+
     // 포함 우선: 링크 밀도는 점수에서 페널티 처리하므로 여기서는 배제하지 않음
-    return wordCount > 50 && !this.isNavigationElement(element);
+    return wordCount > threshold && !this.isNavigationElement(element);
   }
 
   /**
@@ -207,7 +275,12 @@ export class WebClipper {
    * 가장 큰 텍스트 컨테이너 찾기
    */
   private findLargestTextContainer(): Element | null {
-    const candidates = Array.from(document.querySelectorAll('div, section, article, main'));
+    // Shadow DOM 포함 후보 수집
+    const deepElements = this.collectAllElementsDeep();
+    const candidates = deepElements.filter(el => {
+      const tag = el.tagName.toLowerCase();
+      return tag === 'div' || tag === 'section' || tag === 'article' || tag === 'main';
+    });
     let maxScore = 0;
     let bestElement: Element | null = null;
 
@@ -264,6 +337,8 @@ export class WebClipper {
     const hints = [
       'article', 'content', 'post', 'entry', 'markdown-body',
       'et_pb_post_content', 'mail_view_contents_inner', 'mail_view_contents',
+      // 뉴스레터/이메일 본문 힌트
+      'email-content', 'emailcontent', 'contentbody', 'content-body', 'newsletter'
     ];
     return hints.some(h => cls.includes(h) || id.includes(h));
   }
@@ -312,7 +387,6 @@ export class WebClipper {
       '.lnb',
       // 기타 본문 외 위젯/배너
       '[class*="subscribe"]',
-      '[class*="newsletter"]',
       '[class*="signup"]',
       '[class*="share"]',
       '[class*="breadcrumb"]'
