@@ -253,6 +253,7 @@ class AuthService {
             // 탭에 스크립트 주입하여 localStorage 읽기
             const [result] = await browser.scripting.executeScript({
               target: { tabId: tab.id },
+              world: 'MAIN',
               func: () => {
                 const authState = localStorage.getItem('authState');
                 if (authState) {
