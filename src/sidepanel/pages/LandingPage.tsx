@@ -16,6 +16,8 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
   const handleStartClick = async () => {
     try {
       clearError();
+      // 사이드패널 닫기 (로그인 페이지가 새 탭에서 열림)
+      // window.close();
       await login();
       showSuccess(t('landingPage_loginSuccess'), t('landingPage_welcomeMessage'));
       onStart(); // 인증 성공 후 메인 페이지로 이동

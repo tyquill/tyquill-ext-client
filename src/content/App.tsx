@@ -37,6 +37,45 @@ const App: React.FC = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
+  // 웹 클라이언트로부터 인증 정보 요청 처리
+  useEffect(() => {
+    const handleWebClientAuthRequest = async (event: MessageEvent) => {
+      // 웹 클라이언트로부터 인증 요청인지 확인
+      if (event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
+          event.data.source === 'tyquill-web-client' &&
+          (window.location.origin === 'http://localhost:5173' || window.location.origin === 'https://app.tyquill.ai')) {
+
+        try {
+          // Background script에 인증 정보 요청
+          const response = await browser.runtime.sendMessage({
+            action: 'getAuthState'
+          });
+
+          // 웹 클라이언트에 응답
+          window.postMessage({
+            type: 'TYQUILL_AUTH_RESPONSE',
+            source: 'tyquill-extension',
+            authState: response?.authState || null
+          }, event.origin);
+        } catch (error) {
+          console.error('Failed to get auth state from extension:', error);
+          // 에러 발생 시에도 응답
+          window.postMessage({
+            type: 'TYQUILL_AUTH_RESPONSE',
+            source: 'tyquill-extension',
+            authState: null
+          }, event.origin);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleWebClientAuthRequest);
+
+    return () => {
+      window.removeEventListener('message', handleWebClientAuthRequest);
+    };
+  }, []);
+
   // Background Script로부터의 메시지 처리
   useEffect(() => {
     const handleMessage = async (request: any, _sender: any, sendResponse: any) => {
@@ -51,6 +90,19 @@ const App: React.FC = () => {
         }));
 
         // 응답 보내기 (선택사항)
+        if (sendResponse) {
+          sendResponse({ success: true });
+        }
+      }
+
+      // 인증 상태 변경 처리
+      if (request.type === 'AUTH_STATE_CHANGED') {
+        console.log('Auth state changed in content script:', request.isAuthenticated);
+        // FloatingButton과 다른 컴포넌트들에 인증 상태 변경 알림
+        window.dispatchEvent(new CustomEvent('tyquill-auth-changed', {
+          detail: { isAuthenticated: request.isAuthenticated }
+        }));
+
         if (sendResponse) {
           sendResponse({ success: true });
         }
