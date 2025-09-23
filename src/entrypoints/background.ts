@@ -45,6 +45,19 @@ export default defineBackground(() => {
       return true; // async
     }
 
+    if (request.action === 'logoutFromWebClient') {
+      // 웹 클라이언트로부터의 로그아웃 요청 처리
+      authService.logout().then(() => {
+        console.log('✅ Extension logged out from web client');
+        // 사이드패널은 자동으로 랜딩페이지로 전환됨 (isAuthenticated가 false로 변경되므로)
+        sendResponse({ success: true });
+      }).catch(error => {
+        console.error('❌ Failed to logout extension:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // async
+    }
+
     if (request.action === 'scrapExtracted') {
       handleScrapExtracted(request.data)
         .then(response => {

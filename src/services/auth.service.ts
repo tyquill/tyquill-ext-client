@@ -408,10 +408,48 @@ class AuthService {
       await this.clearAuthState();
       this.notifyStateChange();
 
+      // 5. 웹 클라이언트에 로그아웃 알림
+      await this.notifyWebClientLogout();
+
       // console.log('✅ Logout successful');
     } catch (error) {
       // console.error('❌ Logout error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 웹 클라이언트에 로그아웃 알림
+   */
+  private async notifyWebClientLogout(): Promise<void> {
+    try {
+      // 웹 클라이언트 탭 찾기
+      const tabs = await browser.tabs.query({
+        url: ['http://localhost:5173/*', 'https://app.tyquill.ai/*']
+      });
+
+      // 각 탭에 로그아웃 메시지 전송
+      for (const tab of tabs) {
+        if (tab.id) {
+          try {
+            await browser.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => {
+                // postMessage로 로그아웃 알림 전송
+                window.postMessage({
+                  type: 'TYQUILL_EXTENSION_LOGOUT',
+                  source: 'tyquill-extension'
+                }, window.location.origin);
+              },
+            });
+            console.log('✅ Notified web client of logout');
+          } catch (error) {
+            console.log('Failed to notify tab of logout:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Failed to notify web client of logout:', error);
     }
   }
 

@@ -37,9 +37,9 @@ const App: React.FC = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
-  // 웹 클라이언트로부터 인증 정보 요청 처리
+  // 웹 클라이언트로부터 인증 정보 요청 및 로그아웃 알림 처리
   useEffect(() => {
-    const handleWebClientAuthRequest = async (event: MessageEvent) => {
+    const handleWebClientMessage = async (event: MessageEvent) => {
       // 웹 클라이언트로부터 인증 요청인지 확인
       if (event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
           event.data.source === 'tyquill-web-client' &&
@@ -67,12 +67,31 @@ const App: React.FC = () => {
           }, event.origin);
         }
       }
+
+      // 웹 클라이언트로부터 로그아웃 알림 처리
+      if (event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
+          event.data.source === 'tyquill-web-client' &&
+          (window.location.origin === 'http://localhost:5173' || window.location.origin === 'https://app.tyquill.ai')) {
+
+        console.log('📤 Received logout notification from web client');
+
+        try {
+          // Background script에 로그아웃 요청
+          await browser.runtime.sendMessage({
+            action: 'logoutFromWebClient'
+          });
+
+          console.log('✅ Extension logout triggered from web client');
+        } catch (error) {
+          console.error('Failed to trigger extension logout:', error);
+        }
+      }
     };
 
-    window.addEventListener('message', handleWebClientAuthRequest);
+    window.addEventListener('message', handleWebClientMessage);
 
     return () => {
-      window.removeEventListener('message', handleWebClientAuthRequest);
+      window.removeEventListener('message', handleWebClientMessage);
     };
   }, []);
 
