@@ -41,9 +41,10 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleWebClientMessage = async (event: MessageEvent) => {
       // 웹 클라이언트로부터 인증 요청인지 확인
-      if (event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
-          event.data.source === 'tyquill-web-client' &&
-          (window.location.origin === 'http://localhost:5173' || window.location.origin === 'https://app.tyquill.ai')) {
+      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
+          typeof event.data === 'object' && event.data !== null &&
+          event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
+          event.data.source === 'tyquill-web-client') {
 
         try {
           // Background script에 인증 정보 요청
@@ -69,9 +70,10 @@ const App: React.FC = () => {
       }
 
       // 웹 클라이언트로부터 로그아웃 알림 처리
-      if (event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
-          event.data.source === 'tyquill-web-client' &&
-          (window.location.origin === 'http://localhost:5173' || window.location.origin === 'https://app.tyquill.ai')) {
+      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
+          typeof event.data === 'object' && event.data !== null &&
+          event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
+          event.data.source === 'tyquill-web-client') {
 
         console.log('📤 Received logout notification from web client');
 
