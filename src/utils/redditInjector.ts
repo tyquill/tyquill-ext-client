@@ -60,7 +60,7 @@ const REDDIT_STYLE_TEXT = `
     width: 20px;
     height: 20px;
     object-fit: contain;
-    filter: brightness(0) saturate(100%) invert(44%) sepia(11%) saturate(434%) hue-rotate(180deg) brightness(94%) contrast(86%);
+    filter: brightness(0) saturate(100%) invert(20%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(0%) contrast(100%);
     vertical-align: middle;
     display: block;
     margin: 0 auto;
@@ -101,15 +101,37 @@ const REDDIT_STYLE_TEXT = `
     border-color: var(--color-tone-11, rgba(0, 0, 0, 0.9)) transparent transparent transparent;
   }
 
+  /* Light mode adjustments */
+  html.theme-light .tyquill-reddit-action img,
+  [data-theme="light"] .tyquill-reddit-action img,
+  html[data-colorscheme="light"] .tyquill-reddit-action img {
+    filter: brightness(0) saturate(100%) invert(20%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(0%) contrast(100%);
+  }
+
+  html.theme-light .tyquill-reddit-action:hover,
+  [data-theme="light"] .tyquill-reddit-action:hover,
+  html[data-colorscheme="light"] .tyquill-reddit-action:hover {
+    background-color: transparent;
+  }
+
+  html.theme-light .tyquill-reddit-tooltip,
+  [data-theme="light"] .tyquill-reddit-tooltip,
+  html[data-colorscheme="light"] .tyquill-reddit-tooltip {
+    background: transparent;
+    color: var(--color-tone-11, #000);
+  }
+
   /* Dark mode adjustments */
+  html.theme-dark .tyquill-reddit-action:hover,
   [data-theme="dark"] .tyquill-reddit-action:hover,
   html[data-colorscheme="dark"] .tyquill-reddit-action:hover {
     background-color: var(--color-tone-2, #1a1a1b);
   }
 
+  html.theme-dark .tyquill-reddit-action img,
   [data-theme="dark"] .tyquill-reddit-action img,
   html[data-colorscheme="dark"] .tyquill-reddit-action img {
-    filter: brightness(0) saturate(100%) invert(70%) sepia(9%) saturate(201%) hue-rotate(180deg) brightness(95%) contrast(86%);
+    filter: brightness(0) saturate(100%) invert(100%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(100%) contrast(100%);
   }
 `;
 
