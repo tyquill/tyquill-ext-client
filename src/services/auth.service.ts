@@ -187,12 +187,143 @@ class AuthService {
   }
 
   /**
+   * 웹 클라이언트에서 인증 정보 동기화 (외부에서 호출 가능)
+   */
+  async syncAuthFromWebClient(): Promise<boolean> {
+    try {
+      // 이미 인증되고 토큰이 유효한 경우에만 스킵
+      if (this.authState.isAuthenticated && this.authState.accessToken && !this.isTokenExpired()) {
+        return false;
+      }
+
+      const webAuth = await this.tryGetAuthFromWebClient();
+      if (webAuth) {
+        // 웹 클라이언트의 인증 정보 사용
+        this.authState = {
+          isAuthenticated: true,
+          user: webAuth.user,
+          accessToken: webAuth.accessToken,
+          refreshToken: webAuth.refreshToken,
+          isLoading: false,
+        };
+
+        // Extension 로컬 스토리지에 저장
+        await this.saveAuthState();
+        this.notifyStateChange();
+
+        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+
+        // Analytics
+        try {
+          await analytics.identify(webAuth.user.id, {
+            email: webAuth.user.email,
+            full_name: webAuth.user.fullName,
+            provider: webAuth.user.provider,
+          });
+        } catch {}
+
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('Failed to sync auth from web client:', error);
+      return false;
+    }
+  }
+
+  /**
+   * 웹 클라이언트에서 인증 정보 가져오기 시도
+   */
+  private async tryGetAuthFromWebClient(): Promise<AuthResponse | null> {
+    try {
+      // 웹 클라이언트 탭 찾기
+      const tabs = await browser.tabs.query({
+        url: ['http://localhost:5173/*', 'https://app.tyquill.ai/*']
+      });
+
+      if (tabs.length === 0) {
+        return null;
+      }
+
+      // 각 탭에서 인증 정보 요청
+      for (const tab of tabs) {
+        if (tab.id) {
+          try {
+            // 탭에 스크립트 주입하여 localStorage 읽기
+            const [result] = await browser.scripting.executeScript({
+              target: { tabId: tab.id },
+              world: 'MAIN',
+              func: () => {
+                const authState = localStorage.getItem('authState');
+                if (authState) {
+                  return JSON.parse(authState);
+                }
+                return null;
+              },
+            });
+
+            if (result?.result?.accessToken) {
+              console.log('🔐 Found auth from web client');
+              const authData = result.result;
+
+              // AuthResponse 형식으로 변환
+              return {
+                accessToken: authData.accessToken,
+                refreshToken: authData.refreshToken,
+                user: authData.user,
+                expiresAt: Date.now() + 3600000, // 1시간
+              };
+            }
+          } catch (error) {
+            console.log('Failed to get auth from tab:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Failed to query tabs:', error);
+    }
+
+    return null;
+  }
+
+  /**
    * 전체 로그인 플로우 실행
    */
   async login(): Promise<AuthResponse> {
     try {
       this.authState.isLoading = true;
       this.notifyStateChange();
+
+      // 0. 먼저 웹 클라이언트에서 인증 정보 확인
+      const webAuth = await this.tryGetAuthFromWebClient();
+      if (webAuth) {
+        // 웹 클라이언트의 인증 정보 사용
+        this.authState = {
+          isAuthenticated: true,
+          user: webAuth.user,
+          accessToken: webAuth.accessToken,
+          refreshToken: webAuth.refreshToken,
+          isLoading: false,
+        };
+
+        // Extension 로컬 스토리지에 저장
+        await this.saveAuthState();
+        this.notifyStateChange();
+
+        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+
+        // Analytics
+        try {
+          await analytics.identify(webAuth.user.id, {
+            email: webAuth.user.email,
+            full_name: webAuth.user.fullName,
+            provider: webAuth.user.provider,
+          });
+        } catch {}
+
+        return webAuth;
+      }
 
       // 1. 일반 OAuth 플로우로 인증 코드 획득
       // console.log('🔐 Starting OAuth flow...');
@@ -278,10 +409,48 @@ class AuthService {
       await this.clearAuthState();
       this.notifyStateChange();
 
+      // 5. 웹 클라이언트에 로그아웃 알림
+      await this.notifyWebClientLogout();
+
       // console.log('✅ Logout successful');
     } catch (error) {
       // console.error('❌ Logout error:', error);
       throw error;
+    }
+  }
+
+  /**
+   * 웹 클라이언트에 로그아웃 알림
+   */
+  private async notifyWebClientLogout(): Promise<void> {
+    try {
+      // 웹 클라이언트 탭 찾기
+      const tabs = await browser.tabs.query({
+        url: ['http://localhost:5173/*', 'https://app.tyquill.ai/*']
+      });
+
+      // 각 탭에 로그아웃 메시지 전송
+      for (const tab of tabs) {
+        if (tab.id) {
+          try {
+            await browser.scripting.executeScript({
+              target: { tabId: tab.id },
+              func: () => {
+                // postMessage로 로그아웃 알림 전송
+                window.postMessage({
+                  type: 'TYQUILL_EXTENSION_LOGOUT',
+                  source: 'tyquill-extension'
+                }, window.location.origin);
+              },
+            });
+            console.log('✅ Notified web client of logout');
+          } catch (error) {
+            console.log('Failed to notify tab of logout:', error);
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Failed to notify web client of logout:', error);
     }
   }
 

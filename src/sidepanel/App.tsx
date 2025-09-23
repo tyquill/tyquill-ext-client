@@ -5,6 +5,7 @@ import type { Browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import { ToastProvider } from '../hooks/useToast';
 import { trackPageViewBridge, trackPageExitBridge } from '../analytics/bridge';
+import { authService } from '../services/auth.service';
 import LandingPage from './pages/LandingPage';
 import Header, { Sidebar } from '../components/sidepanel/Header/Header';
 import ScrapPage from './pages/ScrapPage';
@@ -48,9 +49,23 @@ const App: React.FC = () => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
 
-  // 언어 설정 초기화
+  // 언어 설정 초기화 및 인증 체크
   useEffect(() => {
     initializeLanguage();
+
+    // 사이드패널이 열릴 때 웹 클라이언트에서 인증 정보 체크
+    const checkAuthOnOpen = async () => {
+      try {
+        const synced = await authService.syncAuthFromWebClient();
+        if (synced) {
+          console.log('✅ Auth synced from web client on sidepanel open');
+        }
+      } catch (error) {
+        console.error('Failed to sync auth on open:', error);
+      }
+    };
+
+    checkAuthOnOpen();
   }, [initializeLanguage]);
 
   // Chrome storage 변경 감지 (언어 설정 동기화)

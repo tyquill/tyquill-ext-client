@@ -1,6 +1,7 @@
 // Background Service Worker for Tyquill Extension
 import { scrapService } from '../services/scrapService';
 import { trackScrapCreatedBridge, captureInBackground } from '../analytics/bridge';
+import { authService } from '../services/auth.service';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 
@@ -31,6 +32,31 @@ export default defineBackground(() => {
     // Handle messages from content script or popup
     // console.log('Message received:', request);
     
+
+    if (request.action === 'getAuthState') {
+      // 인증 상태 요청 처리
+      authService.restoreAuthState().then(async () => {
+        const authState = authService.getAuthState();
+        sendResponse({ success: true, authState });
+      }).catch(error => {
+        console.error('❌ Failed to get auth state:', error);
+        sendResponse({ success: false, authState: null });
+      });
+      return true; // async
+    }
+
+    if (request.action === 'logoutFromWebClient') {
+      // 웹 클라이언트로부터의 로그아웃 요청 처리
+      authService.logout().then(() => {
+        console.log('✅ Extension logged out from web client');
+        // 사이드패널은 자동으로 랜딩페이지로 전환됨 (isAuthenticated가 false로 변경되므로)
+        sendResponse({ success: true });
+      }).catch(error => {
+        console.error('❌ Failed to logout extension:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // async
+    }
 
     if (request.action === 'scrapExtracted') {
       handleScrapExtracted(request.data)
@@ -212,12 +238,20 @@ export default defineBackground(() => {
       
       // Notify sidepanel to refresh on success
       try {
-        browser.runtime.sendMessage({
+        await browser.runtime.sendMessage({
           action: 'scrapCreated',
           data: result
+        }).catch(() => {
+          // Ignore error as sidepanel might not be open
+          if (browser.runtime.lastError) {
+            void browser.runtime.lastError;
+          }
         });
       } catch (error) {
         // Ignore error as sidepanel might not be open
+        if (browser.runtime.lastError) {
+          void browser.runtime.lastError;
+        }
       }
       
       return result;
@@ -314,8 +348,16 @@ export default defineBackground(() => {
     const result = await scrapService.quickScrap(scrapResult, '', tags);
 
     try {
-      browser.runtime.sendMessage({ action: 'scrapCreated', data: result });
-    } catch {}
+      await browser.runtime.sendMessage({ action: 'scrapCreated', data: result }).catch(() => {
+        if (browser.runtime.lastError) {
+          void browser.runtime.lastError;
+        }
+      });
+    } catch {
+      if (browser.runtime.lastError) {
+        void browser.runtime.lastError;
+      }
+    }
 
     return result;
   }
@@ -416,7 +458,10 @@ export default defineBackground(() => {
                   settings: { floatingButtonVisible: newValue }
                 });
               } catch (error) {
-                // Ignore tabs without content script loaded
+                // Ignore tabs without content script loaded or in back/forward cache
+                if (browser.runtime.lastError) {
+                  void browser.runtime.lastError;
+                }
               }
             }
           }
