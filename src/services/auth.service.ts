@@ -191,8 +191,8 @@ class AuthService {
    */
   async syncAuthFromWebClient(): Promise<boolean> {
     try {
-      // 이미 인증된 상태면 스킵
-      if (this.authState.isAuthenticated && this.authState.accessToken) {
+      // 이미 인증되고 토큰이 유효한 경우에만 스킵
+      if (this.authState.isAuthenticated && this.authState.accessToken && !this.isTokenExpired()) {
         return false;
       }
 
