@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../../hooks/useAuth';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
@@ -26,6 +26,24 @@ interface PageState {
   draftId?: string;
 }
 
+interface SidebarPosition {
+  x: number;
+  y: number;
+}
+
+interface SavedSidebarPosition {
+  x: number;
+  // Y position is not saved - always use default
+}
+
+interface DragState {
+  isDragging: boolean;
+  startX: number;
+  startY: number;
+  offsetX: number;
+  offsetY: number;
+}
+
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
@@ -39,21 +57,144 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const pageStartTimeRef = useRef<number>(Date.now());
   const sidebarRef = useRef<HTMLDivElement>(null);
 
-  // Ensure sidebar dimensions remain fixed after animation
+  // Calculate default Y position (properly center the 98vh sidebar)
+  const getDefaultY = useCallback(() => {
+    // For a 98vh sidebar to be centered: (100vh - 98vh) / 2 = 1vh from top
+    // This gives equal 1vh margins at top and bottom
+    return Math.max(10, window.innerHeight * 0.01);
+  }, []);
+
+  // Drag and drop state
+  const [position, setPosition] = useState<SidebarPosition>({
+    x: window.innerWidth - 440,
+    y: getDefaultY()
+  });
+  const [dragState, setDragState] = useState<DragState>({
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    offsetY: 0
+  });
+  const [isAnimatingY, setIsAnimatingY] = useState(false);
+  const dragHandleRef = useRef<HTMLButtonElement>(null);
+
+  // Load saved position from storage
+  useEffect(() => {
+    const loadSavedPosition = async () => {
+      try {
+        const result = await browser.storage.local.get('tyquill-sidebar-position');
+        const defaultY = getDefaultY();
+
+        if (result['tyquill-sidebar-position']) {
+          const savedPosition = result['tyquill-sidebar-position'];
+          // Handle legacy string positions
+          if (typeof savedPosition === 'string') {
+            setPosition({
+              x: savedPosition === 'left' ? 10 : window.innerWidth - 440,
+              y: defaultY // Always use default Y
+            });
+          } else if (typeof savedPosition === 'object' && 'x' in savedPosition) {
+            // Use saved X position but always default Y
+            setPosition({
+              x: savedPosition.x,
+              y: defaultY // Always use default Y
+            });
+          } else {
+            // Fallback to default position
+            setPosition({
+              x: window.innerWidth - 440,
+              y: defaultY
+            });
+          }
+        } else {
+          // No saved position, use defaults
+          setPosition({
+            x: window.innerWidth - 440,
+            y: defaultY
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load sidebar position:', error);
+      }
+    };
+
+    if (isOpen) {
+      loadSavedPosition();
+    }
+  }, [isOpen, getDefaultY]);
+
+  // Clear saved position to reset to default on next open
+  const clearSavedPosition = useCallback(async () => {
+    try {
+      await browser.storage.local.remove('tyquill-sidebar-position');
+    } catch (error) {
+      console.error('Failed to clear sidebar position:', error);
+    }
+  }, []);
+
+  // Save only X position to storage (Y always returns to default)
+  const savePosition = useCallback(async (newPosition: SidebarPosition) => {
+    try {
+      const positionToSave: SavedSidebarPosition = { x: newPosition.x };
+      await browser.storage.local.set({ 'tyquill-sidebar-position': positionToSave });
+    } catch (error) {
+      console.error('Failed to save sidebar position:', error);
+    }
+  }, []);
+
+  // Clear saved position when sidebar closes to reset to default position on next open
+  useEffect(() => {
+    if (!isOpen) {
+      clearSavedPosition();
+    }
+  }, [isOpen, clearSavedPosition]);
+
+  // Keep sidebar within viewport bounds
+  const constrainToViewport = useCallback((x: number, y: number) => {
+    const sidebarWidth = 430;
+    const sidebarHeight = 600; // Approximate height
+
+    const minX = 10;
+    const maxX = window.innerWidth - sidebarWidth - 10;
+    const minY = 10;
+    const maxY = window.innerHeight - sidebarHeight - 10;
+
+    return {
+      x: Math.max(minX, Math.min(maxX, x)),
+      y: Math.max(minY, Math.min(maxY, y))
+    };
+  }, []);
+
+  // Ensure sidebar dimensions remain fixed and apply exact positioning
   useEffect(() => {
     const sidebar = sidebarRef.current;
     if (!sidebar) return;
 
     const enforceDimensions = () => {
       // Force dimensions to prevent any expansion
-      sidebar.style.width = '400px';
-      sidebar.style.minWidth = '400px';
-      sidebar.style.maxWidth = '400px';
+      sidebar.style.width = '430px';
+      sidebar.style.minWidth = '430px';
+      sidebar.style.maxWidth = '430px';
       sidebar.style.position = 'fixed';
-      sidebar.style.right = '0';
-      sidebar.style.left = 'auto';
-      sidebar.style.transform = 'translateX(0)';
-      sidebar.style.flexBasis = '400px';
+
+      // Apply exact positioning - always override CSS defaults
+      const constrainedPos = constrainToViewport(position.x, position.y);
+      sidebar.style.left = `${constrainedPos.x}px`;
+      sidebar.style.top = `${constrainedPos.y}px`;
+      sidebar.style.right = 'auto';
+      sidebar.style.transform = 'none';
+
+      // Enable transitions based on state
+      if (!dragState.isDragging && !isAnimatingY) {
+        sidebar.style.transition = 'opacity 0.3s ease'; // Only transition opacity, not position
+      } else if (isAnimatingY) {
+        sidebar.style.transition = 'top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease'; // Smooth Y animation
+      } else {
+        sidebar.style.transition = 'none';
+      }
+
+      sidebar.style.flexBasis = '430px';
       sidebar.style.flexGrow = '0';
       sidebar.style.flexShrink = '0';
     };
@@ -86,7 +227,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       sidebar.removeEventListener('animationend', handleAnimationEnd);
       resizeObserver.disconnect();
     };
-  }, [isOpen]);
+  }, [isOpen, position, dragState.isDragging, isAnimatingY, constrainToViewport]);
 
   const navigateToMain = () => {
     setCurrentPage({ type: 'scrap' });
@@ -107,6 +248,157 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const handleNavigateToDetail = (articleId: number) => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
+
+  // Drag and drop handlers
+  const handleDragStart = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    // Get current actual position from DOM (getBoundingClientRect gives actual rendered position)
+    const rect = sidebar.getBoundingClientRect();
+
+    // Calculate offset from mouse to sidebar's top-left corner
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+
+    // Ensure sidebar position state matches actual DOM position before dragging
+    const currentPosition = { x: rect.left, y: rect.top };
+    setPosition(currentPosition);
+
+    setDragState({
+      isDragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX,
+      offsetY
+    });
+
+    // Disable transitions during drag and prevent text selection
+    sidebar.style.transition = 'none';
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'move';
+  }, []);
+
+  const handleDragMove = useCallback((e: MouseEvent) => {
+    if (!dragState.isDragging) return;
+
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    // Calculate new position
+    const newX = e.clientX - dragState.offsetX;
+    const newY = e.clientY - dragState.offsetY;
+
+    // Constrain to viewport bounds during drag
+    const constrainedPos = constrainToViewport(newX, newY);
+
+    // Apply position directly to DOM during drag for smooth real-time following
+    // Disable transitions and transforms that could interfere
+    sidebar.style.left = `${constrainedPos.x}px`;
+    sidebar.style.right = 'auto';
+    sidebar.style.top = `${constrainedPos.y}px`;
+    sidebar.style.transform = 'none';
+    sidebar.style.transition = 'none';
+
+    // DON'T update React state during drag to avoid re-renders that interfere with smooth dragging
+    // Position will be updated only once in handleDragEnd when dropping
+  }, [dragState, constrainToViewport]);
+
+  const handleDragEnd = useCallback((e: MouseEvent) => {
+    if (!dragState.isDragging) return;
+
+    const sidebar = sidebarRef.current;
+    if (!sidebar) return;
+
+    // Calculate final position where dropped
+    const finalX = e.clientX - dragState.offsetX;
+    const finalY = e.clientY - dragState.offsetY;
+
+    // Constrain X to viewport bounds, but keep the default Y
+    const defaultY = getDefaultY();
+    const constrainedX = Math.max(10, Math.min(window.innerWidth - 440, finalX));
+
+    const finalPosition: SidebarPosition = {
+      x: constrainedX,
+      y: defaultY // Always snap back to default Y
+    };
+
+    // Start Y animation back to default position
+    setIsAnimatingY(true);
+
+    // Apply final X position and animate Y back to default
+    sidebar.style.left = `${constrainedX}px`;
+    sidebar.style.top = `${defaultY}px`;
+    sidebar.style.right = 'auto';
+    sidebar.style.transform = 'none';
+    sidebar.style.transition = 'top 0.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease';
+
+    // Update React state and save position (only X coordinate)
+    setPosition(finalPosition);
+    savePosition(finalPosition);
+
+    // Reset drag state
+    setDragState({
+      isDragging: false,
+      startX: 0,
+      startY: 0,
+      offsetX: 0,
+      offsetY: 0
+    });
+
+    // Restore body styles
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    // End Y animation after transition completes
+    setTimeout(() => {
+      setIsAnimatingY(false);
+    }, 500); // Match the transition duration
+  }, [dragState.isDragging, dragState.offsetX, dragState.offsetY, savePosition, getDefaultY]);
+
+  // Mouse event listeners for dragging
+  useEffect(() => {
+    if (dragState.isDragging) {
+      document.addEventListener('mousemove', handleDragMove);
+      document.addEventListener('mouseup', handleDragEnd);
+
+      return () => {
+        document.removeEventListener('mousemove', handleDragMove);
+        document.removeEventListener('mouseup', handleDragEnd);
+      };
+    }
+  }, [dragState.isDragging, handleDragMove, handleDragEnd]);
+
+  // Handle window resize - keep sidebar in bounds and recalculate default Y
+  useEffect(() => {
+    const handleResize = () => {
+      const sidebar = sidebarRef.current;
+      if (!sidebar || dragState.isDragging || isAnimatingY) return;
+
+      // Recalculate default Y position and constrain X to new viewport bounds
+      const newDefaultY = getDefaultY();
+      const constrainedX = Math.max(10, Math.min(window.innerWidth - 440, position.x));
+
+      const newPosition = { x: constrainedX, y: newDefaultY };
+
+      // Update position if it changed due to resize
+      if (constrainedX !== position.x || newDefaultY !== position.y) {
+        setPosition(newPosition);
+        savePosition(newPosition);
+      }
+
+      // Apply the position only when not dragging or animating
+      sidebar.style.left = `${constrainedX}px`;
+      sidebar.style.top = `${newDefaultY}px`;
+      sidebar.style.right = 'auto';
+      sidebar.style.transform = 'none';
+      sidebar.style.transition = 'opacity 0.3s ease'; // Only transition opacity, not position
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [position, dragState.isDragging, isAnimatingY, getDefaultY, savePosition]);
 
   // Handle clicks on overlay backdrop - removed close functionality
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -255,7 +547,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   if (!isAuthenticated || currentPage.type === 'landing') {
     return (
       <div className={styles.overlay} onClick={handleOverlayClick}>
-        <div ref={sidebarRef} className={styles.sidebar} onClick={handleSidebarClick}>
+        <div
+          ref={sidebarRef}
+          className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
+          onClick={handleSidebarClick}
+        >
           <button
             className={styles.closeButton}
             onClick={onClose}
@@ -263,6 +559,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             type="button"
           >
             <IoClose size={24} />
+          </button>
+          <button
+            ref={dragHandleRef}
+            className={styles.dragHandle}
+            onMouseDown={handleDragStart}
+            aria-label="Drag to move sidebar"
+            type="button"
+          >
+            <div className={styles.dragGrip} />
           </button>
           <ToastProvider>
             <LandingPage onStart={navigateToMain} />
@@ -275,7 +580,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   // 메인 앱 (헤더 + 메인 콘텐츠 + 사이드바)
   return (
     <div className={styles.overlay} onClick={handleOverlayClick}>
-      <div ref={sidebarRef} className={styles.sidebar} onClick={handleSidebarClick}>
+      <div
+        ref={sidebarRef}
+        className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
+        onClick={handleSidebarClick}
+      >
         <button
           className={styles.closeButton}
           onClick={onClose}
@@ -283,6 +592,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           type="button"
         >
           <IoClose size={24} />
+        </button>
+        <button
+          ref={dragHandleRef}
+          className={styles.dragHandle}
+          onMouseDown={handleDragStart}
+          aria-label="Drag to move sidebar"
+          type="button"
+        >
+          <div className={styles.dragGrip} />
         </button>
         <ToastProvider>
           <div className={styles.app}>
