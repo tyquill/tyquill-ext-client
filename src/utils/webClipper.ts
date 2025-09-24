@@ -6,6 +6,7 @@
  */
 
 import TurndownService from 'turndown';
+import { Readability } from '@mozilla/readability';
 
 export interface PageMetadata {
   title: string;
@@ -15,13 +16,27 @@ export interface PageMetadata {
   description?: string;
   siteName?: string;
   favicon?: string;
+  // 추가 메타데이터
+  host?: string;
+  heroImageUrl?: string;
+  authorNames?: string[];
+  authorPictures?: string[];
+  language?: string;
+  type?: string; // article, video, etc.
+  keywords?: string[];
+  canonicalUrl?: string;
+  ogImage?: string;
 }
 
 export interface ScrapResult {
-  content: string;
+  content: string; // Markdown 형식
   metadata: PageMetadata;
   selectionOnly: boolean;
   timestamp: string;
+  // 추가 콘텐츠 정보
+  htmlContent?: string; // Raw HTML
+  plainText?: string; // 순수 텍스트만
+  contentFormat?: string; // reader-html, markdown, etc.
 }
 
 export interface ClipperOptions {
@@ -121,26 +136,64 @@ export class WebClipper {
    */
   async clipPage(options?: Partial<ClipperOptions>): Promise<ScrapResult> {
     const finalOptions = { ...this.options, ...options };
-    
+
     // 선택된 텍스트가 있는지 확인
     const selection = window.getSelection();
     const hasSelection = selection && !selection.isCollapsed;
-    
+
     let content: string;
+    let htmlContent: string = '';
+    let plainText: string = '';
     let selectionOnly = false;
 
     if (hasSelection && finalOptions.selectionOnly) {
       // 선택된 부분만 스크랩
-      content = this.clipSelection(selection);
+      const range = selection.getRangeAt(0);
+      const container = document.createElement('div');
+      container.appendChild(range.cloneContents());
+      htmlContent = container.innerHTML;
+      content = this.convertToMarkdown(container);
+      plainText = this.extractPlainText(htmlContent);
       selectionOnly = true;
     } else {
-      // 전체 페이지 또는 주요 콘텐츠 영역 스크랩
-      content = this.clipMainContent();
+      // Readability를 사용한 개선된 콘텐츠 추출
+      const article = this.extractWithReadability();
+
+      if (article) {
+        // Readability가 성공적으로 콘텐츠를 추출한 경우
+        htmlContent = article.content || '';
+        content = this.turndownService.turndown(htmlContent);
+        plainText = article.textContent || this.extractPlainText(htmlContent);
+
+        // Readability에서 추출한 메타데이터도 활용
+        const metadata = this.extractMetadata();
+        if (article.title && !metadata.title) {
+          metadata.title = article.title;
+        }
+        if (article.byline && !metadata.author) {
+          metadata.author = article.byline;
+        }
+        if (article.excerpt && !metadata.description) {
+          metadata.description = article.excerpt;
+        }
+      } else {
+        // Readability 실패 시 기존 방식 사용
+        const mainContent = this.detectMainContent();
+        if (mainContent) {
+          htmlContent = mainContent.innerHTML;
+          content = this.convertToMarkdown(mainContent);
+        } else {
+          const cleanedBody = this.getCleanedBody();
+          htmlContent = cleanedBody.innerHTML;
+          content = this.convertToMarkdown(cleanedBody);
+        }
+        plainText = this.extractPlainText(htmlContent);
+      }
       selectionOnly = false;
     }
 
     const metadata = this.extractMetadata();
-    
+
     // 메타데이터 헤더 추가
     let finalContent = content;
     if (finalOptions.includeMetadata) {
@@ -148,11 +201,33 @@ export class WebClipper {
     }
 
     return {
-      content: finalContent,
+      content: finalContent, // Markdown 형식 (메타데이터 헤더 포함 가능)
       metadata,
       selectionOnly,
       timestamp: new Date().toISOString(),
+      htmlContent: htmlContent, // Raw HTML (클리닝 하지 않음)
+      plainText: plainText, // 순수 텍스트만
+      contentFormat: 'reader-html',
     };
+  }
+
+  /**
+   * Readability를 사용한 콘텐츠 추출
+   */
+  private extractWithReadability() {
+    try {
+      // 현재 문서의 복사본 생성
+      const documentClone = document.cloneNode(true) as Document;
+
+      // Readability 파서 생성 및 실행
+      const reader = new Readability(documentClone);
+      const article = reader.parse();
+
+      return article;
+    } catch (error) {
+      console.warn('Readability extraction failed:', error);
+      return null;
+    }
   }
 
   /**
@@ -425,11 +500,31 @@ export class WebClipper {
   }
 
   /**
+   * HTML에서 순수 텍스트 추출
+   */
+  private extractPlainText(html: string): string {
+    // 임시 div 생성
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+
+    // script, style 태그 제거
+    tempDiv.querySelectorAll('script, style, noscript').forEach(el => el.remove());
+
+    // 텍스트 추출
+    let text = tempDiv.textContent || tempDiv.innerText || '';
+
+    // 모든 개행 문자와 여러 공백을 하나의 공백으로 압축
+    text = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
+
+    return text;
+  }
+
+  /**
    * 페이지 메타데이터 추출
    */
   private extractMetadata(): PageMetadata {
-    const title = document.title || 
-                  document.querySelector('h1')?.textContent?.trim() || 
+    const title = document.title ||
+                  document.querySelector('h1')?.textContent?.trim() ||
                   'Untitled';
 
     const url = window.location.href;
@@ -438,32 +533,99 @@ export class WebClipper {
     const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
     const ogDescription = document.querySelector('meta[property="og:description"]')?.getAttribute('content');
     const ogSiteName = document.querySelector('meta[property="og:site_name"]')?.getAttribute('content');
+    const ogImage = document.querySelector('meta[property="og:image"]')?.getAttribute('content');
+    const ogType = document.querySelector('meta[property="og:type"]')?.getAttribute('content');
 
     // 일반 메타 태그
     const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content');
     const metaAuthor = document.querySelector('meta[name="author"]')?.getAttribute('content');
+    const metaKeywords = document.querySelector('meta[name="keywords"]')?.getAttribute('content');
+
+    // 언어 정보
+    const language = document.documentElement.lang ||
+                    document.querySelector('meta[property="og:locale"]')?.getAttribute('content') ||
+                    'ko-KR';
+
+    // Canonical URL
+    const canonicalUrl = document.querySelector('link[rel="canonical"]')?.getAttribute('href');
 
     // 구조화된 데이터에서 작성자 찾기
-    const authorElement = document.querySelector('[rel="author"], .author, .byline, [itemprop="author"]');
-    const author = metaAuthor || authorElement?.textContent?.trim();
+    const authorElements = document.querySelectorAll('[rel="author"], .author, .byline, [itemprop="author"]');
+    const authorNames: string[] = [];
+    authorElements.forEach(el => {
+      const name = el.textContent?.trim();
+      if (name && !authorNames.includes(name)) {
+        authorNames.push(name);
+      }
+    });
+
+    // 작성자 프로필 이미지 찾기
+    const authorPictures: string[] = [];
+    const authorImages = document.querySelectorAll('.author-avatar img, .author-image img, [itemprop="author"] img');
+    authorImages.forEach(img => {
+      const src = (img as HTMLImageElement).src;
+      if (src && !authorPictures.includes(src)) {
+        authorPictures.push(src);
+      }
+    });
 
     // 게시일 찾기
-    const timeElement = document.querySelector('time[datetime], [itemprop="datePublished"]');
-    const publishedDate = timeElement?.getAttribute('datetime') || 
-                         timeElement?.textContent?.trim();
+    const timeElement = document.querySelector('time[datetime], [itemprop="datePublished"], meta[property="article:published_time"]');
+    let publishedDate: string | undefined;
+    if (timeElement) {
+      const datetime = timeElement.getAttribute('datetime') ||
+                       timeElement.getAttribute('content') ||
+                       timeElement.textContent?.trim();
+      if (datetime) {
+        try {
+          publishedDate = new Date(datetime).toISOString();
+        } catch {
+          publishedDate = datetime;
+        }
+      }
+    }
+
+    // Hero 이미지 찾기 (OG Image 또는 첫 번째 큰 이미지)
+    let heroImageUrl = ogImage;
+    if (!heroImageUrl) {
+      const firstLargeImage = document.querySelector('article img[src], main img[src], .content img[src]');
+      if (firstLargeImage) {
+        const src = (firstLargeImage as HTMLImageElement).src;
+        if (src) {
+          try {
+            heroImageUrl = new URL(src, window.location.origin).href;
+          } catch {
+            heroImageUrl = src;
+          }
+        }
+      }
+    }
 
     // 파비콘
     const faviconElement = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
     const favicon = faviconElement?.getAttribute('href');
 
+    // Keywords 파싱
+    const keywords = metaKeywords ? metaKeywords.split(',').map(k => k.trim()).filter(Boolean) : [];
+
     return {
       title: ogTitle || title,
       url,
-      author: author || undefined,
-      publishedDate: publishedDate ? new Date(publishedDate).toLocaleDateString('ko-KR') : undefined,
+      author: metaAuthor || authorNames[0] || undefined,
+      publishedDate: publishedDate || undefined,
       description: ogDescription || metaDescription || undefined,
       siteName: ogSiteName || window.location.hostname,
       favicon: favicon ? new URL(favicon, window.location.origin).href : undefined,
+      // 추가 메타데이터
+      host: window.location.host,
+      heroImageUrl: heroImageUrl || undefined,
+      authorNames: authorNames.length > 0 ? authorNames : undefined,
+      authorPictures: authorPictures.length > 0 ? authorPictures : undefined,
+      language,
+      type: ogType || 'article',
+      keywords: keywords.length > 0 ? keywords : undefined,
+      canonicalUrl: canonicalUrl || undefined,
+      ogImage: ogImage || undefined,
     };
   }
 

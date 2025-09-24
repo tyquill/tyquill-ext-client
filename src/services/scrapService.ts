@@ -10,15 +10,66 @@ import { globalApiClient } from './globalApiClient';
 import { trackScrapCreatedBridge, trackTagAddedBridge, trackTagRemovedBridge } from '../analytics/bridge';
 
 /**
- * 스크랩 생성 요청 DTO (기존 서버 엔티티에 맞춤)
+ * 웹페이지 사이트 정보
+ */
+export interface WebpageSiteInfo {
+  host?: string;
+  favicon_url?: string;
+  name?: string;
+}
+
+/**
+ * 웹페이지 메타데이터
+ */
+export interface WebpageMetadata {
+  url: string;
+  site?: WebpageSiteInfo;
+  title: string;
+  description?: string;
+}
+
+/**
+ * 콘텐츠 정보
+ */
+export interface ContentInfo {
+  raw?: string; // Raw HTML content (태그 포함)
+  plain?: string; // Markdown 형식
+  text?: string; // 순수 텍스트만 (태그 제거)
+  language?: string;
+  format?: string; // reader-html, markdown, etc.
+}
+
+/**
+ * 작성자 정보
+ */
+export interface AuthorInfo {
+  name?: string;
+  picture?: string;
+}
+
+/**
+ * 스크랩 생성 요청 DTO (확장된 버전)
  */
 export interface CreateScrapDto {
+  // 기본 필드
   url: string;
   title: string;
   content: string; // markdown content
-  htmlContent: string; // 원본 HTML (선택사항)
+  htmlContent: string; // 원본 HTML
   userComment?: string;
   tags?: string[];
+
+  // 추가 메타데이터 필드
+  webpage?: WebpageMetadata;
+  hero_image_url?: string;
+  published_at?: string;
+  author_names?: string[];
+  author_pictures?: string[];
+  content_info?: ContentInfo;
+  type?: string; // article, video, etc.
+  authors?: AuthorInfo[];
+  board_id?: string;
+  from?: string; // webpage, extension, etc.
 }
 
 /**
@@ -106,17 +157,65 @@ export class ScrapService {
    * ScrapResult를 CreateScrapDto로 변환
    */
   scrapResultToDto(
-    scrapResult: ScrapResult, 
+    scrapResult: ScrapResult,
     userComment?: string,
     tags?: string[]
   ): CreateScrapDto {
+    const { metadata } = scrapResult;
+
+    // 웹페이지 메타데이터 구성
+    const webpage: WebpageMetadata = {
+      url: metadata.url,
+      title: metadata.title,
+      description: metadata.description,
+      site: {
+        host: metadata.host || metadata.siteName,
+        favicon_url: metadata.favicon,
+        name: metadata.siteName,
+      },
+    };
+
+    // 콘텐츠 정보 구성
+    const content_info: ContentInfo = {
+      raw: scrapResult.htmlContent, // Raw HTML (태그 포함)
+      plain: scrapResult.content, // Markdown 형식
+      text: scrapResult.plainText, // 순수 텍스트만
+      language: metadata.language,
+      format: scrapResult.contentFormat || 'reader-html',
+    };
+
+    // 작성자 정보 구성
+    const authors: AuthorInfo[] = [];
+    if (metadata.authorNames && metadata.authorNames.length > 0) {
+      metadata.authorNames.forEach((name, index) => {
+        authors.push({
+          name,
+          picture: metadata.authorPictures?.[index],
+        });
+      });
+    } else if (metadata.author) {
+      authors.push({ name: metadata.author });
+    }
+
     return {
-      url: scrapResult.metadata.url,
-      title: scrapResult.metadata.title,
+      // 기본 필드
+      url: metadata.url,
+      title: metadata.title,
       content: scrapResult.content, // markdown content
-      htmlContent: '', // 일단 빈 문자열 (필요시 원본 HTML 저장)
+      htmlContent: scrapResult.htmlContent || '', // 원본 HTML
       userComment,
       tags: tags || [],
+
+      // 추가 메타데이터
+      webpage,
+      hero_image_url: metadata.heroImageUrl || metadata.ogImage,
+      published_at: metadata.publishedDate,
+      author_names: metadata.authorNames,
+      author_pictures: metadata.authorPictures,
+      content_info,
+      type: 'webclip',
+      authors: authors.length > 0 ? authors : undefined,
+      from: 'extension',
     };
   }
 
