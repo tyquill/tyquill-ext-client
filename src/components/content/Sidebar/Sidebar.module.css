@@ -5,28 +5,27 @@
   right: 0 !important;
   bottom: 0 !important;
   left: 0 !important;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: transparent;
   z-index: 2147483647; /* Maximum z-index value */
   display: flex !important;
   justify-content: flex-end !important;
   align-items: stretch !important;
-  backdrop-filter: blur(2px);
-  animation: fadeIn 0.2s ease-out;
-  pointer-events: auto; /* Enable pointer events but not for closing */
+  /* animation: fadeIn 0.2s ease-out; */ /* Removed - no overlay to fade in */
+  pointer-events: none; /* Allow clicks to pass through to the page behind */
   cursor: default; /* Default cursor - not clickable */
   /* Prevent overlay from affecting sidebar sizing */
   flex-direction: row !important;
   flex-wrap: nowrap !important;
 }
 
-@keyframes fadeIn {
+/* @keyframes fadeIn {
   from {
     opacity: 0;
   }
   to {
     opacity: 1;
   }
-}
+} */ /* Removed - no overlay animation needed */
 
 /* The actual sidebar container */
 .sidebar {
@@ -71,6 +70,7 @@
 
   /* Animation */
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: auto; /* Ensure sidebar itself remains interactive */
   transform: translateX(0) !important;
 
   /* Reset potential host page interference */
@@ -218,14 +218,14 @@
   }
 
   .overlay {
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: transparent; /* Keep transparent even in high contrast mode */
   }
 }
 
 /* Handle reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
   .overlay {
-    animation: none;
+    /* animation: none; */ /* No animation to disable */
   }
 
   .sidebar {
