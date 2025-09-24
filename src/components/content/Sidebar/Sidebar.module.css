@@ -29,17 +29,20 @@
 
 /* The actual sidebar container */
 .sidebar {
-  /* Core dimensions - absolutely fixed */
-  width: 400px !important;
-  min-width: 400px !important;
-  max-width: 400px !important;
-  height: 100vh !important;
+  /* Core dimensions - floating panel size */
+  width: 430px !important;
+  min-width: 430px !important;
+  max-width: 430px !important;
+  height: 98vh !important;
+  max-height: calc(100vh - 20px) !important;
+  min-height: 600px !important;
 
-  /* Positioning - absolutely fixed to right */
+  /* Positioning - floating panel with margins */
   position: fixed !important;
-  right: 0 !important;
-  top: 0 !important;
-  bottom: 0 !important;
+  right: 10px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  bottom: auto !important;
   left: auto !important;
 
   /* Flex behavior - prevent any expansion */
@@ -47,15 +50,13 @@
   flex-direction: column !important;
   flex-shrink: 0 !important;
   flex-grow: 0 !important;
-  flex-basis: 400px !important;
+  flex-basis: 430px !important;
 
-  /* Visual styling */
+  /* Visual styling - floating panel appearance */
   background: #ffffff !important;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
-  border-left: 1px solid rgba(0, 0, 0, 0.1);
-  border-right: none !important;
-  border-top: none !important;
-  border-bottom: none !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  border-radius: 16px !important;
 
   /* Typography */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
@@ -71,12 +72,10 @@
   /* Animation */
   animation: slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto; /* Ensure sidebar itself remains interactive */
-  transform: translateX(0) !important;
 
   /* Reset potential host page interference */
   margin: 0 !important;
   padding: 0 !important;
-  border-radius: 0 !important;
   box-sizing: border-box !important;
 
   /* Prevent any layout shifts */
@@ -85,12 +84,14 @@
 
 @keyframes slideIn {
   from {
-    transform: translateX(100%);
-    width: 400px;
+    transform: translateY(-50%) translateX(100%);
+    opacity: 0;
+    width: 430px;
   }
   to {
-    transform: translateX(0);
-    width: 400px;
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+    width: 430px;
   }
 }
 
@@ -125,21 +126,28 @@
   min-width: 0;
 }
 
-/* Responsive behavior - Keep sidebar fixed width for consistency */
+/* Responsive behavior - Adjust floating panel for smaller screens */
 @media (max-width: 768px) {
   .sidebar {
-    width: 350px !important;
-    min-width: 350px !important;
-    max-width: 350px !important;
+    width: 380px !important;
+    min-width: 380px !important;
+    max-width: 380px !important;
+    right: 8px !important;
+    height: 96vh !important;
+    max-height: calc(100vh - 30px) !important;
   }
 }
 
-/* Remove fullscreen behavior - keep sidebar as fixed width panel */
+/* Mobile responsiveness - smaller floating panel */
 @media (max-width: 400px) {
   .sidebar {
-    width: 320px !important;
-    min-width: 320px !important;
-    max-width: 320px !important;
+    width: 340px !important;
+    min-width: 340px !important;
+    max-width: 340px !important;
+    right: 5px !important;
+    height: 94vh !important;
+    max-height: calc(100vh - 40px) !important;
+    border-radius: 12px !important;
   }
 }
 
