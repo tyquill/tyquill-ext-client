@@ -9,6 +9,7 @@
   background-color: white;
   box-shadow: 0 3.2px 12px 0 rgba(0, 0, 0, 0.08), 0 5px 25px 0 rgba(0, 0, 0, 0.04);
   transition: none;
+  pointer-events: auto; /* Ensure button is clickable */
 }
 
 .floatingButton.dragging {

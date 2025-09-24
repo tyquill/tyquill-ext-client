@@ -15,16 +15,38 @@ export default defineBackground(() => {
     // console.log('Tyquill Extension installed');
   });
 
-  // Handle extension icon click to open side panel
+  // Handle extension icon click to open sidebar via content script
   browser.action.onClicked.addListener(async (tab) => {
     // console.log('Extension icon clicked');
-    
-    // Open side panel
+
+    if (!tab.id) {
+      console.error('No tab ID available');
+      return;
+    }
+
     try {
-      await browser.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
-      // console.log('Side panel opened');
+      // Check if content script is loaded first
+      try {
+        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
+      } catch (pingError) {
+        // Content script not loaded, inject it
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content-scripts/content.js']
+        });
+
+        // Wait briefly for content script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Send message to content script to open sidebar
+      await browser.tabs.sendMessage(tab.id, {
+        action: 'openSidebar'
+      });
+
+      // console.log('Sidebar opened via content script');
     } catch (error) {
-      // console.error('Failed to open side panel:', error);
+      console.error('Failed to open sidebar:', error);
     }
   });
 
@@ -149,17 +171,34 @@ export default defineBackground(() => {
   });
 
   /**
-   * Handle opening side panel
+   * Handle opening sidebar via content script
    */
   async function handleOpenSidePanel(sender: Browser.runtime.MessageSender) {
     try {
-      if (sender.tab?.id) {
-        await browser.sidePanel.open({ tabId: sender.tab.id });
-      } else {
+      if (!sender.tab?.id) {
         throw new Error('No tab ID available');
       }
+
+      // Check if content script is loaded first
+      try {
+        await browser.tabs.sendMessage(sender.tab.id, { type: 'PING' });
+      } catch (pingError) {
+        // Content script not loaded, inject it
+        await browser.scripting.executeScript({
+          target: { tabId: sender.tab.id },
+          files: ['content-scripts/content.js']
+        });
+
+        // Wait briefly for content script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Send message to content script to open sidebar
+      await browser.tabs.sendMessage(sender.tab.id, {
+        action: 'openSidebar'
+      });
     } catch (error) {
-      console.error('❌ Background: Failed to open side panel:', error);
+      console.error('❌ Background: Failed to open sidebar:', error);
       throw error;
     }
   }

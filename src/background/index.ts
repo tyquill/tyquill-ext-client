@@ -3,23 +3,48 @@ import { scrapService } from '../services/scrapService';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 
-// 사이드패널 상태 (전역)
-let isSidePanelOpen = false;
+// 사이드바 상태 (전역) - content-script 기반
+let isSidebarOpen = false;
 
 browser.runtime.onInstalled.addListener(() => {
   // console.log('Tyquill Extension installed');
 });
 
-// Handle extension icon click to open side panel
+// Handle extension icon click to open sidebar
 browser.action.onClicked.addListener(async (tab) => {
   // console.log('Extension icon clicked');
-  
-  // Open side panel
+
+  // Open sidebar via content script
   try {
-    await browser.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
-    // console.log('Side panel opened');
+    if (tab.id) {
+      // First check if content script is loaded
+      try {
+        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
+      } catch (pingError) {
+        // Content script not loaded, inject it
+        console.log('Content script not loaded, injecting...');
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content-scripts/content.js']
+        });
+
+        // Also inject the CSS
+        await browser.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ['content-scripts/content.css']
+        });
+
+        // Wait a bit for the script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Now send the openSidebar message
+      await browser.tabs.sendMessage(tab.id, { action: 'openSidebar' });
+      isSidebarOpen = true;
+      // console.log('Sidebar opened');
+    }
   } catch (error) {
-    // console.error('Failed to open side panel:', error);
+    console.error('Failed to open sidebar:', error);
   }
 });
 
@@ -82,36 +107,36 @@ browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.Mes
     return true;
   }
   
-  if (request.action === 'openSidePanel') {
-    handleOpenSidePanel(sender)
+  if (request.action === 'openSidebar') {
+    handleOpenSidebar(sender)
       .then(() => {
-        isSidePanelOpen = true;
+        isSidebarOpen = true;
         sendResponse({ success: true });
       })
       .catch(error => {
-        console.error('❌ Background side panel error:', error);
+        console.error('❌ Background sidebar error:', error);
         sendResponse({ success: false, error: error.message });
       });
-    
+
     // Return true to indicate we will respond asynchronously
     return true;
   }
 
-  if (request.action === 'closeSidePanel') {
-    // 사이드패널에 닫기 메시지 전달
-    isSidePanelOpen = false;
+  if (request.action === 'closeSidebar') {
+    // 사이드바에 닫기 메시지 전달
+    isSidebarOpen = false;
     sendResponse({ success: true });
     return true;
   }
 
-  if (request.action === 'getSidePanelState') {
-    sendResponse({ success: true, isOpen: isSidePanelOpen });
+  if (request.action === 'getSidebarState') {
+    sendResponse({ success: true, isOpen: isSidebarOpen });
     return true;
   }
 
-  if (request.action === 'sidePanelClosed') {
-    // 사이드패널이 닫혔음을 알림
-    isSidePanelOpen = false;
+  if (request.action === 'sidebarClosed') {
+    // 사이드바가 닫혔음을 알림
+    isSidebarOpen = false;
     sendResponse({ success: true });
     return true;
   }
@@ -119,17 +144,18 @@ browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.Mes
 });
 
 /**
- * 사이드패널 열기 처리
+ * 사이드바 열기 처리 (content-script 기반)
  */
-async function handleOpenSidePanel(sender: Browser.runtime.MessageSender) {
+async function handleOpenSidebar(sender: Browser.runtime.MessageSender) {
   try {
     if (sender.tab?.id) {
-      await browser.sidePanel.open({ tabId: sender.tab.id });
+      // Content script에 사이드바 열기 메시지 전송
+      await browser.tabs.sendMessage(sender.tab.id, { action: 'openSidebar' });
     } else {
       throw new Error('No tab ID available');
     }
   } catch (error) {
-    console.error('❌ Background: Failed to open side panel:', error);
+    console.error('❌ Background: Failed to open sidebar:', error);
     throw error;
   }
 }
@@ -170,7 +196,13 @@ async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSend
       // Content script 수동 주입 시도
       await browser.scripting.executeScript({
         target: { tabId: tabId },
-        files: ['content/index.js']
+        files: ['content-scripts/content.js']
+      });
+
+      // Also inject the CSS
+      await browser.scripting.insertCSS({
+        target: { tabId: tabId },
+        files: ['content-scripts/content.css']
       });
       
       // 잠시 대기 후 재시도
@@ -254,7 +286,13 @@ async function handleClipCurrentPageForStyle(sender: Browser.runtime.MessageSend
       // Content script 수동 주입 시도
       await browser.scripting.executeScript({
         target: { tabId: tabId },
-        files: ['content/index.js']
+        files: ['content-scripts/content.js']
+      });
+
+      // Also inject the CSS
+      await browser.scripting.insertCSS({
+        target: { tabId: tabId },
+        files: ['content-scripts/content.css']
       });
       
       // 잠시 대기 후 재시도

@@ -11,7 +11,6 @@ export default defineConfig({
     default_locale: 'en',
     permissions: [
       'storage',
-      'sidePanel',
       'tabs',
       'activeTab',
       'scripting',
@@ -31,9 +30,6 @@ export default defineConfig({
       extension_pages:
         "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.amazonaws.com",
     },
-    side_panel: {
-      default_path: 'sidepanel.html'
-    },
     web_accessible_resources: [
       {
         resources: [
@@ -45,7 +41,7 @@ export default defineConfig({
       }
     ],
     action: {
-      default_title: 'Open Tyquill Side Panel',
+      default_title: 'Open Tyquill Sidebar',
       default_icon: {
         16: '/icon16.png',
         32: '/icon32.png',
