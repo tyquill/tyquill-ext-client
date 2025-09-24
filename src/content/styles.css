@@ -1,0 +1,78 @@
+/* Global styles for the content script shadow DOM */
+/* Reset and base styles for shadow DOM isolation */
+
+:host {
+  /* Host element styles */
+  display: contents;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #000;
+}
+
+/* Reset all elements within shadow DOM */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure proper isolation from host page */
+div, span, p, h1, h2, h3, h4, h5, h6,
+button, input, textarea, select,
+ul, ol, li, a {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: normal;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+/* Button reset */
+button {
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Input reset */
+input, textarea {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Prevent any scroll chain to host page */
+.tyquill-main-root,
+.tyquill-sidebar-root {
+  overscroll-behavior: contain;
+}
+
+/* Ensure the shadow DOM containers don't interfere with page layout */
+.tyquill-shadow-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+}
+
+/* Main app root container */
+.tyquill-main-root {
+  /* Ensure FloatingButton doesn't interfere with page layout */
+  position: relative;
+  z-index: 2147483646;
+}
+
+/* Sidebar root container */
+.tyquill-sidebar-root {
+  /* Sidebar has highest z-index for overlay */
+  position: relative;
+  z-index: 2147483647;
+}

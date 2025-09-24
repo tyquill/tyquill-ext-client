@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
-import Sidebar from '../components/content/Sidebar/Sidebar';
 import { WebClipper } from '../utils/webClipper';
 import { initLinkedInInjector } from '../utils/linkedinInjector';
 import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
@@ -15,7 +14,6 @@ import { initRedditInjector } from '../utils/redditInjector';
 const App: React.FC = () => {
   const { isReady, currentSelection } = useContentScript();
   const { initializeLanguage } = useLanguageStore();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const isThreads = (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
     window.location.hostname.includes('threads.com') ||
@@ -39,70 +37,10 @@ const App: React.FC = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
-  // 웹 클라이언트로부터 인증 정보 요청 및 로그아웃 알림 처리
-  useEffect(() => {
-    const handleWebClientMessage = async (event: MessageEvent) => {
-      // 웹 클라이언트로부터 인증 요청인지 확인
-      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
-          typeof event.data === 'object' && event.data !== null &&
-          event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
-          event.data.source === 'tyquill-web-client') {
-
-        try {
-          // Background script에 인증 정보 요청
-          const response = await browser.runtime.sendMessage({
-            action: 'getAuthState'
-          });
-
-          // 웹 클라이언트에 응답
-          window.postMessage({
-            type: 'TYQUILL_AUTH_RESPONSE',
-            source: 'tyquill-extension',
-            authState: response?.authState || null
-          }, event.origin);
-        } catch (error) {
-          console.error('Failed to get auth state from extension:', error);
-          // 에러 발생 시에도 응답
-          window.postMessage({
-            type: 'TYQUILL_AUTH_RESPONSE',
-            source: 'tyquill-extension',
-            authState: null
-          }, event.origin);
-        }
-      }
-
-      // 웹 클라이언트로부터 로그아웃 알림 처리
-      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
-          typeof event.data === 'object' && event.data !== null &&
-          event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
-          event.data.source === 'tyquill-web-client') {
-
-        console.log('📤 Received logout notification from web client');
-
-        try {
-          // Background script에 로그아웃 요청
-          await browser.runtime.sendMessage({
-            action: 'logoutFromWebClient'
-          });
-
-          console.log('✅ Extension logout triggered from web client');
-        } catch (error) {
-          console.error('Failed to trigger extension logout:', error);
-        }
-      }
-    };
-
-    window.addEventListener('message', handleWebClientMessage);
-
-    return () => {
-      window.removeEventListener('message', handleWebClientMessage);
-    };
-  }, []);
-
-  // Background Script로부터의 메시지 처리
+  // Background Script로부터의 메시지 처리 (FloatingButton 관련만)
   useEffect(() => {
     const handleMessage = async (request: any, _sender: any, sendResponse: any) => {
-      // console.log('Content Script 메시지 수신:', request);
+      // console.log('Main App 메시지 수신:', request);
 
       // PING 요청 처리 (content script 로드 확인용)
       if (request.type === 'PING') {
@@ -136,35 +74,6 @@ const App: React.FC = () => {
 
         if (sendResponse) {
           sendResponse({ success: true });
-        }
-      }
-
-      // 사이드바 열기/닫기 처리
-      if (request.action === 'openSidebar') {
-        setIsSidebarOpen(true);
-        // State change event 발송
-        window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-          detail: { isOpen: true }
-        }));
-        if (sendResponse) {
-          sendResponse({ success: true });
-        }
-      }
-
-      if (request.action === 'closeSidebar') {
-        setIsSidebarOpen(false);
-        // State change event 발송
-        window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-          detail: { isOpen: false }
-        }));
-        if (sendResponse) {
-          sendResponse({ success: true });
-        }
-      }
-
-      if (request.action === 'getSidebarState') {
-        if (sendResponse) {
-          sendResponse({ success: true, isOpen: isSidebarOpen });
         }
       }
 
@@ -238,24 +147,6 @@ const App: React.FC = () => {
     };
   }, [initializeLanguage]);
 
-  // Handle sidebar open/close via custom events (for FloatingButton)
-  useEffect(() => {
-    const handleOpenSidebar = () => {
-      setIsSidebarOpen(true);
-    };
-
-    const handleCloseSidebar = () => {
-      setIsSidebarOpen(false);
-    };
-
-    window.addEventListener('tyquill-open-sidebar', handleOpenSidebar);
-    window.addEventListener('tyquill-close-sidebar', handleCloseSidebar);
-
-    return () => {
-      window.removeEventListener('tyquill-open-sidebar', handleOpenSidebar);
-      window.removeEventListener('tyquill-close-sidebar', handleCloseSidebar);
-    };
-  }, []);
 
   // DOM이 준비되면 FloatingButton 표시
   useEffect(() => {
@@ -353,27 +244,12 @@ const App: React.FC = () => {
   }, [isReddit]);
 
   return (
-    <div id="tyquill-content-app" style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: 0,
-      height: 0,
-      pointerEvents: 'none',
-      zIndex: 2147483647,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-    }}>
+    <div id="tyquill-main-app" className="tyquill-main-root">
       <FloatingButton />
 
-      {/* Content-script based Sidebar */}
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-      />
-
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
-      <div id="tyquill-content-components" style={{ display: 'none' }}>
-        {/* 여기에 추가적인 content-script UI 컴포넌트들이 들어갈 수 있습니다 */}
+      <div id="tyquill-main-components" style={{ display: 'none' }}>
+        {/* 여기에 추가적인 main app UI 컴포넌트들이 들어갈 수 있습니다 */}
       </div>
     </div>
   );
