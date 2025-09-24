@@ -10,11 +10,10 @@ browser.runtime.onInstalled.addListener(() => {
   // console.log('Tyquill Extension installed');
 });
 
-// Handle extension icon click to open sidebar
+// Handle extension icon click to toggle sidebar
 browser.action.onClicked.addListener(async (tab) => {
   // console.log('Extension icon clicked');
 
-  // Open sidebar via content script
   try {
     if (tab.id) {
       // First check if content script is loaded
@@ -38,13 +37,31 @@ browser.action.onClicked.addListener(async (tab) => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Now send the openSidebar message
-      await browser.tabs.sendMessage(tab.id, { action: 'openSidebar' });
-      isSidebarOpen = true;
-      // console.log('Sidebar opened');
+      // Query the actual sidebar state from content script instead of relying on cached state
+      let actualSidebarState = false;
+      try {
+        const stateResponse = await browser.tabs.sendMessage(tab.id, { action: 'getSidebarState' });
+        actualSidebarState = stateResponse?.isOpen || false;
+      } catch (error) {
+        console.warn('Could not get sidebar state, assuming closed:', error);
+        actualSidebarState = false;
+      }
+
+      // Toggle sidebar based on actual current state (not cached background state)
+      if (actualSidebarState) {
+        // Close the sidebar
+        await browser.tabs.sendMessage(tab.id, { action: 'closeSidebar' });
+        isSidebarOpen = false;
+        // console.log('Sidebar closed');
+      } else {
+        // Open the sidebar
+        await browser.tabs.sendMessage(tab.id, { action: 'openSidebar' });
+        isSidebarOpen = true;
+        // console.log('Sidebar opened');
+      }
     }
   } catch (error) {
-    console.error('Failed to open sidebar:', error);
+    console.error('Failed to toggle sidebar:', error);
   }
 });
 

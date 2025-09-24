@@ -6,6 +6,7 @@ import { useLanguageStore } from '../../../stores/languageStore';
 import { ToastProvider } from '../../../hooks/useToast';
 import { trackPageViewBridge, trackPageExitBridge } from '../../../analytics/bridge';
 import { authService } from '../../../services/auth.service';
+import { IoClose } from 'react-icons/io5';
 
 // Import all the sidepanel components (now in sidepanel_unused)
 import LandingPage from '../../../sidepanel_unused/pages/LandingPage';
@@ -107,22 +108,17 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
 
-  // Handle clicks outside sidebar to close it
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node)) {
-        onClose();
-      }
-    };
+  // Handle clicks on overlay backdrop - removed close functionality
+  const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Do nothing - sidebar should only close via X button or extension button
+    // Keeping this handler to prevent event propagation issues
+  };
 
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isOpen, onClose]);
+  // Handle clicks inside sidebar content to prevent event propagation
+  const handleSidebarClick = (event: React.MouseEvent<HTMLDivElement>) => {
+    // Stop propagation to prevent overlay click handler from firing
+    event.stopPropagation();
+  };
 
   // Handle escape key to close sidebar
   useEffect(() => {
@@ -258,8 +254,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   // 로딩 중이거나 인증되지 않은 경우 랜딩 페이지
   if (!isAuthenticated || currentPage.type === 'landing') {
     return (
-      <div className={styles.overlay}>
-        <div ref={sidebarRef} className={styles.sidebar}>
+      <div className={styles.overlay} onClick={handleOverlayClick}>
+        <div ref={sidebarRef} className={styles.sidebar} onClick={handleSidebarClick}>
+          <button
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close sidebar"
+            type="button"
+          >
+            <IoClose size={24} />
+          </button>
           <ToastProvider>
             <LandingPage onStart={navigateToMain} />
           </ToastProvider>
@@ -270,8 +274,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   // 메인 앱 (헤더 + 메인 콘텐츠 + 사이드바)
   return (
-    <div className={styles.overlay}>
-      <div ref={sidebarRef} className={styles.sidebar}>
+    <div className={styles.overlay} onClick={handleOverlayClick}>
+      <div ref={sidebarRef} className={styles.sidebar} onClick={handleSidebarClick}>
+        <button
+          className={styles.closeButton}
+          onClick={onClose}
+          aria-label="Close sidebar"
+          type="button"
+        >
+          <IoClose size={24} />
+        </button>
         <ToastProvider>
           <div className={styles.app}>
             <Header />

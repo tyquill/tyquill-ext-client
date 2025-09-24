@@ -4,20 +4,41 @@ import { trackScrapCreatedBridge, captureInBackground } from '../analytics/bridg
 import { authService } from '../services/auth.service';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import type {
+  ExtensionMessage,
+  MessageResponse,
+  SidebarState,
+  SidebarStateResponse
+} from '../types/messages';
 
 // WXT Analytics는 자동 초기화됨
 
 export default defineBackground(() => {
-  // Side panel state (global)
-  let isSidePanelOpen = false;
+  // Side panel state (global) - track per tab for better state management
+  const sidebarStates: Map<number, SidebarState> = new Map();
+
+  // Helper function to get sidebar state for a tab
+  const getSidebarState = (tabId: number): SidebarState => {
+    return sidebarStates.get(tabId) || { isOpen: false, tabId };
+  };
+
+  // Helper function to set sidebar state for a tab
+  const setSidebarState = (tabId: number, isOpen: boolean): void => {
+    sidebarStates.set(tabId, { isOpen, tabId });
+  };
+
+  // Clean up closed tabs
+  browser.tabs.onRemoved.addListener((tabId) => {
+    sidebarStates.delete(tabId);
+  });
 
   browser.runtime.onInstalled.addListener(() => {
     // console.log('Tyquill Extension installed');
   });
 
-  // Handle extension icon click to open sidebar via content script
+  // Handle extension icon click to toggle sidebar via content script
   browser.action.onClicked.addListener(async (tab) => {
-    // console.log('Extension icon clicked');
+    console.log('Extension icon clicked');
 
     if (!tab.id) {
       console.error('No tab ID available');
@@ -30,6 +51,7 @@ export default defineBackground(() => {
         await browser.tabs.sendMessage(tab.id, { type: 'PING' });
       } catch (pingError) {
         // Content script not loaded, inject it
+        console.log('Content script not loaded, injecting...');
         await browser.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['content-scripts/content.js']
@@ -39,20 +61,66 @@ export default defineBackground(() => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Send message to content script to open sidebar
-      await browser.tabs.sendMessage(tab.id, {
-        action: 'openSidebar'
-      });
+      // Query the actual sidebar state from content script instead of relying on cached state
+      let actualSidebarState = false;
+      try {
+        console.log('Querying sidebar state for tab', tab.id);
+        const stateResponse = await browser.tabs.sendMessage(tab.id, { action: 'getSidebarState' });
+        console.log('State response received:', JSON.stringify(stateResponse));
+        console.log('State response type:', typeof stateResponse);
+        console.log('State response.success:', stateResponse?.success);
+        console.log('State response.isOpen:', stateResponse?.isOpen, 'type:', typeof stateResponse?.isOpen);
 
-      // console.log('Sidebar opened via content script');
+        // More robust state parsing
+        if (stateResponse && stateResponse.success === true && typeof stateResponse.isOpen === 'boolean') {
+          actualSidebarState = stateResponse.isOpen;
+          console.log('✅ Valid state response - using isOpen:', actualSidebarState);
+        } else if (stateResponse && typeof stateResponse.isOpen === 'boolean') {
+          // Fallback for responses without success field but valid isOpen
+          actualSidebarState = stateResponse.isOpen;
+          console.log('⚠️ Fallback state response - using isOpen:', actualSidebarState);
+        } else {
+          // Last resort fallback
+          actualSidebarState = false;
+          console.log('❌ Invalid state response - defaulting to false');
+        }
+
+        console.log('Final actualSidebarState for tab', tab.id, ':', actualSidebarState, 'type:', typeof actualSidebarState);
+      } catch (error) {
+        console.warn('Could not get sidebar state, assuming closed:', error);
+        actualSidebarState = false;
+      }
+
+      // Toggle sidebar based on actual current state (not cached background state)
+      console.log('🔄 Determining action based on actualSidebarState:', actualSidebarState);
+      console.log('🔄 actualSidebarState === true:', actualSidebarState === true);
+      console.log('🔄 Boolean(actualSidebarState):', Boolean(actualSidebarState));
+
+      if (actualSidebarState === true) {
+        // Close the sidebar
+        console.log('🔴 CLOSING SIDEBAR - Sending closeSidebar message to tab', tab.id);
+        await browser.tabs.sendMessage(tab.id, {
+          action: 'closeSidebar'
+        });
+        setSidebarState(tab.id, false);
+        console.log('✅ Sidebar closed for tab', tab.id);
+      } else {
+        // Open the sidebar
+        console.log('🟢 OPENING SIDEBAR - Sending openSidebar message to tab', tab.id);
+        await browser.tabs.sendMessage(tab.id, {
+          action: 'openSidebar'
+        });
+        setSidebarState(tab.id, true);
+        console.log('✅ Sidebar opened for tab', tab.id);
+      }
     } catch (error) {
-      console.error('Failed to open sidebar:', error);
+      console.error('Failed to toggle sidebar:', error);
     }
   });
 
   browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.MessageSender, sendResponse: (response?: any) => void) => {
     // Handle messages from content script or popup
-    // console.log('Message received:', request);
+    console.log('Message received:', request);
     
 
     if (request.action === 'getAuthState') {
@@ -123,33 +191,63 @@ export default defineBackground(() => {
     if (request.action === 'openSidePanel') {
       handleOpenSidePanel(sender)
         .then(() => {
-          isSidePanelOpen = true;
+          if (sender.tab?.id) {
+            setSidebarState(sender.tab.id, true);
+          }
           sendResponse({ success: true });
         })
         .catch(error => {
           console.error('❌ Background side panel error:', error);
           sendResponse({ success: false, error: error.message });
         });
-      
+
       // Return true to indicate we will respond asynchronously
       return true;
     }
 
     if (request.action === 'closeSidePanel') {
       // Send close message to side panel
-      isSidePanelOpen = false;
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
       sendResponse({ success: true });
       return true;
     }
 
     if (request.action === 'getSidePanelState') {
-      sendResponse({ success: true, isOpen: isSidePanelOpen });
+      const tabId = sender.tab?.id;
+      if (tabId) {
+        const state = getSidebarState(tabId);
+        const response: SidebarStateResponse = { success: true, isOpen: state.isOpen };
+        sendResponse(response);
+      } else {
+        sendResponse({ success: false, isOpen: false });
+      }
       return true;
     }
 
     if (request.action === 'sidePanelClosed') {
       // Notify that side panel has been closed
-      isSidePanelOpen = false;
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
+    // Handle sidebar state notifications from content script
+    if (request.action === 'sidebarOpened') {
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, true);
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (request.action === 'sidebarClosed') {
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
       sendResponse({ success: true });
       return true;
     }

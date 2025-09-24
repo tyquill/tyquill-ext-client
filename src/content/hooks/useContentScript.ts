@@ -55,7 +55,8 @@ export const useContentScript = (): UseContentScriptReturn => {
           return true;
 
         default:
-          sendResponse({ success: false, error: 'Unknown message type' });
+          // 다른 리스너가 처리할 수 있도록 false 반환
+          return false;
       }
     };
 

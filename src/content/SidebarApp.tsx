@@ -1,12 +1,55 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import Sidebar from '../components/content/Sidebar/Sidebar';
 import { authService } from '../services/auth.service';
+import type { ExtensionMessage, MessageResponse } from '../types/messages';
 
 const SidebarApp: React.FC = () => {
   const { initializeLanguage } = useLanguageStore();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const sidebarStateRef = useRef(false);
+
+  // Debug logging for state changes
+  useEffect(() => {
+    console.log('📊 State changed - isSidebarOpen:', isSidebarOpen, 'ref:', sidebarStateRef.current);
+  }, [isSidebarOpen]);
+
+  // Helper function to update both state and ref atomically
+  const updateSidebarState = (isOpen: boolean) => {
+    console.log('🔄 updateSidebarState called with:', isOpen);
+    console.log('🔄 Before update - ref:', sidebarStateRef.current, 'state:', isSidebarOpen);
+
+    // Update ref first, then state
+    sidebarStateRef.current = isOpen;
+    setIsSidebarOpen(isOpen);
+
+    console.log('🔄 After ref update - ref:', sidebarStateRef.current);
+
+    // Dispatch state change event
+    window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
+      detail: { isOpen }
+    }));
+
+    // Notify background script
+    const action = isOpen ? 'sidebarOpened' : 'sidebarClosed';
+    browser.runtime.sendMessage({ action } as ExtensionMessage).catch(() => {
+      // Ignore errors if background script is not available
+      if (browser.runtime.lastError) {
+        void browser.runtime.lastError;
+      }
+    });
+  };
+
+  // Function to close sidebar and notify background script
+  const closeSidebar = () => {
+    updateSidebarState(false);
+  };
+
+  // Function to open sidebar and notify background script
+  const openSidebar = () => {
+    updateSidebarState(true);
+  };
 
   // 언어 설정 초기화
   useEffect(() => {
@@ -15,45 +58,41 @@ const SidebarApp: React.FC = () => {
 
   // Background Script로부터의 메시지 처리
   useEffect(() => {
-    const handleMessage = async (request: any, _sender: any, sendResponse: any) => {
-      // console.log('Sidebar App 메시지 수신:', request);
+    const handleMessage = (request: any, _sender: any, sendResponse: any) => {
+      console.log('Sidebar App 메시지 수신:', request);
 
       // PING 요청 처리 (content script 로드 확인용)
       if (request.type === 'PING') {
-        if (sendResponse) {
-          sendResponse({ success: true, loaded: true });
-        }
-        return;
+        sendResponse({ success: true, data: { loaded: true } });
+        return true; // async response를 위해 true 반환
       }
 
       // 사이드바 열기/닫기 처리
       if (request.action === 'openSidebar') {
-        setIsSidebarOpen(true);
-        // State change event 발송
-        window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-          detail: { isOpen: true }
-        }));
-        if (sendResponse) {
-          sendResponse({ success: true });
-        }
+        openSidebar();
+        sendResponse({ success: true });
+        return true;
       }
 
       if (request.action === 'closeSidebar') {
-        setIsSidebarOpen(false);
-        // State change event 발송
-        window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-          detail: { isOpen: false }
-        }));
-        if (sendResponse) {
-          sendResponse({ success: true });
-        }
+        closeSidebar();
+        sendResponse({ success: true });
+        return true;
       }
 
       if (request.action === 'getSidebarState') {
-        if (sendResponse) {
-          sendResponse({ success: true, isOpen: isSidebarOpen });
-        }
+        // useRef를 통해 최신 상태 참조 - ref는 동기적으로 업데이트되므로 신뢰할 수 있음
+        const currentState = sidebarStateRef.current;
+        console.log('📍 getSidebarState 요청 받음');
+        console.log('📍 sidebarStateRef.current:', currentState, 'type:', typeof currentState);
+
+        const response = { success: true, isOpen: currentState };
+        console.log('📍 Sending response:', JSON.stringify(response));
+        sendResponse(response);
+        return true; // async response를 위해 true 반환
       }
+
+      return false;
     };
 
     browser.runtime.onMessage.addListener(handleMessage);
@@ -63,16 +102,16 @@ const SidebarApp: React.FC = () => {
     return () => {
       // browser.runtime.onMessage.removeListener(handleMessage); // 이 메서드는 존재하지 않음
     };
-  }, []);
+  }, []); // 빈 dependency 배열로 한 번만 등록
 
   // Handle sidebar open/close via custom events (for FloatingButton communication)
   useEffect(() => {
     const handleOpenSidebar = () => {
-      setIsSidebarOpen(true);
+      openSidebar();
     };
 
     const handleCloseSidebar = () => {
-      setIsSidebarOpen(false);
+      closeSidebar();
     };
 
     window.addEventListener('tyquill-open-sidebar', handleOpenSidebar);
@@ -164,7 +203,7 @@ const SidebarApp: React.FC = () => {
     <div id="tyquill-sidebar-app" className="tyquill-sidebar-root">
       <Sidebar
         isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
+        onClose={closeSidebar}
       />
     </div>
   );
