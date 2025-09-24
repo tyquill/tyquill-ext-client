@@ -11,6 +11,9 @@ importers:
       '@floating-ui/react':
         specifier: ^0.27.13
         version: 0.27.13(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+      '@mozilla/readability':
+        specifier: ^0.6.0
+        version: 0.6.0
       '@posthog/core':
         specifier: ^1.0.2
         version: 1.0.2
@@ -613,6 +616,10 @@ packages:
     resolution: {integrity: sha512-Obb0/gEd/HReTlg8ttaYk+0m62gQJmCblMOjHSMHRrBP2zdfKMHLCRbh/6ex9fSUJMKdjjIEiohwkbGD3wj2Nw==}
     peerDependencies:
       three: '>= 0.159.0'
+
+  '@mozilla/readability@0.6.0':
+    resolution: {integrity: sha512-juG5VWh4qAivzTAeMzvY9xs9HY5rAcr2E4I7tiSSCokRFi7XIZCAu92ZkSTsIj1OPceCifL3cpfteP3pDT9/QQ==}
+    engines: {node: '>=14.0.0'}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     resolution: {integrity: sha512-QZHtlVgbAdy2zAqNA9Gu1UpIuI8Xvsd1v8ic6B2pZmeFnFcMWiPLfWXh7TVw4eGEZ/C9TH281KwhVoeQUKbyjw==}
@@ -5174,6 +5181,8 @@ snapshots:
     dependencies:
       promise-worker-transferable: 1.0.4
       three: 0.178.0
+
+  '@mozilla/readability@0.6.0': {}
 
   '@msgpackr-extract/msgpackr-extract-darwin-arm64@3.0.3':
     optional: true

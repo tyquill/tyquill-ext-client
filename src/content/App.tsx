@@ -129,12 +129,30 @@ const App: React.FC = () => {
         }
       }
 
-      // 스크랩 요청 처리
+      // 스크랩 요청 처리 (새 메시지 포맷)
+      if (request.type === 'CLIP_PAGE') {
+        try {
+          const clipper = new WebClipper(request.options || {});
+          const result = await clipper.clipPage();
+
+          if (sendResponse) {
+            sendResponse({ success: true, data: result });
+          }
+        } catch (error) {
+          console.error('스크랩 실패:', error);
+          if (sendResponse) {
+            sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' });
+          }
+        }
+        return true; // 비동기 응답을 위해 true 반환
+      }
+
+      // 스크랩 요청 처리 (레거시)
       if (request.action === 'scrapePage') {
         try {
           const clipper = new WebClipper(request.options || {});
           const result = await clipper.clipPage();
-          
+
           if (sendResponse) {
             sendResponse(result);
           }
@@ -145,6 +163,14 @@ const App: React.FC = () => {
           }
         }
         return true; // 비동기 응답을 위해 true 반환
+      }
+
+      // Ping 요청 처리 (Content Script 활성 확인용)
+      if (request.type === 'PING') {
+        if (sendResponse) {
+          sendResponse({ success: true });
+        }
+        return true;
       }
     };
 

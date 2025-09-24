@@ -85,7 +85,7 @@ const ScrapPage: React.FC = () => {
       const convertedScraps: Scrap[] = scrapList.map(scrap => ({
         id: scrap.scrapId.toString(),
         title: scrap.title,
-        content: scrap.content,
+        content: scrap.contentInfo?.text || scrap.content, // contentInfo.text 우선, 없으면 content 폴백
         url: scrap.url,
         date: new Date(scrap.createdAt).toLocaleString('ko-KR', {
           year: 'numeric',

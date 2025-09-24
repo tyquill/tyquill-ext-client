@@ -10,15 +10,66 @@ import { globalApiClient } from './globalApiClient';
 import { trackScrapCreatedBridge, trackTagAddedBridge, trackTagRemovedBridge } from '../analytics/bridge';
 
 /**
- * 스크랩 생성 요청 DTO (기존 서버 엔티티에 맞춤)
+ * 웹페이지 사이트 정보
+ */
+export interface WebpageSiteInfo {
+  host?: string;
+  favicon_url?: string;
+  name?: string;
+}
+
+/**
+ * 웹페이지 메타데이터
+ */
+export interface WebpageMetadata {
+  url: string;
+  site?: WebpageSiteInfo;
+  title: string;
+  description?: string;
+}
+
+/**
+ * 콘텐츠 정보
+ */
+export interface ContentInfo {
+  raw?: string; // Raw HTML content (태그 포함)
+  plain?: string; // Markdown 형식
+  text?: string; // 순수 텍스트만 (태그 제거)
+  language?: string;
+  format?: string; // reader-html, markdown, etc.
+}
+
+/**
+ * 작성자 정보
+ */
+export interface AuthorInfo {
+  name?: string;
+  picture?: string;
+}
+
+/**
+ * 스크랩 생성 요청 DTO (확장된 버전)
  */
 export interface CreateScrapDto {
+  // 기본 필드
   url: string;
   title: string;
   content: string; // markdown content
-  htmlContent: string; // 원본 HTML (선택사항)
+  htmlContent: string; // 원본 HTML
   userComment?: string;
   tags?: string[];
+
+  // 추가 메타데이터 필드
+  webpage?: WebpageMetadata;
+  hero_image_url?: string;
+  published_at?: string;
+  author_names?: string[];
+  author_pictures?: string[];
+  content_info?: ContentInfo;
+  type?: string; // article, video, etc.
+  authors?: AuthorInfo[];
+  board_id?: string;
+  from?: string; // webpage, extension, etc.
 }
 
 /**
@@ -34,6 +85,31 @@ export interface ScrapResponse {
   createdAt: string;
   updatedAt: string;
   tags?: TagResponse[];
+  contentInfo?: {
+    raw?: string;
+    plain?: string;
+    text?: string;
+    language?: string;
+    format?: string;
+  };
+  webpage?: {
+    url?: string;
+    title?: string;
+    description?: string;
+    site?: {
+      host?: string;
+      favicon_url?: string;
+      name?: string;
+    };
+  };
+  heroImageUrl?: string;
+  publishedAt?: string;
+  authors?: Array<{
+    name?: string;
+    picture?: string;
+  }>;
+  type?: string;
+  from?: string;
 }
 
 /**
@@ -60,9 +136,11 @@ export class ScrapService {
    */
   private async apiRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    version: 'v1' | 'v2' = 'v1'
   ): Promise<T> {
-    return globalApiClient.request<T>(endpoint, options as any);
+    const versionedEndpoint = `/${version}${endpoint}`;
+    return globalApiClient.request<T>(versionedEndpoint, options as any);
   }
 
   /**
@@ -82,13 +160,14 @@ export class ScrapService {
         }
       } catch {}
 
-      const response = await this.apiRequest<ScrapResponse>('/v1/scraps', {
+      // Use Version 2 API for enhanced metadata
+      const response = await this.apiRequest<ScrapResponse>('/scraps', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(scrapData),
-      });
+      }, 'v2');
 
       // console.log('✅ Scrap created successfully:', {
       //   scrapId: response.scrapId,
@@ -106,17 +185,65 @@ export class ScrapService {
    * ScrapResult를 CreateScrapDto로 변환
    */
   scrapResultToDto(
-    scrapResult: ScrapResult, 
+    scrapResult: ScrapResult,
     userComment?: string,
     tags?: string[]
   ): CreateScrapDto {
+    const { metadata } = scrapResult;
+
+    // 웹페이지 메타데이터 구성
+    const webpage: WebpageMetadata = {
+      url: metadata.url,
+      title: metadata.title,
+      description: metadata.description,
+      site: {
+        host: metadata.host || metadata.siteName,
+        favicon_url: metadata.favicon,
+        name: metadata.siteName,
+      },
+    };
+
+    // 콘텐츠 정보 구성
+    const content_info: ContentInfo = {
+      raw: scrapResult.htmlContent, // Raw HTML (태그 포함)
+      plain: scrapResult.content, // Markdown 형식
+      text: scrapResult.plainText, // 순수 텍스트만
+      language: metadata.language,
+      format: scrapResult.contentFormat || 'reader-html',
+    };
+
+    // 작성자 정보 구성
+    const authors: AuthorInfo[] = [];
+    if (metadata.authorNames && metadata.authorNames.length > 0) {
+      metadata.authorNames.forEach((name, index) => {
+        authors.push({
+          name,
+          picture: metadata.authorPictures?.[index],
+        });
+      });
+    } else if (metadata.author) {
+      authors.push({ name: metadata.author });
+    }
+
     return {
-      url: scrapResult.metadata.url,
-      title: scrapResult.metadata.title,
+      // 기본 필드
+      url: metadata.url,
+      title: metadata.title,
       content: scrapResult.content, // markdown content
-      htmlContent: '', // 일단 빈 문자열 (필요시 원본 HTML 저장)
+      htmlContent: scrapResult.htmlContent || '', // 원본 HTML
       userComment,
       tags: tags || [],
+
+      // 추가 메타데이터
+      webpage,
+      hero_image_url: metadata.heroImageUrl || metadata.ogImage,
+      published_at: metadata.publishedDate,
+      author_names: metadata.authorNames,
+      author_pictures: metadata.authorPictures,
+      content_info,
+      type: 'webclip',
+      authors: authors.length > 0 ? authors : undefined,
+      from: 'extension',
     };
   }
 
@@ -127,9 +254,10 @@ export class ScrapService {
     try {
       // console.log('📋 Fetching scraps list');
 
-      const response = await this.apiRequest<ScrapResponse[]>('/v1/scraps', {
+      // Use Version 2 API to get enhanced metadata
+      const response = await this.apiRequest<ScrapResponse[]>('/scraps', {
         method: 'GET',
-      });
+      }, 'v2');
 
       // console.log('✅ Scraps fetched successfully:', {
       //   count: response.length,
@@ -147,9 +275,10 @@ export class ScrapService {
    */
   async getScrapById(scrapId: number): Promise<ScrapResponse> {
     try {
-      const response = await this.apiRequest<ScrapResponse>(`/v1/scraps/${scrapId}`, {
+      // Use Version 2 API for enhanced metadata
+      const response = await this.apiRequest<ScrapResponse>(`/scraps/${scrapId}`, {
         method: 'GET',
-      });
+      }, 'v2');
       return response;
     } catch (error) {
       throw error;
@@ -163,9 +292,9 @@ export class ScrapService {
     try {
       // console.log('🗑️ Deleting scrap:', scrapId);
 
-      await this.apiRequest<void>(`/v1/scraps/${scrapId}`, {
+      await this.apiRequest<void>(`/scraps/${scrapId}`, {
         method: 'DELETE',
-      });
+      }, 'v1');
 
       // console.log('✅ Scrap deleted successfully:', scrapId);
     } catch (error) {
@@ -193,10 +322,10 @@ export class ScrapService {
     try {
       // console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
 
-      const response = await this.apiRequest<TagResponse>(`/v1/scraps/${scrapId}/tags`, {
+      const response = await this.apiRequest<TagResponse>(`/scraps/${scrapId}/tags`, {
         method: 'POST',
         body: JSON.stringify({ name: tagName }),
-      });
+      }, 'v1');
 
       try {
         if (typeof document !== 'undefined') {
@@ -228,9 +357,9 @@ export class ScrapService {
     try {
       // console.log('🏷️ Fetching scrap tags:', scrapId);
 
-      const response = await this.apiRequest<TagResponse[]>(`/v1/scraps/${scrapId}/tags`, {
+      const response = await this.apiRequest<TagResponse[]>(`/scraps/${scrapId}/tags`, {
         method: 'GET',
-      });
+      }, 'v1');
 
       // console.log('✅ Scrap tags fetched successfully:', {
       //   scrapId,
@@ -251,9 +380,9 @@ export class ScrapService {
     try {
       // console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
 
-      await this.apiRequest<void>(`/v1/scraps/${scrapId}/tags/${tagId}`, {
+      await this.apiRequest<void>(`/scraps/${scrapId}/tags/${tagId}`, {
         method: 'DELETE',
-      });
+      }, 'v1');
 
       try {
         if (typeof document !== 'undefined') {
