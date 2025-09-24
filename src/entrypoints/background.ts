@@ -135,6 +135,18 @@ export default defineBackground(() => {
       return true; // async
     }
 
+    if (request.action === 'performOAuth') {
+      // Content script로부터의 OAuth 요청 처리
+      authService.login().then(authResponse => {
+        console.log('✅ Background OAuth completed:', authResponse.user.email);
+        sendResponse({ success: true, data: authResponse });
+      }).catch(error => {
+        console.error('❌ Background OAuth failed:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // async
+    }
+
     if (request.action === 'logoutFromWebClient') {
       // 웹 클라이언트로부터의 로그아웃 요청 처리
       authService.logout().then(() => {

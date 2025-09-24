@@ -122,6 +122,7 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  border-radius: 0 0 16px 16px; /* Match parent border radius */
 }
 
 .appMain {
@@ -195,17 +196,41 @@
   overscroll-behavior: contain;
 }
 
-/* Close button styles */
+/* Sidebar Header - dedicated space for controls */
+.sidebarHeader {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  height: 48px !important;
+  min-height: 48px !important;
+  padding: 8px 12px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5) !important;
+  border-radius: 16px 16px 0 0 !important; /* Match sidebar border radius at top */
+}
+
+/* Sidebar Content - main content area below header */
+.sidebarContent {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  border-radius: 0 0 16px 16px !important; /* Match sidebar border radius at bottom */
+}
+
+/* Close button styles - positioned absolutely on the right */
 .closeButton {
   position: absolute !important;
-  top: 12px !important;
   right: 12px !important;
-  z-index: 10 !important;
-  width: 32px !important;
-  height: 32px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  z-index: 1 !important;
+  width: 28px !important;
+  height: 28px !important;
   padding: 0 !important;
   margin: 0 !important;
-  background-color: transparent !important;
+  background-color: rgba(255, 255, 255, 0.8) !important;
   border: none !important;
   border-radius: 6px !important;
   cursor: pointer !important;
@@ -213,19 +238,21 @@
   align-items: center !important;
   justify-content: center !important;
   color: #6b7280 !important;
-  transition: all 0.2s ease !important;
   outline: none !important;
-  box-shadow: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 .closeButton:hover {
-  background-color: rgba(0, 0, 0, 0.05) !important;
+  background-color: rgba(255, 255, 255, 1) !important;
   color: #374151 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-50%) !important;
 }
 
 .closeButton:active {
-  background-color: rgba(0, 0, 0, 0.08) !important;
-  transform: scale(0.95) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  transform: translateY(-50%) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
 }
 
 .closeButton:focus-visible {
@@ -255,45 +282,70 @@
   }
 }
 
-/* Drag handle styles */
+/* Drag handle styles - now positioned within header */
 .dragHandle {
-  position: absolute !important;
-  top: 8px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  width: 60px !important;
-  height: 20px !important;
-  background: transparent !important;
+  position: relative !important;
+  width: 48px !important;
+  height: 32px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
   border: none !important;
   cursor: move !important;
-  z-index: 11 !important;
+  z-index: auto !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 10px !important;
-  transition: background-color 0.2s ease !important;
-  padding: 2px !important;
+  border-radius: 8px !important;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
+  padding: 4px !important;
   margin: 0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 .dragHandle:hover {
-  background-color: rgba(0, 0, 0, 0.05) !important;
+  background-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
+  transform: scale(1.02) !important;
 }
 
 .dragHandle:active {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  transform: scale(0.98) !important;
 }
 
-/* Drag handle grip indicator - single line */
+/* Drag handle grip indicator - three dots */
 .dragGrip {
-  width: 32px !important;
+  width: 20px !important;
   height: 4px !important;
   background-color: #d1d5db !important;
   border-radius: 2px !important;
   transition: background-color 0.2s ease !important;
+  position: relative !important;
 }
 
-.dragHandle:hover .dragGrip {
+.dragGrip::before,
+.dragGrip::after {
+  content: '' !important;
+  position: absolute !important;
+  width: 4px !important;
+  height: 4px !important;
+  background-color: #d1d5db !important;
+  border-radius: 50% !important;
+  top: 0 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.dragGrip::before {
+  left: -2px !important;
+}
+
+.dragGrip::after {
+  right: -2px !important;
+}
+
+.dragHandle:hover .dragGrip,
+.dragHandle:hover .dragGrip::before,
+.dragHandle:hover .dragGrip::after {
   background-color: #9ca3af !important;
 }
 
@@ -304,6 +356,10 @@
   cursor: move !important;
   z-index: 2147483649 !important;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+.sidebar.dragging .sidebarHeader {
+  background: #ffffff !important; /* Keep white background during drag */
 }
 
 /* Y-axis snap-back animation state */
@@ -320,6 +376,8 @@
 
 .sidebar.dragging .dragHandle {
   cursor: move !important;
+  background-color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
 }
 
 /* Position variants */

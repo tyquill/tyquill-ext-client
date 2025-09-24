@@ -552,26 +552,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
           onClick={handleSidebarClick}
         >
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Close sidebar"
-            type="button"
-          >
-            <IoClose size={24} />
-          </button>
-          <button
-            ref={dragHandleRef}
-            className={styles.dragHandle}
-            onMouseDown={handleDragStart}
-            aria-label="Drag to move sidebar"
-            type="button"
-          >
-            <div className={styles.dragGrip} />
-          </button>
-          <ToastProvider>
-            <LandingPage onStart={navigateToMain} />
-          </ToastProvider>
+          {/* Dedicated header area */}
+          <div className={styles.sidebarHeader}>
+            <button
+              ref={dragHandleRef}
+              className={styles.dragHandle}
+              onMouseDown={handleDragStart}
+              aria-label="Drag to move sidebar"
+              type="button"
+            >
+              <div className={styles.dragGrip} />
+            </button>
+            <button
+              className={styles.closeButton}
+              onClick={onClose}
+              aria-label="Close sidebar"
+              type="button"
+            >
+              <IoClose size={20} />
+            </button>
+          </div>
+
+          {/* Main content area */}
+          <div className={styles.sidebarContent}>
+            <ToastProvider>
+              <LandingPage onStart={navigateToMain} />
+            </ToastProvider>
+          </div>
         </div>
       </div>
     );
@@ -585,53 +592,60 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
         onClick={handleSidebarClick}
       >
-        <button
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label="Close sidebar"
-          type="button"
-        >
-          <IoClose size={24} />
-        </button>
-        <button
-          ref={dragHandleRef}
-          className={styles.dragHandle}
-          onMouseDown={handleDragStart}
-          aria-label="Drag to move sidebar"
-          type="button"
-        >
-          <div className={styles.dragGrip} />
-        </button>
-        <ToastProvider>
-          <div className={styles.app}>
-            <Header />
-            <div className={styles.appMain}>
-              <div className={styles.appContent}>
-                {currentPage.type === 'scrap' && <ScrapPage />}
+        {/* Dedicated header area */}
+        <div className={styles.sidebarHeader}>
+          <button
+            ref={dragHandleRef}
+            className={styles.dragHandle}
+            onMouseDown={handleDragStart}
+            aria-label="Drag to move sidebar"
+            type="button"
+          >
+            <div className={styles.dragGrip} />
+          </button>
+          <button
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close sidebar"
+            type="button"
+          >
+            <IoClose size={20} />
+          </button>
+        </div>
 
-                {currentPage.type === 'draft' && (
-                  <ArticleGeneratePage
-                    onNavigateToDetail={handleNavigateToDetail}
-                    onNavigate={handleMenuClick}
-                  />
-                )}
-                {currentPage.type === 'archive' && (
-                  <ArchivePage
-                    onDraftClick={handleArchiveDetail}
-                  />
-                )}
-                {currentPage.type === 'archive-detail' && currentPage.draftId && (
-                  <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
-                )}
-                {currentPage.type === 'style-management' && <StyleManagementPage />}
+        {/* Main content area */}
+        <div className={styles.sidebarContent}>
+          <ToastProvider>
+            <div className={styles.app}>
+              <Header />
+              <div className={styles.appMain}>
+                <div className={styles.appContent}>
+                  {currentPage.type === 'scrap' && <ScrapPage />}
+
+                  {currentPage.type === 'draft' && (
+                    <ArticleGeneratePage
+                      onNavigateToDetail={handleNavigateToDetail}
+                      onNavigate={handleMenuClick}
+                    />
+                  )}
+                  {currentPage.type === 'archive' && (
+                    <ArchivePage
+                      onDraftClick={handleArchiveDetail}
+                    />
+                  )}
+                  {currentPage.type === 'archive-detail' && currentPage.draftId && (
+                    <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
+                  )}
+                  {currentPage.type === 'style-management' && <StyleManagementPage />}
+                </div>
+                <SidebarNav
+                  activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type}
+                  onMenuClick={handleMenuClick}
+                />
               </div>
-              <SidebarNav
-                activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type}
-                onMenuClick={handleMenuClick}
-              />
             </div>
-          </div>
-        </ToastProvider>
+          </ToastProvider>
+        </div>
       </div>
     </div>
   );
