@@ -85,6 +85,31 @@ export interface ScrapResponse {
   createdAt: string;
   updatedAt: string;
   tags?: TagResponse[];
+  contentInfo?: {
+    raw?: string;
+    plain?: string;
+    text?: string;
+    language?: string;
+    format?: string;
+  };
+  webpage?: {
+    url?: string;
+    title?: string;
+    description?: string;
+    site?: {
+      host?: string;
+      favicon_url?: string;
+      name?: string;
+    };
+  };
+  heroImageUrl?: string;
+  publishedAt?: string;
+  authors?: Array<{
+    name?: string;
+    picture?: string;
+  }>;
+  type?: string;
+  from?: string;
 }
 
 /**
@@ -111,9 +136,11 @@ export class ScrapService {
    */
   private async apiRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    version: 'v1' | 'v2' = 'v1'
   ): Promise<T> {
-    return globalApiClient.request<T>(endpoint, options as any);
+    const versionedEndpoint = `/${version}${endpoint}`;
+    return globalApiClient.request<T>(versionedEndpoint, options as any);
   }
 
   /**
@@ -133,13 +160,14 @@ export class ScrapService {
         }
       } catch {}
 
-      const response = await this.apiRequest<ScrapResponse>('/v1/scraps', {
+      // Use Version 2 API for enhanced metadata
+      const response = await this.apiRequest<ScrapResponse>('/scraps', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(scrapData),
-      });
+      }, 'v2');
 
       // console.log('✅ Scrap created successfully:', {
       //   scrapId: response.scrapId,
@@ -226,9 +254,10 @@ export class ScrapService {
     try {
       // console.log('📋 Fetching scraps list');
 
-      const response = await this.apiRequest<ScrapResponse[]>('/v1/scraps', {
+      // Use Version 2 API to get enhanced metadata
+      const response = await this.apiRequest<ScrapResponse[]>('/scraps', {
         method: 'GET',
-      });
+      }, 'v2');
 
       // console.log('✅ Scraps fetched successfully:', {
       //   count: response.length,
@@ -246,9 +275,10 @@ export class ScrapService {
    */
   async getScrapById(scrapId: number): Promise<ScrapResponse> {
     try {
-      const response = await this.apiRequest<ScrapResponse>(`/v1/scraps/${scrapId}`, {
+      // Use Version 2 API for enhanced metadata
+      const response = await this.apiRequest<ScrapResponse>(`/scraps/${scrapId}`, {
         method: 'GET',
-      });
+      }, 'v2');
       return response;
     } catch (error) {
       throw error;
@@ -262,9 +292,9 @@ export class ScrapService {
     try {
       // console.log('🗑️ Deleting scrap:', scrapId);
 
-      await this.apiRequest<void>(`/v1/scraps/${scrapId}`, {
+      await this.apiRequest<void>(`/scraps/${scrapId}`, {
         method: 'DELETE',
-      });
+      }, 'v1');
 
       // console.log('✅ Scrap deleted successfully:', scrapId);
     } catch (error) {
@@ -292,10 +322,10 @@ export class ScrapService {
     try {
       // console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
 
-      const response = await this.apiRequest<TagResponse>(`/v1/scraps/${scrapId}/tags`, {
+      const response = await this.apiRequest<TagResponse>(`/scraps/${scrapId}/tags`, {
         method: 'POST',
         body: JSON.stringify({ name: tagName }),
-      });
+      }, 'v1');
 
       try {
         if (typeof document !== 'undefined') {
@@ -327,9 +357,9 @@ export class ScrapService {
     try {
       // console.log('🏷️ Fetching scrap tags:', scrapId);
 
-      const response = await this.apiRequest<TagResponse[]>(`/v1/scraps/${scrapId}/tags`, {
+      const response = await this.apiRequest<TagResponse[]>(`/scraps/${scrapId}/tags`, {
         method: 'GET',
-      });
+      }, 'v1');
 
       // console.log('✅ Scrap tags fetched successfully:', {
       //   scrapId,
@@ -350,9 +380,9 @@ export class ScrapService {
     try {
       // console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
 
-      await this.apiRequest<void>(`/v1/scraps/${scrapId}/tags/${tagId}`, {
+      await this.apiRequest<void>(`/scraps/${scrapId}/tags/${tagId}`, {
         method: 'DELETE',
-      });
+      }, 'v1');
 
       try {
         if (typeof document !== 'undefined') {
