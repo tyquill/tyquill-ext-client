@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import Sidebar from '../components/content/Sidebar/Sidebar';
 import { authService } from '../services/auth.service';
+import { WebClipper } from '../utils/webClipper';
 import type { ExtensionMessage, MessageResponse } from '../types/messages';
 
 const SidebarApp: React.FC = () => {
@@ -90,6 +91,33 @@ const SidebarApp: React.FC = () => {
         console.log('📍 Sending response:', JSON.stringify(response));
         sendResponse(response);
         return true; // async response를 위해 true 반환
+      }
+
+      // 스크랩 요청 처리 (CLIP_PAGE 메시지)
+      if (request.type === 'CLIP_PAGE') {
+        console.log('📄 Sidebar App: CLIP_PAGE 요청 받음:', request);
+
+        // 비동기 처리를 위해 즉시 true 반환
+        (async () => {
+          try {
+            const clipper = new WebClipper(request.options || {});
+            const result = await clipper.clipPage();
+
+            if (sendResponse) {
+              sendResponse({ success: true, data: result });
+            }
+          } catch (error) {
+            console.error('📄 Sidebar App: 스크랩 실패:', error);
+            if (sendResponse) {
+              sendResponse({
+                success: false,
+                error: error instanceof Error ? error.message : 'Unknown error'
+              });
+            }
+          }
+        })();
+
+        return true; // 비동기 응답을 위해 true 반환
       }
 
       return false;

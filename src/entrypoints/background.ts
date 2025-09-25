@@ -451,16 +451,19 @@ export default defineBackground(() => {
    * Handle current page clipping and scraping (executed in Background Script)
    */
   async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSender) {
+    console.log('🔄 Background: Starting handleClipAndScrapCurrentPage');
     try {
       // Get current active tab info
       let tabId = sender.tab?.id;
+      console.log('📝 Background: Sender tab ID:', tabId);
 
       // Query active tab if sender.tab is not available (when requested from Sidepanel)
       if (!tabId) {
         const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
         tabId = activeTab?.id;
+        console.log('📝 Background: Queried active tab ID:', tabId);
       }
-      
+
       if (!tabId) {
         throw new Error('No active tab found');
       }
@@ -489,15 +492,33 @@ export default defineBackground(() => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Request clipping from Content Script
-      const response = await browser.tabs.sendMessage(tabId, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: false }
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Clipping failed');
+      // Request clipping from Content Script with timeout and error handling
+      console.log('📤 Background: Sending CLIP_PAGE message to tab:', tabId);
+      let response;
+      try {
+        response = await browser.tabs.sendMessage(tabId, {
+          type: 'CLIP_PAGE',
+          options: { includeMetadata: false }
+        });
+        console.log('📨 Background: Received response from content script:', response);
+      } catch (messageError) {
+        // Handle cases where sendMessage fails (e.g., content script not loaded, tab closed)
+        console.error('❌ Background: Failed to send message to content script:', messageError);
+        throw new Error('Could not communicate with content script. The page may need to be refreshed.');
       }
+
+      // Add proper null/undefined checks for the response
+      if (!response) {
+        console.error('❌ Background: Content script response is null/undefined');
+        throw new Error('Content script did not respond to CLIP_PAGE message');
+      }
+
+      if (response.success !== true) {
+        console.error('❌ Background: Content script reported failure:', response);
+        throw new Error(response.error || response.message || 'Clipping failed');
+      }
+
+      console.log('✅ Background: Content script clipping successful');
 
       // Create scrap data
       const scrapResult = {
@@ -587,14 +608,26 @@ export default defineBackground(() => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Request clipping from Content Script
-      const response = await browser.tabs.sendMessage(tabId, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: true }
-      });
+      // Request clipping from Content Script with timeout and error handling
+      let response;
+      try {
+        response = await browser.tabs.sendMessage(tabId, {
+          type: 'CLIP_PAGE',
+          options: { includeMetadata: true }
+        });
+      } catch (messageError) {
+        // Handle cases where sendMessage fails (e.g., content script not loaded, tab closed)
+        console.error('Failed to send message to content script:', messageError);
+        throw new Error('Could not communicate with content script. The page may need to be refreshed.');
+      }
 
-      if (!response.success) {
-        throw new Error(response.error || 'Clipping failed');
+      // Add proper null/undefined checks for the response
+      if (!response) {
+        throw new Error('Content script did not respond to CLIP_PAGE message');
+      }
+
+      if (response.success !== true) {
+        throw new Error(response.error || response.message || 'Clipping failed');
       }
 
       // Return only clipping result (without calling scrap API)
