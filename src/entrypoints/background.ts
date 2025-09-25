@@ -278,6 +278,25 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'openOptionsPage') {
+      // Handle options page opening from content script context
+      (async () => {
+        try {
+          if (browser.runtime.openOptionsPage) {
+            await browser.runtime.openOptionsPage();
+            sendResponse({ success: true });
+          } else {
+            console.error('browser.runtime.openOptionsPage is not available');
+            sendResponse({ success: false, error: 'Options page not available' });
+          }
+        } catch (error) {
+          console.error('❌ Failed to open options page:', error);
+          sendResponse({ success: false, error: (error as Error)?.message });
+        }
+      })();
+      return true;
+    }
+
   });
 
   /**

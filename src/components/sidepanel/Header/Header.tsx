@@ -116,10 +116,14 @@ const Header: React.FC<HeaderProps> = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
-  const handleSettingsClick = () => {
-    // Chrome extension options page 열기
-    if (typeof browser !== 'undefined' && browser.runtime) {
-      browser.runtime.openOptionsPage();
+  const handleSettingsClick = async () => {
+    // Send message to background script to open options page
+    try {
+      if (typeof browser !== 'undefined' && browser.runtime) {
+        await browser.runtime.sendMessage({ action: 'openOptionsPage' });
+      }
+    } catch (error) {
+      console.error('Failed to open options page:', error);
     }
     setIsMenuOpen(false);
   };
@@ -267,10 +271,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
     { key: 'archive', label: t('menu_archive'), icon: IoArchive },
   ];
 
-  const handleSettingsClick = () => {
-    // Chrome extension options page 열기
-    if (typeof browser !== 'undefined' && browser.runtime) {
-      browser.runtime.openOptionsPage();
+  const handleSettingsClick = async () => {
+    // Send message to background script to open options page
+    try {
+      if (typeof browser !== 'undefined' && browser.runtime) {
+        await browser.runtime.sendMessage({ action: 'openOptionsPage' });
+      }
+    } catch (error) {
+      console.error('Failed to open options page:', error);
     }
   };
 
