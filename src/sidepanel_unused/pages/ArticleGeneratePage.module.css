@@ -85,6 +85,8 @@
   font-weight: 500;
   transition: all 0.2s;
   box-sizing: border-box;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sectionButton:hover {
