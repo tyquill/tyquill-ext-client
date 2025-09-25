@@ -402,7 +402,7 @@
   text-align: center;
   padding: 8px;
   color: #6c757d;
-  background: rgba(255, 255, 255, 0.9);
+  background: transparent;
   border-radius: 4px;
   font-size: 14px;
   pointer-events: none;
