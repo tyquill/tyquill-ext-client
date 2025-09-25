@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoDocument, IoLink } from 'react-icons/io5';
+import { FaBookmark } from 'react-icons/fa6';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
@@ -799,12 +800,12 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
                   </>
                 ) : clipStatus === 'loading' || isClipping ? (
                   <>
-                    <IoClipboard size={20} />
+                    <FaBookmark size={18} />
                     {t('scrapPage_clipping')}
                   </>
                 ) : (
                   <>
-                    <IoClipboard size={20} />
+                    <FaBookmark size={18} />
                     {t('scrapPage_pageScrap')}
                   </>
                 )}

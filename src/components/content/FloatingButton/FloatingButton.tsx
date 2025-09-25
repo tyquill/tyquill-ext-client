@@ -5,7 +5,7 @@ import type { Browser } from 'wxt/browser';
 import { useI18n } from '../../../hooks/useI18n';
 import { trackSidepanelOpenedBridge, trackSidepanelClosedBridge } from '../../../analytics/bridge';
 import styles from './FloatingButton.module.css';
-import { BsBook } from 'react-icons/bs';
+import { FaBookmark } from 'react-icons/fa6';
 import { IoClose } from 'react-icons/io5';
 import { IoMdCheckmark } from 'react-icons/io';
 import { motion } from 'framer-motion';
@@ -484,7 +484,7 @@ const FloatingButton: React.FC = () => {
   const toolGroups: ToolGroup[] = [{
     id: 'main', position: 'top',
     tools: [{
-      id: 'scrap', icon: <BsBook size={18} />, label: t('content_scrap'), action: handleScrap,
+      id: 'scrap', icon: <FaBookmark size={18} />, label: t('content_scrap'), action: handleScrap,
       shortcut: '⌘S', tooltip: t('content_scrapCurrentPage')
     }]
   }];

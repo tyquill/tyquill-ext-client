@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClipboard, IoSparkles, IoArchive } from 'react-icons/io5';
+import { IoSparkles, IoArchive } from 'react-icons/io5';
+import { FaBookmark } from 'react-icons/fa6';
 import { IconBaseProps } from 'react-icons';
 
 function TablerMasksTheater({ size = 20, ...props }: IconBaseProps) {
@@ -69,7 +70,7 @@ const menuItemVariants = {
 export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => {
   const { t } = useI18n();
   const menuItems: MenuItem[] = [
-    { key: 'scrap', label: t('menu_scrap'), icon: IoClipboard },
+    { key: 'scrap', label: t('menu_scrap'), icon: FaBookmark },
     { key: 'style-management', label: t('menu_styleManagement'), icon: TablerMasksTheater },
     { key: 'draft', label: t('menu_draft'), icon: IoSparkles },
     { key: 'archive', label: t('menu_archive'), icon: IoArchive },
