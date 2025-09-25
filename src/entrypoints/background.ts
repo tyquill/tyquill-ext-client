@@ -320,6 +320,45 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'openViewer') {
+      // Handle viewer opening from sidepanel context
+      console.log('🚀 Background: Received openViewer request:', request);
+      (async () => {
+        try {
+          const { url, type, id } = request;
+          console.log('📝 Background: Extracted params - url:', url, 'type:', type, 'id:', id);
+
+          if (!url) {
+            console.error('❌ Background: Missing URL in openViewer request');
+            sendResponse({ success: false, error: 'Viewer URL is required' });
+            return;
+          }
+
+          console.log(`🔧 Opening ${type} viewer for ID ${id}:`, url);
+
+          // Check if browser.tabs.create is available
+          if (!browser.tabs || !browser.tabs.create) {
+            console.error('❌ Background: browser.tabs.create is not available');
+            sendResponse({ success: false, error: 'Tabs API not available' });
+            return;
+          }
+
+          const newTab = await browser.tabs.create({
+            url: url,
+            active: true
+          });
+
+          console.log('✅ Background: Successfully created new tab:', newTab.id);
+          sendResponse({ success: true, tabId: newTab.id });
+        } catch (error) {
+          console.error('❌ Background: Failed to open viewer:', error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          sendResponse({ success: false, error: errorMessage });
+        }
+      })();
+      return true;
+    }
+
   });
 
   /**

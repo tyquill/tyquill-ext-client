@@ -512,10 +512,35 @@ const ScrapPage: React.FC = () => {
 
 
   const openScrapInNewTab = useCallback(async (scrapId: string) => {
+    console.log('🚀 ScrapPage: Opening scrap viewer for ID:', scrapId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
-      await browser.tabs.create({ url });
+      console.log('📝 ScrapPage: Generated viewer URL:', url);
+
+      const message = {
+        action: 'openViewer',
+        url: url,
+        type: 'SCRAP',
+        id: scrapId
+      };
+      console.log('📤 ScrapPage: Sending message to background:', message);
+
+      const response = await browser.runtime.sendMessage(message);
+      console.log('📥 ScrapPage: Received response from background:', response);
+
+      if (!response) {
+        console.error('❌ ScrapPage: No response received from background');
+        throw new Error('No response from background script');
+      }
+
+      if (!response.success) {
+        console.error('❌ ScrapPage: Background returned error:', response.error);
+        throw new Error(response.error || 'Failed to open viewer');
+      }
+
+      console.log('✅ ScrapPage: Successfully opened scrap viewer');
     } catch (e) {
+      console.error('❌ ScrapPage: Failed to open scrap viewer:', e);
       showError(t('common_error'), t('scrapPage_openViewerError'));
     }
   }, [showError]);
@@ -602,10 +627,35 @@ const ScrapPage: React.FC = () => {
   });
 
   const openUploadInNewTab = useCallback(async (uploadedId: number) => {
+    console.log('🚀 ScrapPage: Opening upload viewer for ID:', uploadedId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
-      await browser.tabs.create({ url });
+      console.log('📝 ScrapPage: Generated upload viewer URL:', url);
+
+      const message = {
+        action: 'openViewer',
+        url: url,
+        type: 'UPLOAD',
+        id: uploadedId
+      };
+      console.log('📤 ScrapPage: Sending upload message to background:', message);
+
+      const response = await browser.runtime.sendMessage(message);
+      console.log('📥 ScrapPage: Received upload response from background:', response);
+
+      if (!response) {
+        console.error('❌ ScrapPage: No response received from background for upload');
+        throw new Error('No response from background script');
+      }
+
+      if (!response.success) {
+        console.error('❌ ScrapPage: Background returned upload error:', response.error);
+        throw new Error(response.error || 'Failed to open viewer');
+      }
+
+      console.log('✅ ScrapPage: Successfully opened upload viewer');
     } catch (e) {
+      console.error('❌ ScrapPage: Failed to open upload viewer:', e);
       showError(t('common_error'), t('scrapPage_openUploadViewerError'));
     }
   }, [showError]);
