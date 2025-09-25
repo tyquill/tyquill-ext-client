@@ -24,6 +24,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
   const { t } = useI18n();
   const [platformInfo, setPlatformInfo] = useState<PlatformInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [showSuccessState, setShowSuccessState] = useState(false);
 
   // Platform detection
   useEffect(() => {
@@ -300,6 +301,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
           // Execute the export function
           const result = exportToMaily(content);
           if (result.success) {
+            setShowSuccessState(true);
+            setTimeout(() => setShowSuccessState(false), 2000);
             showSuccess(t('export_success'), t('export_mailySuccess'));
             onExportSuccess?.('maily');
           } else {
@@ -469,6 +472,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
           // Execute the export function
           const exportResult = exportToSubstack(title, content);
           if (exportResult.success) {
+            setShowSuccessState(true);
+            setTimeout(() => setShowSuccessState(false), 2000);
             showSuccess(t('export_success'), t('export_substackSuccess'));
             onExportSuccess?.('substack');
           } else {
@@ -512,13 +517,34 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
     }
   };
 
+  // Determine button state classes
+  const getButtonClasses = () => {
+    const classes = [styles.exportButton];
+
+    // Add available class when platform is detected and supported
+    const isPlatformAvailable = platformInfo &&
+      platformInfo.isEditorPage &&
+      isSupportedPlatform(platformInfo.platform);
+
+    if (isPlatformAvailable || forceVisible) {
+      classes.push(styles.available);
+    }
+
+    if (showSuccessState) {
+      classes.push(styles.success);
+    }
+
+    return classes.join(' ');
+  };
+
   return (
     <button
-      className={styles.exportButton}
+      className={getButtonClasses()}
       onClick={handleExport}
       disabled={isLoading}
       title={getTooltipText()}
     >
+      {/* Button icon */}
       {isLoading ? (
         <IoArrowUpCircle size={16} className={styles.spinning} />
       ) : (
