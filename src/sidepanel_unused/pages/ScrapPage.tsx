@@ -43,6 +43,10 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const [uploadsError, setUploadsError] = useState<string | null>(null);
   // createdAt timestamp map for scraps (ms since epoch)
   const [scrapTimestamps, setScrapTimestamps] = useState<Record<string, number>>({});
+  // Undo delete state for scraps
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteTimeoutId, setDeleteTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [deletedScrap, setDeletedScrap] = useState<Scrap | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -50,6 +54,15 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPDFUploadModal, setShowPDFUploadModal] = useState(false);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutId) {
+        clearTimeout(deleteTimeoutId);
+      }
+    };
+  }, [deleteTimeoutId]);
 
   useEffect(() => {
     const fetchAllTags = async () => {
@@ -376,6 +389,86 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       e.currentTarget.value = '';
     }
   }, [handleAddUploadTag]);
+
+  // Handle scrap delete with undo pattern
+  const handleDeleteScrap = (scrapId: string) => {
+    // If there's already a pending delete, complete it immediately
+    if (pendingDeleteId !== null && deleteTimeoutId) {
+      clearTimeout(deleteTimeoutId);
+      executeDeleteScrap(pendingDeleteId);
+    }
+
+    // Find and store the scrap to be deleted
+    const scrapToDelete = scraps.find(scrap => scrap.id === scrapId);
+    if (!scrapToDelete) return;
+
+    // Mark as pending delete and remove from UI immediately
+    setPendingDeleteId(scrapId);
+    setDeletedScrap(scrapToDelete);
+    setScraps(scraps.filter(scrap => scrap.id !== scrapId));
+
+    // Show success toast with undo information
+    showSuccess(
+      t('scrapPage_deleteScrapSuccessUndo'),
+      t('scrapPage_undoMessage'),
+      6000 // 6 seconds to see the message
+    );
+
+    // Set timeout to actually delete after 5 seconds
+    const timeoutId = setTimeout(() => {
+      executeDeleteScrap(scrapId);
+    }, 5000);
+
+    setDeleteTimeoutId(timeoutId);
+  };
+
+  const handleUndoDeleteScrap = () => {
+    if (pendingDeleteId && deleteTimeoutId && deletedScrap) {
+      clearTimeout(deleteTimeoutId);
+      setDeleteTimeoutId(null);
+
+      // Restore the scrap to the list in the correct position
+      setScraps(prevScraps => {
+        const restored = [...prevScraps, deletedScrap];
+        // Sort by timestamp (newest first)
+        return restored.sort((a, b) => {
+          const aTime = scrapTimestamps[a.id] || new Date(a.date).getTime();
+          const bTime = scrapTimestamps[b.id] || new Date(b.date).getTime();
+          return bTime - aTime;
+        });
+      });
+
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      showSuccess(t('scrapPage_undoSuccess'), '', 3000);
+    }
+  };
+
+  const executeDeleteScrap = async (scrapId: string) => {
+    try {
+      await scrapService.deleteScrap(parseInt(scrapId));
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      setDeleteTimeoutId(null);
+    } catch (err: any) {
+      // If delete fails, restore the scrap
+      if (deletedScrap) {
+        setScraps(prevScraps => {
+          const restored = [...prevScraps, deletedScrap];
+          // Sort by timestamp (newest first)
+          return restored.sort((a, b) => {
+            const aTime = scrapTimestamps[a.id] || new Date(a.date).getTime();
+            const bTime = scrapTimestamps[b.id] || new Date(b.date).getTime();
+            return bTime - aTime;
+          });
+        });
+      }
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      setDeleteTimeoutId(null);
+      showError(t('scrapPage_deleteScrapFailed'), err.message || t('scrapPage_deleteScrapError'));
+    }
+  };
 
   // 키보드 입력 처리
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
@@ -785,15 +878,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
                   <ScrapItem
                     key={item.key}
                     scrap={scrap}
-                    onDelete={async () => {
-                      try {
-                        await scrapService.deleteScrap(parseInt(scrap.id));
-                        await loadScraps();
-                        showSuccess(t('common_delete'), t('scrapPage_deleteScrapSuccess'));
-                      } catch (error: any) {
-                        showError(t('common_delete'), error?.message || t('scrapPage_deleteScrapFailed'));
-                      }
-                    }}
+                    onDelete={() => handleDeleteScrap(scrap.id)}
                   />
                 );
               }
@@ -925,6 +1010,19 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
           </div>
         )}
       </div>
+
+      {/* Floating Undo Button */}
+      {pendingDeleteId && (
+        <div className={styles.undoContainer}>
+          <button
+            className={styles.undoButton}
+            onClick={handleUndoDeleteScrap}
+            aria-label={t('scrapPage_undo')}
+          >
+            {t('scrapPage_undo')}
+          </button>
+        </div>
+      )}
 
       {/* PDF Upload Modal */}
       <PDFUploadModal

@@ -3,6 +3,7 @@ import { IoTrash } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
 import { useI18n } from '../../hooks/useI18n';
+import { useToastHelpers } from '../../hooks/useToast';
 import Tooltip from '../../components/common/Tooltip';
 
 interface ArchivePageProps {
@@ -17,7 +18,11 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   const [articles, setArticles] = useState<ArticleResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [deleteTimeoutId, setDeleteTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [deletedArticle, setDeletedArticle] = useState<ArticleResponse | null>(null);
   const { t } = useI18n();
+  const { showSuccess, showError } = useToastHelpers();
 
   const loadArticles = useCallback(async () => {
     try {
@@ -41,14 +46,84 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     loadArticles();
   }, [loadArticles]);
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm(t('archivePage_deleteConfirm'))) {
-      try {
-        await articleService.deleteArticle(id);
-        setArticles(articles.filter(article => article.articleId !== id));
-      } catch (err: any) {
-        alert(t('archivePage_deleteFailed') + ': ' + err.message);
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutId) {
+        clearTimeout(deleteTimeoutId);
       }
+    };
+  }, [deleteTimeoutId]);
+
+  const handleDelete = (id: number) => {
+    // If there's already a pending delete, complete it immediately
+    if (pendingDeleteId !== null && deleteTimeoutId) {
+      clearTimeout(deleteTimeoutId);
+      executeDelete(pendingDeleteId);
+    }
+
+    // Find and store the article to be deleted
+    const articleToDelete = articles.find(article => article.articleId === id);
+    if (!articleToDelete) return;
+
+    // Mark as pending delete and remove from UI immediately
+    setPendingDeleteId(id);
+    setDeletedArticle(articleToDelete);
+    setArticles(articles.filter(article => article.articleId !== id));
+
+    // Show success toast with undo information
+    showSuccess(
+      t('archivePage_deleteSuccess'),
+      t('archivePage_undoMessage'),
+      6000 // 6 seconds to see the message
+    );
+
+    // Set timeout to actually delete after 5 seconds
+    const timeoutId = setTimeout(() => {
+      executeDelete(id);
+    }, 5000);
+
+    setDeleteTimeoutId(timeoutId);
+  };
+
+  const handleUndo = () => {
+    if (pendingDeleteId && deleteTimeoutId && deletedArticle) {
+      clearTimeout(deleteTimeoutId);
+      setDeleteTimeoutId(null);
+
+      // Restore the article to the list in the correct position
+      setArticles(prevArticles => {
+        const restored = [...prevArticles, deletedArticle].sort((a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        return restored;
+      });
+
+      setPendingDeleteId(null);
+      setDeletedArticle(null);
+      showSuccess(t('archivePage_undoSuccess'), '', 3000);
+    }
+  };
+
+  const executeDelete = async (id: number) => {
+    try {
+      await articleService.deleteArticle(id);
+      setPendingDeleteId(null);
+      setDeletedArticle(null);
+      setDeleteTimeoutId(null);
+    } catch (err: any) {
+      // If delete fails, restore the article
+      if (deletedArticle) {
+        setArticles(prevArticles => {
+          return [...prevArticles, deletedArticle].sort((a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+      }
+      setPendingDeleteId(null);
+      setDeletedArticle(null);
+      setDeleteTimeoutId(null);
+      showError(t('archivePage_deleteFailed'), err.message || t('archivePage_deleteError'));
     }
   };
 
@@ -175,6 +250,19 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
           ))
         )}
       </div>
+
+      {/* Floating Undo Button */}
+      {pendingDeleteId && (
+        <div className={styles.undoContainer}>
+          <button
+            className={styles.undoButton}
+            onClick={handleUndo}
+            aria-label={t('archivePage_undo')}
+          >
+            {t('archivePage_undo')}
+          </button>
+        </div>
+      )}
     </div>
   );
 });

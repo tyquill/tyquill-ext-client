@@ -149,6 +149,18 @@ const koTranslations = {
   archivePage_noTitle: "제목 없음",
   archivePage_refreshTooltip: "보관함 새로고침",
   archivePage_deleteTooltip: "삭제",
+  archivePage_deleteSuccess: "아티클이 삭제되었습니다",
+  archivePage_undoMessage: "5초 내에 실행 취소할 수 있습니다",
+  archivePage_undo: "실행 취소",
+  archivePage_undoSuccess: "삭제가 취소되었습니다",
+  archivePage_deleteError: "삭제 중 오류가 발생했습니다",
+
+  // Scrap Page - Undo delete functionality
+  scrapPage_deleteScrapSuccessUndo: "스크랩이 삭제되었습니다",
+  scrapPage_undoMessage: "5초 내에 실행 취소할 수 있습니다",
+  scrapPage_undo: "실행 취소",
+  scrapPage_undoSuccess: "삭제가 취소되었습니다",
+  scrapPage_deleteScrapError: "스크랩 삭제 중 오류가 발생했습니다",
 
   // Style Management Page
   stylePage_title: "문체 관리",
@@ -513,6 +525,18 @@ const enTranslations = {
   archivePage_noTitle: "No title",
   archivePage_refreshTooltip: "Refresh archive",
   archivePage_deleteTooltip: "Delete",
+  archivePage_deleteSuccess: "Article deleted",
+  archivePage_undoMessage: "You can undo within 5 seconds",
+  archivePage_undo: "Undo",
+  archivePage_undoSuccess: "Deletion cancelled",
+  archivePage_deleteError: "Error occurred while deleting",
+
+  // Scrap Page - Undo delete functionality
+  scrapPage_deleteScrapSuccessUndo: "Scrap deleted",
+  scrapPage_undoMessage: "You can undo within 5 seconds",
+  scrapPage_undo: "Undo",
+  scrapPage_undoSuccess: "Deletion cancelled",
+  scrapPage_deleteScrapError: "Error occurred while deleting scrap",
 
   // Style Management Page
   stylePage_title: "Persona Management",
