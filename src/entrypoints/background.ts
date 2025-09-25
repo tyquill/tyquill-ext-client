@@ -359,6 +359,18 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'getActiveTabInfo') {
+      handleGetActiveTabInfo()
+        .then(response => {
+          sendResponse({ success: true, data: response });
+        })
+        .catch(error => {
+          console.error('❌ Background getActiveTabInfo error:', error);
+          sendResponse({ success: false, error: error?.message || String(error) || 'Failed to get active tab info' });
+        });
+      return true;
+    }
+
   });
 
   /**
@@ -394,6 +406,46 @@ export default defineBackground(() => {
     }
   }
 
+  /**
+   * Get current active tab information (requested from content script)
+   */
+  async function handleGetActiveTabInfo() {
+    try {
+      // Try to get active tab in current window first
+      let tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      let tab = tabs[0];
+
+      // If no active tab found in current window (can happen in sidepanel context),
+      // try to get the last focused window's active tab
+      if (!tab || !tab.id) {
+        console.log('No active tab in current window, trying lastFocusedWindow...');
+        tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+        tab = tabs[0];
+      }
+
+      // If still no tab, try to get any active tab
+      if (!tab || !tab.id) {
+        console.log('No active tab in lastFocusedWindow, trying any active tab...');
+        tabs = await browser.tabs.query({ active: true });
+        tab = tabs[0];
+      }
+
+      if (!tab || !tab.id) {
+        throw new Error('Cannot find active tab');
+      }
+
+      console.log('✅ Found active tab:', tab.id, tab.url, tab.title);
+
+      return {
+        id: tab.id,
+        url: tab.url || '',
+        title: tab.title || ''
+      };
+    } catch (error) {
+      console.error('❌ Background: Failed to get active tab info:', error);
+      throw new Error(`Failed to get active tab info: ${(error as any)?.message || String(error)}`);
+    }
+  }
 
   /**
    * Handle current page clipping and scraping (executed in Background Script)

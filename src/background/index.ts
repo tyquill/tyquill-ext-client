@@ -158,6 +158,18 @@ browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.Mes
     return true;
   }
 
+  if (request.action === 'getActiveTabInfo') {
+    handleGetActiveTabInfo()
+      .then(response => {
+        sendResponse({ success: true, data: response });
+      })
+      .catch(error => {
+        console.error('❌ Background getActiveTabInfo error:', error);
+        sendResponse({ success: false, error: error?.message || String(error) || 'Failed to get active tab info' });
+      });
+    return true;
+  }
+
 });
 
 /**
@@ -174,6 +186,29 @@ async function handleOpenSidebar(sender: Browser.runtime.MessageSender) {
   } catch (error) {
     console.error('❌ Background: Failed to open sidebar:', error);
     throw error;
+  }
+}
+
+/**
+ * 현재 활성 탭 정보 가져오기 (content script에서 요청)
+ */
+async function handleGetActiveTabInfo() {
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const tab = tabs[0];
+
+    if (!tab || !tab.id) {
+      throw new Error('Cannot find active tab');
+    }
+
+    return {
+      id: tab.id,
+      url: tab.url || '',
+      title: tab.title || ''
+    };
+  } catch (error) {
+    console.error('❌ Background: Failed to get active tab info:', error);
+    throw new Error(`Failed to get active tab info: ${(error as any)?.message || String(error)}`);
   }
 }
 

@@ -288,42 +288,35 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     try {
       setAnalyzing(true);
-      
-      // 현재 활성 탭 정보 가져오기
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      
+
+      // 현재 활성 탭 정보 가져오기 - background script를 통해
+      const tabInfoResponse = await browser.runtime.sendMessage({ action: 'getActiveTabInfo' });
+
+      if (!tabInfoResponse || !tabInfoResponse.success) {
+        throw new Error(tabInfoResponse?.error || t('articleGenerate_cannotFindActiveTab'));
+      }
+
+      const tab = tabInfoResponse.data;
+
       if (!tab?.id) {
         throw new Error(t('articleGenerate_cannotFindActiveTab'));
       }
 
       // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('chrome://') || 
+      if (tab.url?.startsWith('chrome://') ||
           tab.url?.startsWith('chrome-extension://') ||
+          tab.url?.startsWith('browser://') ||
+          tab.url?.startsWith('browser-extension://') ||
           tab.url?.startsWith('edge://') ||
           tab.url?.startsWith('about:')) {
         throw new Error(t('articleGenerate_cannotScrapThisPage'));
       }
 
-      // Content Script가 로드되었는지 확인
-      try {
-        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
-      } catch (pingError) {
-        // Content script 수동 주입 시도
-        await browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content/index.js']
-        });
-        
-        // 잠시 대기 후 재시도
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
       showInfo(t('articleGenerate_pageAnalysis'), t('articleGenerate_analysisDescription'));
 
-      // 페이지 콘텐츠 스크랩
-      const response = await browser.tabs.sendMessage(tab.id, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: false }
+      // 페이지 콘텐츠 스크랩 - background script를 통해 처리
+      const response = await browser.runtime.sendMessage({
+        action: 'clipCurrentPageForStyle'
       });
 
       if (!response.success) {
