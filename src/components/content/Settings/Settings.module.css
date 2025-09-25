@@ -130,12 +130,64 @@
   text-transform: capitalize !important;
 }
 
+.profileEmailContainer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
 .profileEmail {
   font-size: 13px !important;
   color: #6b6b6b !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
+}
+
+/* Sign Out Link - Subtle text-based action */
+.signOutLink {
+  background: none !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: #9ca3af !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  transition: color 0.15s ease !important;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+}
+
+.signOutLink:hover:not(:disabled) {
+  color: #dc2626 !important;
+  text-decoration: underline !important;
+}
+
+.signOutLink:active:not(:disabled) {
+  color: #b91c1c !important;
+}
+
+.signOutLink:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  text-decoration: none !important;
+}
+
+.signOutError {
+  margin-top: 8px !important;
+  padding: 6px 10px !important;
+  background: #fee2e2 !important;
+  border: 1px solid #fca5a5 !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  color: #dc2626 !important;
+  text-align: left !important;
+  width: 100% !important;
 }
 
 /* Settings Sections */
@@ -396,6 +448,26 @@ input:checked + .slider:before {
     color: #6b6b6b !important;
   }
 
+  /* Sign Out Link Dark Mode */
+  .signOutLink {
+    color: #6b7280 !important;
+  }
+
+  .signOutLink:hover:not(:disabled) {
+    color: #ef4444 !important;
+    text-decoration: underline !important;
+  }
+
+  .signOutLink:active:not(:disabled) {
+    color: #dc2626 !important;
+  }
+
+  .signOutError {
+    background: #450a0a !important;
+    border-color: #7f1d1d !important;
+    color: #ef4444 !important;
+  }
+
   .sectionTitle {
     color: #ffffff !important;
   }
@@ -506,7 +578,8 @@ input:checked + .slider:before {
   .slider,
   .languageOption,
   .optionsButton,
-  .aboutLink {
+  .aboutLink,
+  .signOutLink {
     transition: none !important;
   }
 }

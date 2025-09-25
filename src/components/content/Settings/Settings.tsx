@@ -11,9 +11,11 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
-  const { user } = useAuth();
+  const { user, logout, isLoading: authLoading, isAuthenticated } = useAuth();
   const [floatingButtonVisible, setFloatingButtonVisible] = React.useState<boolean>(true);
   const [authState, setAuthState] = React.useState<any>(null);
+  const [isSigningOut, setIsSigningOut] = React.useState<boolean>(false);
+  const [signOutError, setSignOutError] = React.useState<string | null>(null);
 
   // Load saved preferences and auth state on mount
   React.useEffect(() => {
@@ -41,6 +43,24 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
       await browser.storage.local.set({ floatingButtonVisible: enabled });
     } catch (error) {
       console.error('Failed to save floating button preference:', error);
+    }
+  };
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    setIsSigningOut(true);
+    setSignOutError(null);
+
+    try {
+      await logout();
+      // Optionally close settings after successful logout
+      // onClose();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign out';
+      setSignOutError(errorMessage);
+      console.error('Sign out error:', error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -116,7 +136,26 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
               )}
               <div className={styles.profileInfo}>
                 <div className={styles.profileName}>{user?.email?.split('@')[0] || 'User'}</div>
-                <div className={styles.profileEmail}>{user?.email || 'Not signed in'}</div>
+                <div className={styles.profileEmailContainer}>
+                  <div className={styles.profileEmail}>{user?.email || 'Not signed in'}</div>
+                  {/* Sign Out Link - only show when authenticated */}
+                  {isAuthenticated && (
+                    <button
+                      className={styles.signOutLink}
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      aria-label="Sign out of your account"
+                    >
+                      {isSigningOut ? 'Signing out...' : 'Sign out'}
+                    </button>
+                  )}
+                </div>
+                {/* Error message below profile info if exists */}
+                {signOutError && (
+                  <div className={styles.signOutError}>
+                    {signOutError}
+                  </div>
+                )}
               </div>
             </div>
           </section>

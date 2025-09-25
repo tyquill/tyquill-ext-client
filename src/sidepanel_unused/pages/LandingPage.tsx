@@ -29,11 +29,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   return (
     <div className={styles.landingPage}>
-      {/* Header */}
-      <header className={styles.header}>
-        <h1 className={styles.logo}>Tyquill</h1>
-      </header>
-
       {/* Core content */}
       <main className={styles.mainContent}>
         <h2 className={styles.title}>

@@ -599,24 +599,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               {/* Right side: Action buttons */}
               <div className={styles.headerRight}>
                 <button
-                  className={styles.actionButton}
-                  onClick={handleRefresh}
-                  aria-label="Refresh current page content"
-                  type="button"
-                  title="Refresh"
-                >
-                  <IoRefresh size={18} />
-                </button>
-                <button
-                  className={styles.actionButton}
-                  onClick={() => setShowSettings(true)}
-                  aria-label="Open settings"
-                  type="button"
-                  title="Settings"
-                >
-                  <IoSettings size={18} />
-                </button>
-                <button
                   className={styles.closeButton}
                   onClick={onClose}
                   aria-label="Close sidebar"
