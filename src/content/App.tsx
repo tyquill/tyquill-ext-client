@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
@@ -12,7 +11,6 @@ import { initXInjector } from '../utils/xInjector';
 import { initRedditInjector } from '../utils/redditInjector';
 
 const App: React.FC = () => {
-  const { isReady, currentSelection } = useContentScript();
   const { initializeLanguage } = useLanguageStore();
   const isThreads = (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
