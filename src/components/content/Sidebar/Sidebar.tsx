@@ -636,13 +636,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <ToastProvider>
               <LandingPage onStart={navigateToMain} />
             </ToastProvider>
-
-            {/* Settings overlay */}
-            <Settings
-              isOpen={showSettings}
-              onClose={() => setShowSettings(false)}
-            />
           </div>
+
+          {/* Settings overlay - positioned at sidebar root to cover entire sidebar */}
+          <Settings
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
         </div>
       </div>
     );
@@ -747,13 +747,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
           </ToastProvider>
-
-          {/* Settings overlay */}
-          <Settings
-            isOpen={showSettings}
-            onClose={() => setShowSettings(false)}
-          />
         </div>
+
+        {/* Settings overlay - positioned at sidebar root to cover entire sidebar */}
+        <Settings
+          isOpen={showSettings}
+          onClose={() => setShowSettings(false)}
+        />
       </div>
     </div>
   );

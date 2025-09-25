@@ -6,10 +6,10 @@
   right: 0 !important;
   bottom: 0 !important;
   background: #ffffff !important;
-  z-index: 1000 !important;
+  z-index: 2147483650 !important; /* Higher than sidebar z-index to cover entire sidebar including header */
   transform: translateY(100%) !important;
   transition: transform 0.2s ease-out !important;
-  border-radius: 0 !important;
+  border-radius: 16px !important; /* Match parent sidebar border radius */
   overflow: hidden !important;
   display: flex !important;
   flex-direction: column !important;
@@ -34,6 +34,7 @@
   padding: 20px 24px 16px 24px !important;
   background: #ffffff !important;
   border-bottom: 1px solid #e5e5e5 !important;
+  border-radius: 16px 16px 0 0 !important; /* Match parent sidebar border radius at top */
   gap: 16px !important;
   min-height: 72px !important;
 }
@@ -344,11 +345,13 @@ input:checked + .slider:before {
 @media (prefers-color-scheme: dark) {
   .settingsOverlay {
     background: #000000 !important;
+    border-radius: 16px !important; /* Match parent sidebar border radius */
   }
 
   .settingsHeader {
     background: #000000 !important;
     border-bottom-color: #1a1a1a !important;
+    border-radius: 16px 16px 0 0 !important; /* Match parent sidebar border radius at top */
   }
 
   .settingsTitle {
