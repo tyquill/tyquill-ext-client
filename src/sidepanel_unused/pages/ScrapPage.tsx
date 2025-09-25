@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh, IoDocument, IoLink } from 'react-icons/io5';
+import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoDocument, IoLink } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
@@ -18,7 +18,11 @@ import { libraryItemService, type LibraryItemDto } from '../../services/libraryI
 import { globalApiClient } from '../../services/globalApiClient';
 import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
-const ScrapPage: React.FC = () => {
+export interface ScrapPageRef {
+  refreshList: () => void;
+}
+
+const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { logout } = useAuth();
   const { t } = useI18n();
@@ -392,7 +396,7 @@ const ScrapPage: React.FC = () => {
   // 스크랩 목록 새로고침
   const handleRefresh = useCallback(async () => {
     if (!isAuthenticated || isRefreshing) return;
-    
+
     try {
       setIsRefreshing(true);
       await Promise.all([loadScraps(), loadUploads()]);
@@ -403,6 +407,11 @@ const ScrapPage: React.FC = () => {
       setIsRefreshing(false);
     }
   }, [isAuthenticated, isRefreshing, loadScraps, loadUploads, showSuccess, showError]);
+
+  // ref를 통해 refreshList 함수 노출
+  useImperativeHandle(ref, () => ({
+    refreshList: handleRefresh
+  }));
 
   // PDF 업로드 성공 시 처리
   const handlePDFUploadSuccess = useCallback(() => {
@@ -732,22 +741,11 @@ const ScrapPage: React.FC = () => {
           <TagSelector
             availableTags={allTags}
             selectedTags={selectedTags}
-            onTagSelect={(tag) => setSelectedTags(prev => 
+            onTagSelect={(tag) => setSelectedTags(prev =>
               prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
             )}
             onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
           />
-          {isAuthenticated && (
-            <Tooltip content={t('scrapPage_refreshTooltip')} side='bottom'>
-              <button
-                className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                >
-                <IoRefresh size={16} />
-              </button>
-            </Tooltip>
-          )}
         </div>
       </div>
 
@@ -936,6 +934,6 @@ const ScrapPage: React.FC = () => {
       />
     </div>
   );
-};
+});
 
 export default ScrapPage; 

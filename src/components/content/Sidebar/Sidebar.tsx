@@ -12,9 +12,9 @@ import Settings from '../Settings/Settings';
 // Import all the sidepanel components (now in sidepanel_unused)
 import LandingPage from '../../../sidepanel_unused/pages/LandingPage';
 import Header, { Sidebar as SidebarNav } from '../../../components/sidepanel/Header/Header';
-import ScrapPage from '../../../sidepanel_unused/pages/ScrapPage';
+import ScrapPage, { ScrapPageRef } from '../../../sidepanel_unused/pages/ScrapPage';
 import ArticleGeneratePage from '../../../sidepanel_unused/pages/ArticleGeneratePage';
-import ArchivePage from '../../../sidepanel_unused/pages/ArchivePage';
+import ArchivePage, { ArchivePageRef } from '../../../sidepanel_unused/pages/ArchivePage';
 import ArchiveDetailPage from '../../../sidepanel_unused/pages/ArchiveDetailPage';
 import StyleManagementPage from '../../../sidepanel_unused/pages/StyleManagementPage';
 import { PageType } from '../../../types/pages';
@@ -57,6 +57,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const previousPageRef = useRef<PageState>({ type: 'landing' });
   const pageStartTimeRef = useRef<number>(Date.now());
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const scrapPageRef = useRef<ScrapPageRef>(null);
+  const archivePageRef = useRef<ArchivePageRef>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   // Calculate default Y position (properly center the 98vh sidebar)
@@ -250,6 +252,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const handleNavigateToDetail = (articleId: number) => {
     setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
+
+  // Handle refresh based on current page type
+  const handleRefresh = useCallback(() => {
+    switch (currentPage.type) {
+      case 'scrap':
+        scrapPageRef.current?.refreshList();
+        break;
+      case 'archive':
+      case 'archive-detail': // Archive detail should refresh the archive list when going back
+        archivePageRef.current?.refreshList();
+        break;
+      default:
+        // For other pages, do nothing or show a message
+        console.log('Refresh not available for this page type:', currentPage.type);
+        break;
+    }
+  }, [currentPage.type]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
@@ -581,8 +600,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <div className={styles.headerRight}>
                 <button
                   className={styles.actionButton}
-                  onClick={() => window.location.reload()}
-                  aria-label="Refresh page"
+                  onClick={handleRefresh}
+                  aria-label="Refresh current page content"
                   type="button"
                   title="Refresh"
                 >
@@ -664,8 +683,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className={styles.headerRight}>
               <button
                 className={styles.actionButton}
-                onClick={() => window.location.reload()}
-                aria-label="Refresh page"
+                onClick={handleRefresh}
+                aria-label="Refresh current page content"
                 type="button"
                 title="Refresh"
               >
@@ -702,7 +721,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Header />
               <div className={styles.appMain}>
                 <div className={styles.appContent}>
-                  {currentPage.type === 'scrap' && <ScrapPage />}
+                  {currentPage.type === 'scrap' && <ScrapPage ref={scrapPageRef} />}
 
                   {currentPage.type === 'draft' && (
                     <ArticleGeneratePage
@@ -712,6 +731,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   )}
                   {currentPage.type === 'archive' && (
                     <ArchivePage
+                      ref={archivePageRef}
                       onDraftClick={handleArchiveDetail}
                     />
                   )}

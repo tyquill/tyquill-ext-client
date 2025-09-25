@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
-import { IoTrash, IoRefresh } from 'react-icons/io5';
+import { IoTrash } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
 import { useI18n } from '../../hooks/useI18n';
@@ -83,15 +83,6 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
         <div className={styles.pageHeader}>
           <div className={styles.headerControls}>
             <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
-            <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
-              <button 
-                className={styles.refreshButton}
-                onClick={loadArticles}
-                disabled={loading}
-                >
-                <IoRefresh size={18} />
-              </button>
-            </Tooltip>
           </div>
         </div>
         <div className={styles.loadingContainer}>{t('archivePage_loading')}</div>
@@ -105,15 +96,6 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
         <div className={styles.pageHeader}>
           <div className={styles.headerControls}>
             <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
-            <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
-              <button 
-                className={styles.refreshButton}
-                onClick={loadArticles}
-                disabled={loading}
-                >
-                <IoRefresh size={18} />
-              </button>
-            </Tooltip>
           </div>
         </div>
         <div className={styles.errorContainer}>{t('archivePage_error')}: {error}</div>
@@ -126,15 +108,6 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       <div className={styles.pageHeader}>
         <div className={styles.headerControls}>
           <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
-          <Tooltip content={t('archivePage_refreshTooltip')} side='bottom'>
-            <button 
-              className={styles.refreshButton}
-              onClick={loadArticles}
-              disabled={loading}
-              >
-              <IoRefresh size={18} />
-            </button>
-          </Tooltip>
         </div>
       </div>
 
