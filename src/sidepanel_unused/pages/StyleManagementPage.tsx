@@ -7,6 +7,7 @@ import { clipCurrentPageForStyle } from '../../utils/scrapHelper';
 import Tooltip from '../../components/common/Tooltip';
 import styles from './StyleManagementPage.module.css';
 import pageStyles from './PageStyles.module.css';
+import layoutStyles from './CommonLayout.module.css';
 
 const StyleManagementPage: React.FC = () => {
   const [stylesList, setStylesList] = useState<WritingStyle[]>([]);
@@ -144,8 +145,8 @@ const StyleManagementPage: React.FC = () => {
   };
 
   return (
-    <div className={pageStyles.pageContainer}>
-      <div className={pageStyles.page}>
+    <div className={layoutStyles.pageLayout}>
+      <div className={layoutStyles.scrollableContent}>
         <div className={pageStyles.pageHeader}>
           <div className={pageStyles.headerControls}>
             <h1 className={pageStyles.pageTitle}>{t('stylePage_title')}</h1>

@@ -5,6 +5,7 @@ import { LuLink } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
+import layoutStyles from './CommonLayout.module.css';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
@@ -795,7 +796,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   }, [showError]);
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={layoutStyles.pageLayout}>
       <div className={styles.fixedContent}>
         <div className={styles.addButtonContainer}>
           {!authChecked ? (
@@ -874,7 +875,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         </div>
       </div>
 
-      <div className={styles.scrollableContent}>
+      <div className={layoutStyles.scrollableContent}>
         <div className={styles.scrapList}>
           {(() => {
             const isInitialLoading = (scrapsLoading || uploadsLoading) && combinedItems.length === 0;

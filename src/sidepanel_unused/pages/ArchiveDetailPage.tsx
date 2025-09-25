@@ -4,6 +4,7 @@ import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
+import layoutStyles from './CommonLayout.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
@@ -469,8 +470,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.page}>
-        <div className={styles.detailHeader}>
+      <div className={`${styles.page} ${layoutStyles.pageLayout}`}>
+        <div className={layoutStyles.scrollableContent}>
+          <div className={styles.detailHeader}>
           <button className={styles.backButton} onClick={onBack}>
             <IoArrowBack size={20} />
           </button>
@@ -768,6 +770,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

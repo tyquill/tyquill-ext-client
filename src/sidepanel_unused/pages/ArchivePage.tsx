@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { IoTrash } from 'react-icons/io5';
 import styles from './PageStyles.module.css';
+import layoutStyles from './CommonLayout.module.css';
 import { articleService, ArticleResponse } from '../../services/articleService';
 import { useI18n } from '../../hooks/useI18n';
 import { useToastHelpers } from '../../hooks/useToast';
@@ -179,14 +180,16 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <div className={styles.headerControls}>
-          <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
-        </div>
-      </div>
+    <div className={styles.pageContainer}>
+      <div className={`${styles.page} ${layoutStyles.pageLayout}`}>
+        <div className={layoutStyles.scrollableContent}>
+          <div className={styles.pageHeader}>
+            <div className={styles.headerControls}>
+              <h1 className={styles.pageTitle}>{t('archivePage_title')}</h1>
+            </div>
+          </div>
 
-      <div className={styles.archiveList}>
+          <div className={styles.archiveList}>
         {articles.length === 0 ? (
           <div className={styles.emptyContainer}>
             <div className={styles.emptyMessage}>{t('archivePage_emptyMessage')}</div>
@@ -249,20 +252,22 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
             </div>
           ))
         )}
-      </div>
+          </div>
 
-      {/* Floating Undo Button */}
-      {pendingDeleteId && (
-        <div className={styles.undoContainer}>
-          <button
-            className={styles.undoButton}
-            onClick={handleUndo}
-            aria-label={t('archivePage_undo')}
-          >
-            {t('archivePage_undo')}
-          </button>
+          {/* Floating Undo Button */}
+          {pendingDeleteId && (
+            <div className={styles.undoContainer}>
+              <button
+                className={styles.undoButton}
+                onClick={handleUndo}
+                aria-label={t('archivePage_undo')}
+              >
+                {t('archivePage_undo')}
+              </button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 });
