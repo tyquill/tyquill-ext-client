@@ -90,6 +90,7 @@ const koTranslations = {
   archiveDetailPage_wordCount: "단어 수",
   archiveDetailPage_version: "버전",
   archiveDetailPage_exportToMaily: "maily로 내보내기",
+  archiveDetailPage_exportToSubstack: "Substack으로 내보내기",
   archiveDetailPage_copyToClipboard: "클립보드 복사",
   archiveDetailPage_editDraft: "초안 수정하기",
   archiveDetailPage_editingInPageEditorTooltip: "페이지 편집기에서 편집 중",
@@ -326,6 +327,18 @@ const koTranslations = {
   content_scrapCurrentPage: "현재 페이지 스크랩하기",
   content_mailyEditorNotFound: "maily.so 에디터를 찾을 수 없습니다.",
 
+  // Export functionality
+  export_success: "내보내기 완료",
+  export_failed: "내보내기 실패",
+  export_mailySuccess: "maily.so 페이지에 내용이 붙여넣어졌습니다.",
+  export_substackSuccess: "Substack 페이지에 내용이 붙여넣어졌습니다.",
+  export_mailyNotFound: "maily.so 에디터를 찾을 수 없습니다.",
+  export_substackNotFound: "Substack 에디터를 찾을 수 없습니다.",
+  export_contentRequired: "제목과 내용이 모두 있어야 내보낼 수 있습니다.",
+  export_tabNotFound: "현재 탭을 찾을 수 없습니다.",
+  export_generalError: "내보내기 중 오류가 발생했습니다.",
+  export_platformNotSupported: "지원되지 않는 플랫폼입니다.",
+
   // Options Page
   options_title: "Tyquill",
   options_subtitle: "뉴스레터 생성 도구 설정",
@@ -466,6 +479,7 @@ const enTranslations = {
   archiveDetailPage_wordCount: "Words",
   archiveDetailPage_version: "Version",
   archiveDetailPage_exportToMaily: "Export to maily",
+  archiveDetailPage_exportToSubstack: "Export to Substack",
   archiveDetailPage_copyToClipboard: "Copy to clipboard",
   archiveDetailPage_editDraft: "Edit draft",
   archiveDetailPage_editingInPageEditorTooltip: "Editing in page editor",
@@ -701,6 +715,18 @@ const enTranslations = {
   content_hideFloatingButton: "Hide floating button",
   content_scrapCurrentPage: "Scrap current page",
   content_mailyEditorNotFound: "Cannot find maily.so editor.",
+
+  // Export functionality
+  export_success: "Export completed",
+  export_failed: "Export failed",
+  export_mailySuccess: "Content has been pasted to maily.so page.",
+  export_substackSuccess: "Content has been pasted to Substack page.",
+  export_mailyNotFound: "Cannot find maily.so editor.",
+  export_substackNotFound: "Cannot find Substack editor.",
+  export_contentRequired: "Both title and content are required for export.",
+  export_tabNotFound: "Cannot find current tab.",
+  export_generalError: "An error occurred during export.",
+  export_platformNotSupported: "Platform not supported.",
 
   // Options Page
   options_title: "Tyquill",

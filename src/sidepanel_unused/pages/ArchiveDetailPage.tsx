@@ -557,11 +557,12 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
-                {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
-                <Tooltip content={t('archiveDetailPage_exportToMaily')} side='top'>
+                {/* ExportButton is always visible and detects platform dynamically when clicked */}
+                <Tooltip content={t('common_export')} side='top'>
                   <ExportButton
                     title={currentArchive?.title || article.title}
                     content={currentArchive?.content || article.content}
+                    forceVisible={true}
                     onExportSuccess={async (platform) => {
                       try {
                         await trackArchiveExportedBridge({
