@@ -51,10 +51,13 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     setIsSigningOut(true);
     setSignOutError(null);
 
+    // Close settings immediately when sign-out is clicked
+    onClose();
+
     try {
       await logout();
-      // Optionally close settings after successful logout
-      // onClose();
+      // Auth state change will automatically trigger navigation to LandingPage
+      // in the Sidebar component's useEffect
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to sign out';
       setSignOutError(errorMessage);
