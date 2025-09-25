@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { IoArrowUpCircle } from 'react-icons/io5';
+import { IoArrowUpCircle, IoDocument } from 'react-icons/io5';
 import { SiSubstack } from 'react-icons/si';
 import { MdEmail } from 'react-icons/md';
 import styles from './ExportButton.module.css';
@@ -479,6 +479,251 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
           } else {
             showError(t('export_failed'), exportResult.error || t('export_substackNotFound'));
           }
+
+        } else if (currentPlatformInfo.platform === ExportPlatform.GHOST) {
+          // Ghost export - simplified approach to avoid Lexical errors
+          const exportToGhost = async (titleToExport: string, contentToExport: string) => {
+            try {
+              // Find title field - try multiple selectors for Ghost editor
+              const titleField = document.querySelector('textarea.gh-editor-title, textarea[data-test-editor-title-input]') as HTMLTextAreaElement;
+              if (!titleField) {
+                return { success: false, error: 'Title field not found' };
+              }
+
+              // Find content editor - Ghost uses Lexical with contenteditable div
+              const contentEditor = document.querySelector('div[data-kg="editor"] div.kg-prose[contenteditable="true"]') as HTMLElement;
+              if (!contentEditor) {
+                return { success: false, error: 'Content editor not found' };
+              }
+
+              // Set title using standard form field approach
+              if (titleToExport.trim()) {
+                titleField.value = titleToExport.trim();
+                titleField.focus();
+
+                // Trigger input events for Ghost to recognize the change
+                const inputEvent = new Event('input', { bubbles: true });
+                const changeEvent = new Event('change', { bubbles: true });
+                titleField.dispatchEvent(inputEvent);
+                titleField.dispatchEvent(changeEvent);
+                titleField.blur();
+              }
+
+              // Set content using simplified HTML that Lexical can handle
+              if (contentToExport.trim()) {
+                // Convert markdown to clean HTML for Lexical
+                const convertMarkdownToHtml = (markdown: string): string => {
+                  const lines = markdown.split('\n');
+                  const htmlElements: string[] = [];
+                  let i = 0;
+
+                  // Process inline formatting
+                  const processInlineFormatting = (text: string): string => {
+                    // Escape HTML entities first
+                    text = text.replace(/&/g, '&amp;')
+                               .replace(/</g, '&lt;')
+                               .replace(/>/g, '&gt;');
+
+                    // Then apply formatting
+                    text = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>'); // Restore for our tags
+
+                    // Images
+                    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+                    // Links
+                    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+                    // Bold (must come before italic)
+                    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                    // Italic
+                    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                    // Inline code
+                    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+                    return text;
+                  };
+
+                  while (i < lines.length) {
+                    const line = lines[i];
+                    const trimmedLine = line.trim();
+
+                    // Skip empty lines but add a break
+                    if (!trimmedLine) {
+                      htmlElements.push('<p><br></p>');
+                      i++;
+                      continue;
+                    }
+
+                    // Headers
+                    if (trimmedLine.match(/^#{1,6}\s+/)) {
+                      const level = trimmedLine.match(/^(#{1,6})\s+/)![1].length;
+                      const headerContent = trimmedLine.substring(level + 1);
+                      const processedHeader = processInlineFormatting(headerContent);
+                      htmlElements.push(`<h${level}>${processedHeader}</h${level}>`);
+                    }
+                    // Horizontal rule
+                    else if (trimmedLine === '---' || trimmedLine === '***' || trimmedLine === '___') {
+                      htmlElements.push('<hr>');
+                    }
+                    // Unordered list
+                    else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                      const listItems: string[] = [];
+                      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+                        const item = lines[i].trim().substring(2);
+                        const processedItem = processInlineFormatting(item);
+                        listItems.push(`<li>${processedItem}</li>`);
+                        i++;
+                      }
+                      htmlElements.push(`<ul>${listItems.join('')}</ul>`);
+                      i--; // Back up one
+                    }
+                    // Ordered list
+                    else if (trimmedLine.match(/^\d+\.\s/)) {
+                      const listItems: string[] = [];
+                      while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                        const item = lines[i].trim().replace(/^\d+\.\s/, '');
+                        const processedItem = processInlineFormatting(item);
+                        listItems.push(`<li>${processedItem}</li>`);
+                        i++;
+                      }
+                      htmlElements.push(`<ol>${listItems.join('')}</ol>`);
+                      i--; // Back up one
+                    }
+                    // Blockquote
+                    else if (trimmedLine.startsWith('> ')) {
+                      const quoteLine = trimmedLine.substring(2);
+                      const processedQuote = processInlineFormatting(quoteLine);
+                      htmlElements.push(`<blockquote>${processedQuote}</blockquote>`);
+                    }
+                    // Code block
+                    else if (trimmedLine.startsWith('```')) {
+                      const codeLines: string[] = [];
+                      i++; // Skip opening ```
+                      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+                        codeLines.push(lines[i]);
+                        i++;
+                      }
+                      if (codeLines.length > 0) {
+                        const escapedCode = codeLines.join('\n')
+                          .replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                        htmlElements.push(`<pre><code>${escapedCode}</code></pre>`);
+                      }
+                    }
+                    // Regular paragraph
+                    else {
+                      const processedText = processInlineFormatting(trimmedLine);
+                      htmlElements.push(`<p>${processedText}</p>`);
+                    }
+
+                    i++;
+                  }
+
+                  return htmlElements.join('');
+                };
+
+                // Clean and convert content
+                const cleanedContent = contentToExport
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim();
+
+                const htmlContent = convertMarkdownToHtml(cleanedContent);
+
+                // Focus the editor
+                contentEditor.focus();
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                // Try to clear existing content with execCommand (more compatible)
+                try {
+                  document.execCommand('selectAll', false);
+                  await new Promise(resolve => setTimeout(resolve, 50));
+                  document.execCommand('delete', false);
+                  await new Promise(resolve => setTimeout(resolve, 100));
+                } catch (e) {
+                  // If execCommand fails, try to clear the content directly
+                  contentEditor.innerHTML = '';
+                }
+
+                // Method 1: Try paste event with HTML
+                const clipboardData = new DataTransfer();
+                clipboardData.setData('text/html', htmlContent);
+                clipboardData.setData('text/plain', cleanedContent);
+
+                const pasteEvent = new ClipboardEvent('paste', {
+                  bubbles: true,
+                  cancelable: true,
+                  clipboardData: clipboardData
+                });
+
+                let pasteSuccess = false;
+                try {
+                  pasteSuccess = contentEditor.dispatchEvent(pasteEvent);
+                } catch (e) {
+                  console.log('Paste event failed:', e);
+                }
+
+                // If paste didn't work, try execCommand
+                if (!pasteSuccess || pasteEvent.defaultPrevented) {
+                  try {
+                    document.execCommand('insertHTML', false, htmlContent);
+                  } catch (e) {
+                    // If insertHTML fails, try setting innerHTML directly
+                    contentEditor.innerHTML = htmlContent;
+                  }
+                }
+
+                // Trigger input events to notify Ghost of changes
+                try {
+                  const inputEvent = new Event('input', { bubbles: true });
+                  contentEditor.dispatchEvent(inputEvent);
+
+                  const changeEvent = new Event('change', { bubbles: true });
+                  contentEditor.dispatchEvent(changeEvent);
+                } catch (e) {
+                  console.log('Event dispatch failed:', e);
+                }
+
+                // Wait a bit for content to be processed
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Verify content was inserted
+                const hasContent = contentEditor.textContent?.trim().length! > 0;
+                if (!hasContent) {
+                  // Last attempt: try to write to clipboard and paste manually
+                  try {
+                    // Try copying the HTML to clipboard
+                    const blob = new Blob([htmlContent], { type: 'text/html' });
+                    const clipboardItem = new ClipboardItem({ 'text/html': blob });
+                    await navigator.clipboard.write([clipboardItem]);
+
+                    // Focus and paste
+                    contentEditor.focus();
+                    document.execCommand('paste');
+                  } catch (clipErr) {
+                    // Final fallback: just set the text content
+                    contentEditor.textContent = cleanedContent;
+                  }
+                }
+
+                return { success: true };
+              }
+
+              return { success: true };
+
+            } catch (error) {
+              return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+          };
+
+          // Execute the Ghost export function
+          const exportResult = await exportToGhost(title, content);
+          if (exportResult.success) {
+            setShowSuccessState(true);
+            setTimeout(() => setShowSuccessState(false), 2000);
+            showSuccess(t('export_success'), t('export_ghostSuccess'));
+            onExportSuccess?.('ghost');
+          } else {
+            showError(t('export_failed'), exportResult.error || t('export_ghostNotFound'));
+          }
         }
     } catch (error) {
       console.error('Export error:', error);
@@ -494,6 +739,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         return <MdEmail size={16} />;
       case ExportPlatform.SUBSTACK:
         return <SiSubstack size={16} />;
+      case ExportPlatform.GHOST:
+        return <IoDocument size={16} />;
       default:
         return <IoArrowUpCircle size={16} />;
     }
@@ -512,6 +759,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         return t('archiveDetailPage_exportToMaily');
       case ExportPlatform.SUBSTACK:
         return t('archiveDetailPage_exportToSubstack');
+      case ExportPlatform.GHOST:
+        return t('archiveDetailPage_exportToGhost');
       default:
         return t('common_export');
     }

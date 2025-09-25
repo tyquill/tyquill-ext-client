@@ -5,6 +5,7 @@
 export enum ExportPlatform {
   MAILY = 'maily',
   SUBSTACK = 'substack',
+  GHOST = 'ghost',
   UNKNOWN = 'unknown'
 }
 
@@ -57,6 +58,35 @@ export const detectPlatform = (url: string): PlatformInfo => {
     };
   }
 
+  // Ghost detection - improved to handle various Ghost URL patterns
+  if (url.includes('ghost.io') && (
+      url.includes('/ghost/#/editor') ||
+      url.includes('/ghost/editor') ||
+      url.includes('/#/editor')
+    )) {
+    return {
+      platform: ExportPlatform.GHOST,
+      isEditorPage: true,
+      editorSelectors: {
+        title: 'textarea.gh-editor-title, textarea[data-test-editor-title-input]',
+        content: 'div[data-kg="editor"] div.kg-prose[contenteditable="true"], div.kg-prose[contenteditable="true"]'
+      }
+    };
+  }
+
+  // Ghost detection for self-hosted instances
+  if ((url.includes('/ghost/#/editor') || url.includes('/admin/#/editor')) &&
+      (url.includes('/edit/') || url.includes('/new/'))) {
+    return {
+      platform: ExportPlatform.GHOST,
+      isEditorPage: true,
+      editorSelectors: {
+        title: 'textarea.gh-editor-title, textarea[data-test-editor-title-input]',
+        content: 'div[data-kg="editor"] div.kg-prose[contenteditable="true"], div.kg-prose[contenteditable="true"]'
+      }
+    };
+  }
+
   return {
     platform: ExportPlatform.UNKNOWN,
     isEditorPage: false,
@@ -70,7 +100,7 @@ export const detectPlatform = (url: string): PlatformInfo => {
  * @returns True if platform is supported
  */
 export const isSupportedPlatform = (platform: ExportPlatform): boolean => {
-  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK;
+  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK || platform === ExportPlatform.GHOST;
 };
 
 /**
@@ -84,6 +114,8 @@ export const getPlatformDisplayName = (platform: ExportPlatform): string => {
       return 'Maily';
     case ExportPlatform.SUBSTACK:
       return 'Substack';
+    case ExportPlatform.GHOST:
+      return 'Ghost';
     default:
       return 'Unknown';
   }
