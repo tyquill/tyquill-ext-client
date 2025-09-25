@@ -91,19 +91,29 @@
   justify-content: center;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 .platform {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.5rem;
+  /* Proper padding for logo space */
+  padding: 0.875rem 1.25rem;
   background: #f9fafb;
   border-radius: 0.75rem;
   border: 1px solid #ccc;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  height: 48px;
+  /* Height is fixed, width adapts to content */
+  height: 60px;
+  /* Width completely auto-adjusts to logo content */
+  width: auto;
+  min-width: auto;
+  /* Allow logos to be visible */
+  overflow: visible;
+  position: relative;
 }
 
 .platform:hover {
@@ -112,9 +122,21 @@
 }
 
 .platformLogo {
-  width: 68px;
-  height: 20px;
+  width: auto;
+  /* Increased base height for better visibility */
+  height: 32px;
+  max-height: 40px;
   object-fit: contain;
+  /* Center the logo properly */
+  display: block;
+  margin: 0 auto;
+  /* Smooth transitions for hover effects */
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  /* Prevent image dragging */
+  user-drag: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .platformComingSoon {
@@ -220,4 +242,94 @@
 
 .footerDivider {
   color: #d1d5db;
+}
+
+/* Individual platform logo sizes - boxes will auto-adjust */
+/* Maily logo - square logo */
+.platformLogo[alt="Maily.so"] {
+  height: auto;
+  width: 100px;
+}
+
+/* Substack logo - horizontal wordmark */
+.platformLogo[alt="Substack"] {
+  height: auto;
+  width: 100px;
+}
+
+/* Ghost logo - horizontal with text */
+.platformLogo[alt="Ghost"] {
+  height: 32px;
+  width: auto;
+}
+
+/* LinkedIn logo - horizontal corporate logo */
+.platformLogo[alt="LinkedIn"] {
+  height: 28px;
+  width: auto;
+}
+
+/* Enhanced platform container hover effects */
+.platform:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+  background: #ffffff;
+  border-color: #bbb;
+}
+
+/* Platform logo hover effects for subtle animation */
+.platform:hover .platformLogo {
+  transform: scale(1.05);
+}
+
+/* Platform logo loading state (if needed) */
+.platformLogo[src=""] {
+  opacity: 0.3;
+  background: #e5e7eb;
+  border-radius: 4px;
+  min-height: 24px;
+  min-width: 24px;
+}
+
+/* Focus states for accessibility */
+.platform:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+/* Boxes automatically adjust to logo width - no fixed sizes needed */
+
+/* Responsive adjustments for smaller screens */
+@media (max-width: 320px) {
+  .platformsList {
+    gap: 0.5rem;
+    justify-content: center;
+  }
+
+  .platform {
+    height: 56px;
+    padding: 0.75rem 1rem;
+  }
+
+  .platformLogo {
+    height: 26px;
+    max-height: 32px;
+  }
+
+  /* Logo sizes adjusted for smaller screens - boxes auto-adjust */
+  .platformLogo[alt="Maily.so"] {
+    height: 26px;
+  }
+
+  .platformLogo[alt="Substack"] {
+    height: 24px;
+  }
+
+  .platformLogo[alt="Ghost"] {
+    height: 26px;
+  }
+
+  .platformLogo[alt="LinkedIn"] {
+    height: 24px;
+  }
 } 

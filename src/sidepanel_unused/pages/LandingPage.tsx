@@ -3,6 +3,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToastHelpers } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
 import styles from './LandingPage.module.css';
+import ghostLogoDark from '../../assets/logos/ghost-logo-dark.png';
+import substackWordmark from '../../assets/logos/substack_wordmark.png';
+import linkedInLogo from '../../assets/logos/LinkedIn_Logo.svg';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -51,14 +54,32 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
             <span className={styles.platformsLabel}>{t('landingPage_supportedPlatforms')}</span>
             <div className={styles.platformsList}>
               <div className={styles.platform}>
-                <img 
+                <img
+                  src={substackWordmark}
+                  alt="Substack"
+                  className={styles.platformLogo}
+                />
+              </div>
+              <div className={styles.platform}>
+                <img
+                  src={ghostLogoDark}
+                  alt="Ghost"
+                  className={styles.platformLogo}
+                />
+              </div>
+              <div className={styles.platform}>
+                <img
+                  src={linkedInLogo}
+                  alt="LinkedIn"
+                  className={styles.platformLogo}
+                />
+              </div>
+              <div className={styles.platform}>
+                <img
                   src="https://cdn.maily.so/images/green_logo.png"
                   alt="Maily.so"
                   className={styles.platformLogo}
                 />
-              </div>
-              <div className={styles.platformComingSoon}>
-                {t('landingPage_comingSoon')}
               </div>
             </div>
           </div>
