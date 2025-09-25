@@ -248,25 +248,25 @@
 /* Maily logo - square logo */
 .platformLogo[alt="Maily.so"] {
   height: auto;
-  width: 100px;
+  width: 80px;
 }
 
 /* Substack logo - horizontal wordmark */
 .platformLogo[alt="Substack"] {
   height: auto;
-  width: 100px;
+  width: 80px;
 }
 
 /* Ghost logo - horizontal with text */
 .platformLogo[alt="Ghost"] {
-  height: 32px;
-  width: auto;
+  height: auto;
+  width: 80px;
 }
 
 /* LinkedIn logo - horizontal corporate logo */
 .platformLogo[alt="LinkedIn"] {
-  height: 28px;
-  width: auto;
+  height: auto;
+  width: 80px;
 }
 
 /* Enhanced platform container hover effects */

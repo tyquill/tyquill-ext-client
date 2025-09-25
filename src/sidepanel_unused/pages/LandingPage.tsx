@@ -53,33 +53,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <div className={styles.platforms}>
             <span className={styles.platformsLabel}>{t('landingPage_supportedPlatforms')}</span>
             <div className={styles.platformsList}>
-              <div className={styles.platform}>
-                <img
-                  src={substackWordmark}
-                  alt="Substack"
-                  className={styles.platformLogo}
-                />
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className={styles.platform}>
+                  <img
+                    src={substackWordmark}
+                    alt="Substack"
+                    className={styles.platformLogo}
+                    />
+                </div>
+                <div className={styles.platform}>
+                  <img
+                    src={ghostLogoDark}
+                    alt="Ghost"
+                    className={styles.platformLogo}
+                    />
+                </div>
               </div>
-              <div className={styles.platform}>
-                <img
-                  src={ghostLogoDark}
-                  alt="Ghost"
-                  className={styles.platformLogo}
-                />
-              </div>
-              <div className={styles.platform}>
-                <img
-                  src={linkedInLogo}
-                  alt="LinkedIn"
-                  className={styles.platformLogo}
-                />
-              </div>
-              <div className={styles.platform}>
-                <img
-                  src="https://cdn.maily.so/images/green_logo.png"
-                  alt="Maily.so"
-                  className={styles.platformLogo}
-                />
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className={styles.platform}>
+                  <img
+                    src={linkedInLogo}
+                    alt="LinkedIn"
+                    className={styles.platformLogo}
+                    />
+                </div>
+                <div className={styles.platform}>
+                  <img
+                    src="https://cdn.maily.so/images/green_logo.png"
+                    alt="Maily.so"
+                    className={styles.platformLogo}
+                    />
+                </div>
               </div>
             </div>
           </div>
