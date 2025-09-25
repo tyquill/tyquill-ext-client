@@ -297,6 +297,29 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'openFullscreenEditor') {
+      // Handle fullscreen editor opening from content script context
+      (async () => {
+        try {
+          const { editorUrl } = request;
+          if (!editorUrl) {
+            sendResponse({ success: false, error: 'Editor URL is required' });
+            return;
+          }
+
+          await browser.tabs.create({
+            url: editorUrl,
+            active: true
+          });
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('❌ Failed to open fullscreen editor:', error);
+          sendResponse({ success: false, error: (error as Error)?.message });
+        }
+      })();
+      return true;
+    }
+
   });
 
   /**

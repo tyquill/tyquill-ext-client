@@ -367,27 +367,37 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       });
     } catch {}
 
-    // 편집기로 전달할 데이터 준비
-    const editorData = {
-      articleId: article.articleId,
-      title: editTitle,
-      content: editContent,
-      originalTitle: currentArchive?.title || article.title,
-      originalContent: currentArchive?.content || article.content
-    };
+    try {
+      // 편집기로 전달할 데이터 준비
+      const editorData = {
+        articleId: article.articleId,
+        title: editTitle,
+        content: editContent,
+        originalTitle: currentArchive?.title || article.title,
+        originalContent: currentArchive?.content || article.content
+      };
 
-    // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
-    const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
-    await browser.storage.local.set({
-      [sessionKey]: editorData
-    });
-    const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
+      // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
+      const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
+      await browser.storage.local.set({
+        [sessionKey]: editorData
+      });
+      const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
 
-    // 새 탭에서 편집기 열기
-    browser.tabs.create({
-      url: editorUrl,
-      active: true
-    });
+      // 새 탭에서 편집기 열기 - background script를 통해 처리
+      const response = await browser.runtime.sendMessage({
+        action: 'openFullscreenEditor',
+        editorUrl
+      });
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Failed to open fullscreen editor');
+      }
+    } catch (error) {
+      console.error('Failed to open fullscreen editor:', error);
+      // 사용자에게 에러 알림
+      alert('Failed to open fullscreen editor. Please try again.');
+    }
   };
 
   const handleVersionSelect = async (versionNumber: number) => {
