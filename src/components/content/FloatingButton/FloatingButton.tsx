@@ -22,16 +22,6 @@ type ButtonStyle = {
   gap: string;
 };
 
-type ToolboxStyle = {
-  backgroundColor: string;
-  color: string;
-  borderColor: string;
-  opacity: number;
-  pointerEvents: 'auto' | 'none';
-  cursor: 'pointer' | 'wait';
-  transform?: string;
-};
-
 type ToolGroup = {
   id: string;
   tools: Tool[];
@@ -77,14 +67,7 @@ const FloatingButton: React.FC = () => {
     gap: '6px'
   });
   
-  const [toolbarStyle, setToolbarStyle] = useState<ToolboxStyle>({
-    backgroundColor: 'white',
-    color: '#333',
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    opacity: 1,
-    pointerEvents: 'auto',
-    cursor: 'pointer'
-  });
+  // Removed unused toolbarStyle state
 
   const [settings, setSettings] = useState({
     floatingButtonVisible: true
@@ -457,24 +440,21 @@ const FloatingButton: React.FC = () => {
   const handleScrap = useCallback(async () => {
     if (isLoading) return;
     setIsLoading(true);
-    setToolbarStyle(prev => ({ ...prev, opacity: 0.7, pointerEvents: 'none', cursor: 'wait' }));
+    // Loading state handled by isLoading state
 
     try {
       await clipAndScrapCurrentPage();
 
       // 성공 애니메이션 표시
       setShowSuccessAnimation(true);
-      setToolbarStyle(prev => ({ ...prev, backgroundColor: '#10b981', color: 'white', borderColor: '#10b981' }));
+      // Success state handled by showSuccessAnimation
     } catch (error) {
-      setToolbarStyle(prev => ({ ...prev, backgroundColor: '#ef4444', color: 'white', borderColor: '#ef4444' }));
+      // Error state can be handled separately if needed
       console.error('❌ 스크랩 실패:', error);
     } finally {
       setIsLoading(false);
       setTimeout(() => {
-        setToolbarStyle({
-          backgroundColor: 'white', color: '#333', borderColor: 'rgba(0, 0, 0, 0.1)',
-          opacity: 1, pointerEvents: 'auto', cursor: 'pointer'
-        });
+        // Reset handled by showSuccessAnimation state
         setShowSuccessAnimation(false);
       }, 3000);
     }
@@ -604,7 +584,7 @@ const FloatingButton: React.FC = () => {
             <div key={group.id} className={styles.wrapper}>
               <div className={styles.expandActionTool}>
                 {group.tools.map((tool) => (
-                   <Tooltip key={tool.id} content={tool.tooltip || ''} side={buttonSide === 'left' ? 'right' : 'left'}>
+                   <Tooltip key={tool.id} content={tool.tooltip || ''} side={buttonSide === 'left' ? 'right' : 'left'} delay={300}>
                     <motion.div 
                       className={styles.nodeWrapper}
                       onClick={() => handleToolClick(tool)}
