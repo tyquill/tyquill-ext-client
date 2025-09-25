@@ -1,6 +1,6 @@
 import React, { useState, useEffect, SVGProps } from 'react';
 import { IoArrowUpCircle, IoDocument } from 'react-icons/io5';
-import { SiSubstack } from 'react-icons/si';
+import { SiSubstack, SiLinkedin } from 'react-icons/si';
 import { MdEmail } from 'react-icons/md';
 import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
@@ -489,6 +489,299 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
             showError(t('export_failed'), exportResult.error || t('export_substackNotFound'));
           }
 
+        } else if (currentPlatformInfo.platform === ExportPlatform.LINKEDIN) {
+          // LinkedIn article editor export - using safer approach with proper timing
+          const exportToLinkedIn = async (titleToExport: string, contentToExport: string) => {
+            try {
+              // Find title field
+              const titleField = document.querySelector('textarea#article-editor-headline__textarea') as HTMLTextAreaElement;
+              if (!titleField) {
+                return { success: false, error: 'Title field not found' };
+              }
+
+              // Set title first
+              if (titleToExport.trim()) {
+                titleField.value = titleToExport.trim();
+                titleField.focus();
+
+                // Trigger input events to ensure LinkedIn recognizes the change
+                const inputEvent = new Event('input', { bubbles: true });
+                const changeEvent = new Event('change', { bubbles: true });
+                titleField.dispatchEvent(inputEvent);
+                titleField.dispatchEvent(changeEvent);
+                titleField.blur();
+              }
+
+              // Wait a bit before handling content to let title settle
+              await new Promise(resolve => setTimeout(resolve, 200));
+
+              // Find content editor (ProseMirror)
+              let contentEditor = document.querySelector('div.ProseMirror[contenteditable="true"][role="textbox"]') as HTMLElement;
+              if (!contentEditor) {
+                return { success: false, error: 'Content editor not found' };
+              }
+
+              // Set content with proper initialization
+              if (contentToExport.trim()) {
+
+                // Convert markdown to clean HTML for LinkedIn
+                const convertMarkdownToHtml = (markdown: string): string => {
+                  const lines = markdown.split('\n');
+                  const htmlElements: string[] = [];
+                  let i = 0;
+
+                  // Process inline formatting
+                  const processInlineFormatting = (text: string): string => {
+                    // Bold (must come before italic)
+                    text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                    // Italic
+                    text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                    // Links
+                    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+                    // Inline code
+                    text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                    // Images
+                    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
+
+                    return text;
+                  };
+
+                  while (i < lines.length) {
+                    const line = lines[i];
+                    const trimmedLine = line.trim();
+
+                    // Skip empty lines but add a break
+                    if (!trimmedLine) {
+                      htmlElements.push('<p><br></p>');
+                      i++;
+                      continue;
+                    }
+
+                    // Headers
+                    if (trimmedLine.match(/^#{1,6}\s+/)) {
+                      const level = trimmedLine.match(/^(#{1,6})\s+/)![1].length;
+                      const headerContent = trimmedLine.substring(level + 1);
+                      const processedHeader = processInlineFormatting(headerContent);
+                      htmlElements.push(`<h${level}>${processedHeader}</h${level}>`);
+                    }
+                    // Horizontal rule
+                    else if (trimmedLine === '---' || trimmedLine === '***' || trimmedLine === '___') {
+                      htmlElements.push('<hr>');
+                    }
+                    // Unordered list
+                    else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                      const listItems: string[] = [];
+                      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+                        const item = lines[i].trim().substring(2);
+                        const processedItem = processInlineFormatting(item);
+                        listItems.push(`<li>${processedItem}</li>`);
+                        i++;
+                      }
+                      htmlElements.push(`<ul>${listItems.join('')}</ul>`);
+                      i--; // Back up one
+                    }
+                    // Ordered list
+                    else if (trimmedLine.match(/^\d+\.\s/)) {
+                      const listItems: string[] = [];
+                      while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+                        const item = lines[i].trim().replace(/^\d+\.\s/, '');
+                        const processedItem = processInlineFormatting(item);
+                        listItems.push(`<li>${processedItem}</li>`);
+                        i++;
+                      }
+                      htmlElements.push(`<ol>${listItems.join('')}</ol>`);
+                      i--; // Back up one
+                    }
+                    // Blockquote
+                    else if (trimmedLine.startsWith('> ')) {
+                      const quoteLine = trimmedLine.substring(2);
+                      const processedQuote = processInlineFormatting(quoteLine);
+                      htmlElements.push(`<blockquote>${processedQuote}</blockquote>`);
+                    }
+                    // Code block
+                    else if (trimmedLine.startsWith('```')) {
+                      const codeLines: string[] = [];
+                      i++; // Skip opening ```
+                      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+                        codeLines.push(lines[i]);
+                        i++;
+                      }
+                      if (codeLines.length > 0) {
+                        const escapedCode = codeLines.join('\n')
+                          .replace(/&/g, '&amp;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+                        htmlElements.push(`<pre><code>${escapedCode}</code></pre>`);
+                      }
+                    }
+                    // Regular paragraph
+                    else {
+                      const processedText = processInlineFormatting(trimmedLine);
+                      htmlElements.push(`<p>${processedText}</p>`);
+                    }
+
+                    i++;
+                  }
+
+                  return htmlElements.join('');
+                };
+
+                // Clean and convert content
+                const cleanedContent = contentToExport
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim();
+
+                const htmlContent = convertMarkdownToHtml(cleanedContent);
+
+                // Initialize editor state properly
+                // First, ensure editor is in a clean state by simulating user interaction
+                contentEditor.click();
+                await new Promise(resolve => setTimeout(resolve, 300));
+
+                // Check if there's existing content and position cursor
+                if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                  // If there's content, select all
+                  const selection = window.getSelection();
+                  if (selection) {
+                    selection.removeAllRanges();
+                    const range = document.createRange();
+                    range.selectNodeContents(contentEditor);
+                    selection.addRange(range);
+                  }
+                } else {
+                  // If empty, just focus
+                  contentEditor.focus();
+                }
+
+                // Wait for ProseMirror to stabilize
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                // Attempt to insert content
+                const insertContent = async (): Promise<boolean> => {
+                  try {
+                    // Method 1: Try using clipboard API with proper paste event
+                    const clipboardData = new DataTransfer();
+                    clipboardData.setData('text/html', htmlContent);
+                    clipboardData.setData('text/plain', cleanedContent);
+
+                    const pasteEvent = new ClipboardEvent('paste', {
+                      bubbles: true,
+                      cancelable: true,
+                      clipboardData: clipboardData
+                    });
+
+                    // Dispatch paste event
+                    let pasteResult = false;
+                    try {
+                      pasteResult = contentEditor.dispatchEvent(pasteEvent);
+
+                      // If paste succeeded and wasn't prevented, we're done
+                      if (pasteResult && !pasteEvent.defaultPrevented) {
+                        // Give ProseMirror time to process the paste
+                        await new Promise(resolve => setTimeout(resolve, 300));
+
+                        // Check if content was inserted
+                        if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                          return true;
+                        }
+                      }
+                    } catch (pasteError) {
+                      console.log('Paste event error, trying next method');
+                    }
+
+                    // Method 2: Try execCommand as fallback
+                    try {
+                      // First clear if needed
+                      if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                        document.execCommand('selectAll', false);
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        document.execCommand('delete', false);
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      }
+
+                      // Insert HTML
+                      const insertResult = document.execCommand('insertHTML', false, htmlContent);
+                      if (insertResult) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                          return true;
+                        }
+                      }
+                    } catch (execError) {
+                      console.log('execCommand error, trying final method');
+                    }
+
+                    // Method 3: Direct innerHTML as last resort
+                    contentEditor.innerHTML = htmlContent;
+
+                    // Trigger input event for ProseMirror
+                    const inputEvent = new Event('input', { bubbles: true });
+                    const changeEvent = new Event('change', { bubbles: true });
+                    contentEditor.dispatchEvent(inputEvent);
+                    contentEditor.dispatchEvent(changeEvent);
+
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    return contentEditor.textContent?.trim().length! > 0;
+
+                  } catch (error) {
+                    console.log('Content insertion error:', error);
+                    return false;
+                  }
+                };
+
+                // Try to insert content with internal retry
+                let success = await insertContent();
+
+                // If first attempt failed, wait and retry once more
+                if (!success) {
+                  console.log('First insertion attempt failed, retrying after delay...');
+
+                  // Wait for any LinkedIn state changes to complete
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  // Re-query and re-focus the editor
+                  contentEditor = document.querySelector('div.ProseMirror[contenteditable="true"][role="textbox"]') as HTMLElement;
+                  if (contentEditor) {
+                    contentEditor.click();
+                    contentEditor.focus();
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    // Try insertion again
+                    success = await insertContent();
+                  }
+                }
+
+                if (!success) {
+                  // If still failed, copy to clipboard as fallback
+                  try {
+                    await navigator.clipboard.writeText(cleanedContent);
+                    return { success: false, error: 'Content copied to clipboard. Please paste manually (Ctrl/Cmd+V).' };
+                  } catch (clipErr) {
+                    return { success: false, error: 'Failed to insert content. Please try again.' };
+                  }
+                }
+
+                return { success: true };
+              }
+
+              return { success: true };
+
+            } catch (error) {
+              return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+            }
+          };
+
+          // Execute the LinkedIn export function
+          const exportResult = await exportToLinkedIn(title, content);
+          if (exportResult.success) {
+            setShowSuccessState(true);
+            setTimeout(() => setShowSuccessState(false), 2000);
+            showSuccess(t('export_success'), t('export_linkedinSuccess'));
+            onExportSuccess?.('linkedin');
+          } else {
+            showError(t('export_failed'), exportResult.error || t('export_linkedinNotFound'));
+          }
+
         } else if (currentPlatformInfo.platform === ExportPlatform.GHOST) {
           // Ghost export - using safer approach for Lexical editor
           const exportToGhost = async (titleToExport: string, contentToExport: string) => {
@@ -796,6 +1089,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         return <SiSubstack size={16} />;
       case ExportPlatform.GHOST:
         return <SimpleIconsGhost style={{ width: '22px', height: '22px', transform: 'scale(1.1)' }} />;
+      case ExportPlatform.LINKEDIN:
+        return <SiLinkedin size={16} />;
       default:
         return <IoArrowUpCircle size={16} />;
     }
@@ -816,6 +1111,8 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         return t('archiveDetailPage_exportToSubstack');
       case ExportPlatform.GHOST:
         return t('archiveDetailPage_exportToGhost');
+      case ExportPlatform.LINKEDIN:
+        return t('archiveDetailPage_exportToLinkedIn');
       default:
         return t('common_export');
     }

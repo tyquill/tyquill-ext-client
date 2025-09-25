@@ -6,6 +6,7 @@ export enum ExportPlatform {
   MAILY = 'maily',
   SUBSTACK = 'substack',
   GHOST = 'ghost',
+  LINKEDIN = 'linkedin',
   UNKNOWN = 'unknown'
 }
 
@@ -87,6 +88,19 @@ export const detectPlatform = (url: string): PlatformInfo => {
     };
   }
 
+  // LinkedIn article editor detection - supports both new and edit URLs
+  if (url.includes('linkedin.com') &&
+      (url.includes('/article/new/') || url.includes('/article/edit/'))) {
+    return {
+      platform: ExportPlatform.LINKEDIN,
+      isEditorPage: true,
+      editorSelectors: {
+        title: 'textarea#article-editor-headline__textarea',
+        content: 'div.ProseMirror[contenteditable="true"][role="textbox"]'
+      }
+    };
+  }
+
   return {
     platform: ExportPlatform.UNKNOWN,
     isEditorPage: false,
@@ -100,7 +114,7 @@ export const detectPlatform = (url: string): PlatformInfo => {
  * @returns True if platform is supported
  */
 export const isSupportedPlatform = (platform: ExportPlatform): boolean => {
-  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK || platform === ExportPlatform.GHOST;
+  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK || platform === ExportPlatform.GHOST || platform === ExportPlatform.LINKEDIN;
 };
 
 /**
@@ -116,6 +130,8 @@ export const getPlatformDisplayName = (platform: ExportPlatform): string => {
       return 'Substack';
     case ExportPlatform.GHOST:
       return 'Ghost';
+    case ExportPlatform.LINKEDIN:
+      return 'LinkedIn';
     default:
       return 'Unknown';
   }
