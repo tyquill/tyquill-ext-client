@@ -558,24 +558,22 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 {/* ExportButton is always visible and detects platform dynamically when clicked */}
-                <Tooltip content={t('common_export')} side='top'>
-                  <ExportButton
-                    title={currentArchive?.title || article.title}
-                    content={currentArchive?.content || article.content}
-                    forceVisible={true}
-                    onExportSuccess={async (platform) => {
-                      try {
-                        await trackArchiveExportedBridge({
-                          article_id: article.articleId,
-                          version_number: selectedVersionNumber,
-                          platform,
-                          character_count: characterCount.characters,
-                          word_count: characterCount.words
-                        });
-                      } catch {}
-                    }}
-                  />
-                </Tooltip>
+                <ExportButton
+                  title={currentArchive?.title || article.title}
+                  content={currentArchive?.content || article.content}
+                  forceVisible={true}
+                  onExportSuccess={async (platform) => {
+                    try {
+                      await trackArchiveExportedBridge({
+                        article_id: article.articleId,
+                        version_number: selectedVersionNumber,
+                        platform,
+                        character_count: characterCount.characters,
+                        word_count: characterCount.words
+                      });
+                    } catch {}
+                  }}
+                />
                 <Tooltip content={t('archiveDetailPage_copyToClipboard')} side='top'>
                   <CopyButton
                     title={currentArchive?.title || article.title}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, SVGProps } from 'react';
 import { IoArrowUpCircle, IoDocument } from 'react-icons/io5';
 import { SiSubstack } from 'react-icons/si';
 import { MdEmail } from 'react-icons/md';
@@ -6,6 +6,15 @@ import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
 import { detectPlatform, ExportPlatform, PlatformInfo, isSupportedPlatform, getPlatformDisplayName } from '../../../utils/platformDetection';
+
+// Ghost icon component
+function SimpleIconsGhost(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
+      <path fill="currentColor" d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12s12-5.373 12-12S18.627 0 12 0m.256 2.313c2.47.005 5.116 2.008 5.898 2.962l.244.3c1.64 1.994 3.569 4.34 3.569 6.966c0 3.719-2.98 5.808-6.158 7.508c-1.433.766-2.98 1.508-4.748 1.508c-4.543 0-8.366-3.569-8.366-8.112c0-.706.17-1.425.342-2.15c.122-.515.244-1.033.307-1.549c.548-4.539 2.967-6.795 8.422-7.408a4 4 0 0 1 .49-.026Z" />
+    </svg>
+  );
+}
 
 interface ExportButtonProps {
   title: string;
@@ -786,7 +795,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
       case ExportPlatform.SUBSTACK:
         return <SiSubstack size={16} />;
       case ExportPlatform.GHOST:
-        return <IoDocument size={16} />;
+        return <SimpleIconsGhost style={{ width: '22px', height: '22px', transform: 'scale(1.1)' }} />;
       default:
         return <IoArrowUpCircle size={16} />;
     }
@@ -833,19 +842,23 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
   };
 
   return (
-    <button
-      className={getButtonClasses()}
-      onClick={handleExport}
-      disabled={isLoading}
-      title={getTooltipText()}
-    >
-      {/* Button icon */}
-      {isLoading ? (
-        <IoArrowUpCircle size={16} className={styles.spinning} />
-      ) : (
-        getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)
-      )}
-    </button>
+    <div className={styles.tooltipContainer}>
+      <button
+        className={getButtonClasses()}
+        onClick={handleExport}
+        disabled={isLoading}
+      >
+        {/* Button icon */}
+        {isLoading ? (
+          <IoArrowUpCircle size={16} className={styles.spinning} />
+        ) : (
+          getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)
+        )}
+      </button>
+      <div className={styles.tooltip}>
+        {getTooltipText()}
+      </div>
+    </div>
   );
 };
 
