@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoDocument, IoLink } from 'react-icons/io5';
+import { IoAdd, IoTrash, IoClose, IoCheckmark, IoDocument } from 'react-icons/io5';
 import { FaBookmark } from 'react-icons/fa6';
+import { LuLink } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
@@ -12,7 +13,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
-import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 import Tooltip from '../../components/common/Tooltip';
 import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
 import { libraryItemService, type LibraryItemDto } from '../../services/libraryItemService';
@@ -113,6 +113,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
           minute: '2-digit',
         }),
         tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [], // 태그 객체에서 name만 추출
+        faviconUrl: scrap.webpage?.site?.favicon_url, // 파비콘 URL 추가
       }));
       
       setScraps(convertedScraps);
@@ -182,9 +183,9 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       setClipStatus('loading');
 
       // 공통 헬퍼를 통해 스크랩 처리
-      const scrapResponse = await clipAndScrapCurrentPage();
+      await clipAndScrapCurrentPage();
 
-      // console.log('✅ 스크랩 완료:', scrapResponse);
+      // console.log('✅ 스크랩 완료');
       setClipStatus('success');
       showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
       
@@ -658,7 +659,37 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       >
         <div className={styles.contentHeader}>
           <div className={styles.contentTitleWrapper}>
-            <IoLink size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            {scrap.faviconUrl ? (
+              <img
+                src={scrap.faviconUrl}
+                alt="Site favicon"
+                style={{
+                  width: 16,
+                  height: 16,
+                  marginRight: 6,
+                  verticalAlign: 'text-bottom',
+                  flexShrink: 0
+                }}
+                onError={(e) => {
+                  // Fallback to LuLink icon on error
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallbackIcon = target.nextElementSibling as HTMLElement;
+                  if (fallbackIcon) {
+                    fallbackIcon.style.display = 'inline';
+                  }
+                }}
+              />
+            ) : null}
+            <LuLink
+              size={16}
+              style={{
+                marginRight: 6,
+                verticalAlign: 'text-bottom',
+                display: scrap.faviconUrl ? 'none' : 'inline',
+                flexShrink: 0
+              }}
+            />
             <span className={styles.titleText}>
               <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
                 {scrap.title}

@@ -5,4 +5,5 @@ export interface Scrap {
   tags: string[];
   date: string;
   content: string;
+  faviconUrl?: string;
 }
