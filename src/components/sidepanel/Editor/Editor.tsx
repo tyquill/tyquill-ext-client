@@ -618,6 +618,12 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
+        // Explicitly enable horizontal rule
+        horizontalRule: {
+          HTMLAttributes: {
+            class: 'editor-hr',
+          },
+        },
       }),
       TextAlign.configure({
         types: ['heading', 'paragraph'],
@@ -724,13 +730,15 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   }
 
   return (
-    <div className={styles.editorWrapper} style={{ 
-      border: '1px solid #e0e0e0', 
-      borderRadius: '8px', 
+    <div className={styles.editorWrapper} style={{
+      border: '1px solid #e0e0e0',
+      borderRadius: '8px',
       backgroundColor: '#fff',
       minHeight: '200px',
       position: 'relative',
-      overflow: 'visible'
+      overflow: 'hidden', // Prevent horizontal overflow
+      containerType: 'inline-size', // Enable container queries
+      width: '100%' // Ensure full width utilization
     }}>
       {editor && !readOnly && (
         <MenuBar editor={editor} />
