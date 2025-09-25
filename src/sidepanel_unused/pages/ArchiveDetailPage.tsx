@@ -559,11 +559,10 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
-                {/* ExportButton is always visible and detects platform dynamically when clicked */}
+                {/* ExportButton only shows on supported platforms (Maily, LinkedIn, Substack, Ghost) */}
                 <ExportButton
                   title={currentArchive?.title || article.title}
                   content={currentArchive?.content || article.content}
-                  forceVisible={true}
                   onExportSuccess={async (platform) => {
                     try {
                       await trackArchiveExportedBridge({
