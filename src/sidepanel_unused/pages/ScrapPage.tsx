@@ -616,10 +616,10 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
 
 
   const openScrapInNewTab = useCallback(async (scrapId: string) => {
-    console.log('🚀 ScrapPage: Opening scrap viewer for ID:', scrapId);
+    // console.log('🚀 ScrapPage: Opening scrap viewer for ID:', scrapId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
-      console.log('📝 ScrapPage: Generated viewer URL:', url);
+      // console.log('📝 ScrapPage: Generated viewer URL:', url);
 
       const message = {
         action: 'openViewer',
@@ -627,10 +627,10 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         type: 'SCRAP',
         id: scrapId
       };
-      console.log('📤 ScrapPage: Sending message to background:', message);
+      // console.log('📤 ScrapPage: Sending message to background:', message);
 
       const response = await browser.runtime.sendMessage(message);
-      console.log('📥 ScrapPage: Received response from background:', response);
+      // console.log('📥 ScrapPage: Received response from background:', response);
 
       if (!response) {
         console.error('❌ ScrapPage: No response received from background');
@@ -642,7 +642,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         throw new Error(response.error || 'Failed to open viewer');
       }
 
-      console.log('✅ ScrapPage: Successfully opened scrap viewer');
+      // console.log('✅ ScrapPage: Successfully opened scrap viewer');
     } catch (e) {
       console.error('❌ ScrapPage: Failed to open scrap viewer:', e);
       showError(t('common_error'), t('scrapPage_openViewerError'));
@@ -761,10 +761,10 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   });
 
   const openUploadInNewTab = useCallback(async (uploadedId: number) => {
-    console.log('🚀 ScrapPage: Opening upload viewer for ID:', uploadedId);
+    // console.log('🚀 ScrapPage: Opening upload viewer for ID:', uploadedId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
-      console.log('📝 ScrapPage: Generated upload viewer URL:', url);
+      // console.log('📝 ScrapPage: Generated upload viewer URL:', url);
 
       const message = {
         action: 'openViewer',
@@ -772,10 +772,10 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         type: 'UPLOAD',
         id: uploadedId
       };
-      console.log('📤 ScrapPage: Sending upload message to background:', message);
+      // console.log('📤 ScrapPage: Sending upload message to background:', message);
 
       const response = await browser.runtime.sendMessage(message);
-      console.log('📥 ScrapPage: Received upload response from background:', response);
+      // console.log('📥 ScrapPage: Received upload response from background:', response);
 
       if (!response) {
         console.error('❌ ScrapPage: No response received from background for upload');
@@ -787,7 +787,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         throw new Error(response.error || 'Failed to open viewer');
       }
 
-      console.log('✅ ScrapPage: Successfully opened upload viewer');
+      // console.log('✅ ScrapPage: Successfully opened upload viewer');
     } catch (e) {
       console.error('❌ ScrapPage: Failed to open upload viewer:', e);
       showError(t('common_error'), t('scrapPage_openUploadViewerError'));

@@ -265,7 +265,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         break;
       default:
         // For other pages, do nothing or show a message
-        console.log('Refresh not available for this page type:', currentPage.type);
+        // console.log('Refresh not available for this page type:', currentPage.type);
         break;
     }
   }, [currentPage.type]);
@@ -459,7 +459,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       try {
         const synced = await authService.syncAuthFromWebClient();
         if (synced) {
-          console.log('✅ Auth synced from web client on sidebar open');
+          // console.log('✅ Auth synced from web client on sidebar open');
         }
       } catch (error) {
         console.error('Failed to sync auth on open:', error);

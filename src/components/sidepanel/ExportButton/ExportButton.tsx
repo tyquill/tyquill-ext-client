@@ -686,7 +686,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                         }
                       }
                     } catch (pasteError) {
-                      console.log('Paste event error, trying next method');
+                      // console.log('Paste event error, trying next method');
                     }
 
                     // Method 2: Try execCommand as fallback
@@ -708,7 +708,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                         }
                       }
                     } catch (execError) {
-                      console.log('execCommand error, trying final method');
+                      // console.log('execCommand error, trying final method');
                     }
 
                     // Method 3: Direct innerHTML as last resort
@@ -724,7 +724,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                     return contentEditor.textContent?.trim().length! > 0;
 
                   } catch (error) {
-                    console.log('Content insertion error:', error);
+                    // console.log('Content insertion error:', error);
                     return false;
                   }
                 };
@@ -734,7 +734,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
                 // If first attempt failed, wait and retry once more
                 if (!success) {
-                  console.log('First insertion attempt failed, retrying after delay...');
+                  // console.log('First insertion attempt failed, retrying after delay...');
 
                   // Wait for any LinkedIn state changes to complete
                   await new Promise(resolve => setTimeout(resolve, 1000));
@@ -979,7 +979,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                         }
                       }
                     } catch (pasteError) {
-                      console.log('Paste event error, trying next method');
+                      // console.log('Paste event error, trying next method');
                     }
 
                     // Method 2: Try execCommand as fallback
@@ -1001,7 +1001,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                         }
                       }
                     } catch (execError) {
-                      console.log('execCommand error, trying final method');
+                      // console.log('execCommand error, trying final method');
                     }
 
                     // Method 3: Direct innerHTML as last resort
@@ -1015,7 +1015,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                     return contentEditor.textContent?.trim().length! > 0;
 
                   } catch (error) {
-                    console.log('Content insertion error:', error);
+                    // console.log('Content insertion error:', error);
                     return false;
                   }
                 };
@@ -1025,7 +1025,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
                 // If first attempt failed, wait and retry once more
                 if (!success) {
-                  console.log('First insertion attempt failed, retrying after delay...');
+                  // console.log('First insertion attempt failed, retrying after delay...');
 
                   // Wait for any Ghost state changes to complete
                   await new Promise(resolve => setTimeout(resolve, 1000));

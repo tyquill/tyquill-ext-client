@@ -64,7 +64,7 @@ const App: React.FC = () => {
 
       // 인증 상태 변경 처리
       if (request.type === 'AUTH_STATE_CHANGED') {
-        console.log('Auth state changed in content script:', request.isAuthenticated);
+        // console.log('Auth state changed in content script:', request.isAuthenticated);
         // FloatingButton과 다른 컴포넌트들에 인증 상태 변경 알림
         window.dispatchEvent(new CustomEvent('tyquill-auth-changed', {
           detail: { isAuthenticated: request.isAuthenticated }
@@ -187,9 +187,9 @@ const App: React.FC = () => {
     if (!isThreads) return;
     let cleanup: (() => void) | undefined;
     try {
-      console.log('[Tyquill][App] initThreadsInjector() start');
+      // console.log('[Tyquill][App] initThreadsInjector() start');
       cleanup = initThreadsInjector();
-      console.log('[Tyquill][App] initThreadsInjector() done');
+      // console.log('[Tyquill][App] initThreadsInjector() done');
     } catch {}
     return () => {
       try { cleanup && cleanup(); } catch {}

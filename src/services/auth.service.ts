@@ -198,7 +198,7 @@ class AuthService {
     try {
       // Content script 컨텍스트에서는 동기화할 수 없음
       if (this.isContentScriptContext()) {
-        console.log('🔐 Skipping web client auth sync in content script context');
+        // console.log('🔐 Skipping web client auth sync in content script context');
         return false;
       }
 
@@ -222,7 +222,7 @@ class AuthService {
         await this.saveAuthState();
         this.notifyStateChange();
 
-        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+        // console.log('✅ Authentication synced from web client:', webAuth.user.email);
 
         // Analytics
         try {
@@ -262,7 +262,7 @@ class AuthService {
     try {
       // Content script 컨텍스트에서는 tabs API를 사용할 수 없으므로 건너뜀
       if (this.isContentScriptContext()) {
-        console.log('🔐 Skipping web client auth check in content script context');
+        // console.log('🔐 Skipping web client auth check in content script context');
         return null;
       }
 
@@ -293,7 +293,7 @@ class AuthService {
             });
 
             if (result?.result?.accessToken) {
-              console.log('🔐 Found auth from web client');
+              // console.log('🔐 Found auth from web client');
               const authData = result.result;
 
               // AuthResponse 형식으로 변환
@@ -305,12 +305,12 @@ class AuthService {
               };
             }
           } catch (error) {
-            console.log('Failed to get auth from tab:', error);
+            // console.log('Failed to get auth from tab:', error);
           }
         }
       }
     } catch (error) {
-      console.log('Failed to query tabs:', error);
+      // console.log('Failed to query tabs:', error);
     }
 
     return null;
@@ -340,7 +340,7 @@ class AuthService {
         await this.saveAuthState();
         this.notifyStateChange();
 
-        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+        // console.log('✅ Authentication synced from web client:', webAuth.user.email);
 
         // Analytics
         try {
@@ -356,7 +356,7 @@ class AuthService {
 
       // 1. Content script에서는 background script에 OAuth 요청
       if (this.isContentScriptContext()) {
-        console.log('🔐 Requesting OAuth from background script...');
+        // console.log('🔐 Requesting OAuth from background script...');
         const response = await browser.runtime.sendMessage({ action: 'performOAuth' });
         if (!response.success) {
           throw new Error(response.error || 'OAuth failed');
@@ -498,7 +498,7 @@ class AuthService {
     try {
       // Content script 컨텍스트에서는 tabs API를 사용할 수 없음
       if (this.isContentScriptContext()) {
-        console.log('🔐 Skipping web client logout notification in content script context');
+        // console.log('🔐 Skipping web client logout notification in content script context');
         return;
       }
 
@@ -521,14 +521,14 @@ class AuthService {
                 }, window.location.origin);
               },
             });
-            console.log('✅ Notified web client of logout');
+            // console.log('✅ Notified web client of logout');
           } catch (error) {
-            console.log('Failed to notify tab of logout:', error);
+            // console.log('Failed to notify tab of logout:', error);
           }
         }
       }
     } catch (error) {
-      console.log('Failed to notify web client of logout:', error);
+      // console.log('Failed to notify web client of logout:', error);
     }
   }
 

@@ -21,7 +21,7 @@ browser.action.onClicked.addListener(async (tab) => {
         await browser.tabs.sendMessage(tab.id, { type: 'PING' });
       } catch (pingError) {
         // Content script not loaded, inject it
-        console.log('Content script not loaded, injecting...');
+        // console.log('Content script not loaded, injecting...');
         await browser.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['content-scripts/content.js']

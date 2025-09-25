@@ -58,7 +58,7 @@ const App: React.FC = () => {
       try {
         const synced = await authService.syncAuthFromWebClient();
         if (synced) {
-          console.log('✅ Auth synced from web client on sidepanel open');
+          // console.log('✅ Auth synced from web client on sidepanel open');
         }
       } catch (error) {
         console.error('Failed to sync auth on open:', error);

@@ -13,19 +13,19 @@ const SidebarApp: React.FC = () => {
 
   // Debug logging for state changes
   useEffect(() => {
-    console.log('📊 State changed - isSidebarOpen:', isSidebarOpen, 'ref:', sidebarStateRef.current);
+    // console.log('📊 State changed - isSidebarOpen:', isSidebarOpen, 'ref:', sidebarStateRef.current);
   }, [isSidebarOpen]);
 
   // Helper function to update both state and ref atomically
   const updateSidebarState = (isOpen: boolean) => {
-    console.log('🔄 updateSidebarState called with:', isOpen);
-    console.log('🔄 Before update - ref:', sidebarStateRef.current, 'state:', isSidebarOpen);
+    // console.log('🔄 updateSidebarState called with:', isOpen);
+    // console.log('🔄 Before update - ref:', sidebarStateRef.current, 'state:', isSidebarOpen);
 
     // Update ref first, then state
     sidebarStateRef.current = isOpen;
     setIsSidebarOpen(isOpen);
 
-    console.log('🔄 After ref update - ref:', sidebarStateRef.current);
+    // console.log('🔄 After ref update - ref:', sidebarStateRef.current);
 
     // Dispatch state change event
     window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
@@ -60,7 +60,7 @@ const SidebarApp: React.FC = () => {
   // Background Script로부터의 메시지 처리
   useEffect(() => {
     const handleMessage = (request: any, _sender: any, sendResponse: any) => {
-      console.log('Sidebar App 메시지 수신:', request);
+      // console.log('Sidebar App 메시지 수신:', request);
 
       // PING 요청 처리 (content script 로드 확인용)
       if (request.type === 'PING') {
@@ -84,18 +84,18 @@ const SidebarApp: React.FC = () => {
       if (request.action === 'getSidebarState') {
         // useRef를 통해 최신 상태 참조 - ref는 동기적으로 업데이트되므로 신뢰할 수 있음
         const currentState = sidebarStateRef.current;
-        console.log('📍 getSidebarState 요청 받음');
-        console.log('📍 sidebarStateRef.current:', currentState, 'type:', typeof currentState);
+        // console.log('📍 getSidebarState 요청 받음');
+        // console.log('📍 sidebarStateRef.current:', currentState, 'type:', typeof currentState);
 
         const response = { success: true, isOpen: currentState };
-        console.log('📍 Sending response:', JSON.stringify(response));
+        // console.log('📍 Sending response:', JSON.stringify(response));
         sendResponse(response);
         return true; // async response를 위해 true 반환
       }
 
       // 스크랩 요청 처리 (CLIP_PAGE 메시지)
       if (request.type === 'CLIP_PAGE') {
-        console.log('📄 Sidebar App: CLIP_PAGE 요청 받음:', request);
+        // console.log('📄 Sidebar App: CLIP_PAGE 요청 받음:', request);
 
         // 비동기 처리를 위해 즉시 true 반환
         (async () => {
@@ -205,7 +205,7 @@ const SidebarApp: React.FC = () => {
           event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
           event.data.source === 'tyquill-web-client') {
 
-        console.log('📤 Received logout notification from web client');
+        // console.log('📤 Received logout notification from web client');
 
         try {
           // Background script에 로그아웃 요청
@@ -213,7 +213,7 @@ const SidebarApp: React.FC = () => {
             action: 'logoutFromWebClient'
           });
 
-          console.log('✅ Extension logout triggered from web client');
+          // console.log('✅ Extension logout triggered from web client');
         } catch (error) {
           console.error('Failed to trigger extension logout:', error);
         }
