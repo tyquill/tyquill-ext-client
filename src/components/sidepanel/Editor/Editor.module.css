@@ -117,21 +117,35 @@
 }
 
 /* Horizontal Rule Styles */
-.editorWrapper :global(.ProseMirror) hr {
+.editorWrapper :global(.ProseMirror) hr,
+.editorWrapper :global(.ProseMirror) .editor-hr {
+  display: block;
+  width: 100%;
   border: none;
   border-top: 2px solid #e0e0e0;
-  margin: 2rem 0;
+  margin: 1.5rem 0;
+  padding: 0;
+  height: 0;
   cursor: pointer;
   transition: border-color 0.2s ease;
 }
 
-.editorWrapper :global(.ProseMirror) hr:hover {
+.editorWrapper :global(.ProseMirror) hr:hover,
+.editorWrapper :global(.ProseMirror) .editor-hr:hover {
   border-top-color: #bdbdbd;
 }
 
-.editorWrapper :global(.ProseMirror) hr:focus {
+.editorWrapper :global(.ProseMirror) hr:focus,
+.editorWrapper :global(.ProseMirror) .editor-hr:focus {
   outline: none;
   border-top-color: #2196f3;
+}
+
+/* Ensure hr is visible and not hidden */
+.editorWrapper :global(.ProseMirror) hr::before,
+.editorWrapper :global(.ProseMirror) .editor-hr::before {
+  content: '';
+  display: block;
 }
 
 /* Menu Styles */
@@ -148,21 +162,28 @@
 /* MenuBar Styles */
 .controlGroup {
   border-bottom: 1px solid #e0e0e0;
-  padding: 8px 0px;
+  padding: 8px 12px;
   background-color: #f8f9fa;
   border-radius: 8px 8px 0 0;
   position: relative;
-  overflow: visible;
-  height: 88px;
+  overflow-x: hidden; /* Prevent horizontal overflow */
+  overflow-y: visible; /* Allow tooltips to show */
+  min-height: 56px;
+  max-height: 120px;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
 }
 
 .toolbarRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
-  height: 32px;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-height: 32px;
+  width: 100%;
 }
 
 .toolbarRow:last-child {
@@ -173,6 +194,7 @@
   display: flex;
   align-items: center;
   gap: 2px;
+  flex-shrink: 0;
 }
 
 .toolbarDivider {
@@ -180,6 +202,7 @@
   height: 24px;
   background-color: #e0e0e0;
   margin: 0 4px;
+  flex-shrink: 0;
 }
 
 .toolbarGroup button {
@@ -226,15 +249,17 @@
 }
 
 .headingSelect {
-  padding: 4px 8px;
+  padding: 4px 6px;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   background-color: white;
   color: #333;
-  font-size: 13px;
+  font-size: 12px;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 80px;
+  min-width: 70px;
+  max-width: 90px;
+  flex-shrink: 0;
 }
 
 .headingSelect:hover {
@@ -277,4 +302,141 @@
 .toolbarRow {
   position: relative;
   overflow: visible;
+}
+
+/* Responsive toolbar styles for narrow containers */
+@media (max-width: 400px) {
+  .controlGroup {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .toolbarRow {
+    gap: 4px;
+  }
+
+  .toolbarGroup {
+    gap: 1px;
+  }
+
+  .toolbarGroup button {
+    width: 28px;
+    height: 28px;
+  }
+
+  .headingSelect {
+    min-width: 60px;
+    max-width: 75px;
+    font-size: 11px;
+    padding: 3px 4px;
+  }
+
+  .toolbarDivider {
+    margin: 0 2px;
+    height: 20px;
+  }
+}
+
+/* Container width-based responsive behavior */
+.controlGroup:has(.toolbarRow > *:nth-child(10)) {
+  /* When there are many toolbar items, allow more height */
+  max-height: 140px;
+}
+
+/* Ensure toolbar items don't break out of container */
+.toolbarRow {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Show scrollbar on hover for better UX */
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent;
+}
+
+.toolbarRow:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.3) transparent;
+}
+
+.toolbarRow::-webkit-scrollbar {
+  height: 4px;
+}
+
+.toolbarRow::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.toolbarRow::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 2px;
+}
+
+.toolbarRow:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Add subtle gradient fade for overflow indication */
+.controlGroup::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, #f8f9fa);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.controlGroup:hover::after {
+  opacity: 1;
+}
+
+/* Container queries for responsive toolbar */
+@container (max-width: 350px) {
+  .controlGroup {
+    padding: 6px 8px;
+  }
+
+  .toolbarRow {
+    gap: 3px;
+  }
+
+  .toolbarGroup {
+    gap: 1px;
+  }
+
+  .toolbarGroup button {
+    width: 26px;
+    height: 26px;
+  }
+
+  .headingSelect {
+    min-width: 55px;
+    max-width: 70px;
+    font-size: 10px;
+    padding: 2px 3px;
+  }
+
+  /* Hide less critical dividers and groups on narrow screens */
+  .toolbarDivider:nth-of-type(n+3) {
+    display: none;
+  }
+}
+
+@container (max-width: 280px) {
+  /* Ultra-narrow container: keep only essential tools */
+  .toolbarGroup:nth-child(n+3) {
+    display: none;
+  }
+
+  .toolbarRow:nth-child(2) .toolbarGroup:nth-child(n+3) {
+    display: none;
+  }
+}
+
+/* Ensure toolbar content wraps properly */
+.toolbarRow {
+  justify-content: flex-start;
+  align-items: center;
 }

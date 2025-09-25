@@ -4,6 +4,7 @@ import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
+import layoutStyles from './CommonLayout.module.css';
 import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
@@ -367,27 +368,37 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       });
     } catch {}
 
-    // 편집기로 전달할 데이터 준비
-    const editorData = {
-      articleId: article.articleId,
-      title: editTitle,
-      content: editContent,
-      originalTitle: currentArchive?.title || article.title,
-      originalContent: currentArchive?.content || article.content
-    };
+    try {
+      // 편집기로 전달할 데이터 준비
+      const editorData = {
+        articleId: article.articleId,
+        title: editTitle,
+        content: editContent,
+        originalTitle: currentArchive?.title || article.title,
+        originalContent: currentArchive?.content || article.content
+      };
 
-    // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
-    const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
-    await browser.storage.local.set({
-      [sessionKey]: editorData
-    });
-    const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
+      // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
+      const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
+      await browser.storage.local.set({
+        [sessionKey]: editorData
+      });
+      const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
 
-    // 새 탭에서 편집기 열기
-    browser.tabs.create({
-      url: editorUrl,
-      active: true
-    });
+      // 새 탭에서 편집기 열기 - background script를 통해 처리
+      const response = await browser.runtime.sendMessage({
+        action: 'openFullscreenEditor',
+        editorUrl
+      });
+
+      if (!response?.success) {
+        throw new Error(response?.error || 'Failed to open fullscreen editor');
+      }
+    } catch (error) {
+      console.error('Failed to open fullscreen editor:', error);
+      // 사용자에게 에러 알림
+      alert('Failed to open fullscreen editor. Please try again.');
+    }
   };
 
   const handleVersionSelect = async (versionNumber: number) => {
@@ -459,8 +470,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.page}>
-        <div className={styles.detailHeader}>
+      <div className={`${styles.page} ${layoutStyles.pageLayout}`}>
+        <div className={layoutStyles.scrollableContent}>
+          <div className={styles.detailHeader}>
           <button className={styles.backButton} onClick={onBack}>
             <IoArrowBack size={20} />
           </button>
@@ -547,24 +559,22 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
-                {/* ExportButton은 항상 렌더링하고 내부에서 maily 페이지 체크 */}
-                <Tooltip content={t('archiveDetailPage_exportToMaily')} side='top'>
-                  <ExportButton
-                    title={currentArchive?.title || article.title}
-                    content={currentArchive?.content || article.content}
-                    onExportSuccess={async (platform) => {
-                      try {
-                        await trackArchiveExportedBridge({
-                          article_id: article.articleId,
-                          version_number: selectedVersionNumber,
-                          platform,
-                          character_count: characterCount.characters,
-                          word_count: characterCount.words
-                        });
-                      } catch {}
-                    }}
-                  />
-                </Tooltip>
+                {/* ExportButton only shows on supported platforms (Maily, LinkedIn, Substack, Ghost) */}
+                <ExportButton
+                  title={currentArchive?.title || article.title}
+                  content={currentArchive?.content || article.content}
+                  onExportSuccess={async (platform) => {
+                    try {
+                      await trackArchiveExportedBridge({
+                        article_id: article.articleId,
+                        version_number: selectedVersionNumber,
+                        platform,
+                        character_count: characterCount.characters,
+                        word_count: characterCount.words
+                      });
+                    } catch {}
+                  }}
+                />
                 <Tooltip content={t('archiveDetailPage_copyToClipboard')} side='top'>
                   <CopyButton
                     title={currentArchive?.title || article.title}
@@ -759,6 +769,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               </div>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

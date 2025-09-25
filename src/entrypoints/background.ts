@@ -4,27 +4,117 @@ import { trackScrapCreatedBridge, captureInBackground } from '../analytics/bridg
 import { authService } from '../services/auth.service';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import type {
+  ExtensionMessage,
+  MessageResponse,
+  SidebarState,
+  SidebarStateResponse
+} from '../types/messages';
 
 // WXT Analytics는 자동 초기화됨
 
 export default defineBackground(() => {
-  // Side panel state (global)
-  let isSidePanelOpen = false;
+  // Side panel state (global) - track per tab for better state management
+  const sidebarStates: Map<number, SidebarState> = new Map();
+
+  // Helper function to get sidebar state for a tab
+  const getSidebarState = (tabId: number): SidebarState => {
+    return sidebarStates.get(tabId) || { isOpen: false, tabId };
+  };
+
+  // Helper function to set sidebar state for a tab
+  const setSidebarState = (tabId: number, isOpen: boolean): void => {
+    sidebarStates.set(tabId, { isOpen, tabId });
+  };
+
+  // Clean up closed tabs
+  browser.tabs.onRemoved.addListener((tabId) => {
+    sidebarStates.delete(tabId);
+  });
 
   browser.runtime.onInstalled.addListener(() => {
     // console.log('Tyquill Extension installed');
   });
 
-  // Handle extension icon click to open side panel
+  // Handle extension icon click to toggle sidebar via content script
   browser.action.onClicked.addListener(async (tab) => {
     // console.log('Extension icon clicked');
-    
-    // Open side panel
+
+    if (!tab.id) {
+      console.error('No tab ID available');
+      return;
+    }
+
     try {
-      await browser.sidePanel.open({ tabId: tab.id, windowId: tab.windowId });
-      // console.log('Side panel opened');
+      // Check if content script is loaded first
+      try {
+        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
+      } catch (pingError) {
+        // Content script not loaded, inject it
+        // console.log('Content script not loaded, injecting...');
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content-scripts/content.js']
+        });
+
+        // Wait briefly for content script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Query the actual sidebar state from content script instead of relying on cached state
+      let actualSidebarState = false;
+      try {
+        // console.log('Querying sidebar state for tab', tab.id);
+        const stateResponse = await browser.tabs.sendMessage(tab.id, { action: 'getSidebarState' });
+        // console.log('State response received:', JSON.stringify(stateResponse));
+        // console.log('State response type:', typeof stateResponse);
+        // console.log('State response.success:', stateResponse?.success);
+        // console.log('State response.isOpen:', stateResponse?.isOpen, 'type:', typeof stateResponse?.isOpen);
+
+        // More robust state parsing
+        if (stateResponse && stateResponse.success === true && typeof stateResponse.isOpen === 'boolean') {
+          actualSidebarState = stateResponse.isOpen;
+          // console.log('✅ Valid state response - using isOpen:', actualSidebarState);
+        } else if (stateResponse && typeof stateResponse.isOpen === 'boolean') {
+          // Fallback for responses without success field but valid isOpen
+          actualSidebarState = stateResponse.isOpen;
+          // console.log('⚠️ Fallback state response - using isOpen:', actualSidebarState);
+        } else {
+          // Last resort fallback
+          actualSidebarState = false;
+          // console.log('❌ Invalid state response - defaulting to false');
+        }
+
+        // console.log('Final actualSidebarState for tab', tab.id, ':', actualSidebarState, 'type:', typeof actualSidebarState);
+      } catch (error) {
+        console.warn('Could not get sidebar state, assuming closed:', error);
+        actualSidebarState = false;
+      }
+
+      // Toggle sidebar based on actual current state (not cached background state)
+      // console.log('🔄 Determining action based on actualSidebarState:', actualSidebarState);
+      // console.log('🔄 actualSidebarState === true:', actualSidebarState === true);
+      // console.log('🔄 Boolean(actualSidebarState):', Boolean(actualSidebarState));
+
+      if (actualSidebarState === true) {
+        // Close the sidebar
+        // console.log('🔴 CLOSING SIDEBAR - Sending closeSidebar message to tab', tab.id);
+        await browser.tabs.sendMessage(tab.id, {
+          action: 'closeSidebar'
+        });
+        setSidebarState(tab.id, false);
+        // console.log('✅ Sidebar closed for tab', tab.id);
+      } else {
+        // Open the sidebar
+        // console.log('🟢 OPENING SIDEBAR - Sending openSidebar message to tab', tab.id);
+        await browser.tabs.sendMessage(tab.id, {
+          action: 'openSidebar'
+        });
+        setSidebarState(tab.id, true);
+        // console.log('✅ Sidebar opened for tab', tab.id);
+      }
     } catch (error) {
-      // console.error('Failed to open side panel:', error);
+      console.error('Failed to toggle sidebar:', error);
     }
   });
 
@@ -45,10 +135,22 @@ export default defineBackground(() => {
       return true; // async
     }
 
+    if (request.action === 'performOAuth') {
+      // Content script로부터의 OAuth 요청 처리
+      authService.login().then(authResponse => {
+        // console.log('✅ Background OAuth completed:', authResponse.user.email);
+        sendResponse({ success: true, data: authResponse });
+      }).catch(error => {
+        console.error('❌ Background OAuth failed:', error);
+        sendResponse({ success: false, error: error.message });
+      });
+      return true; // async
+    }
+
     if (request.action === 'logoutFromWebClient') {
       // 웹 클라이언트로부터의 로그아웃 요청 처리
       authService.logout().then(() => {
-        console.log('✅ Extension logged out from web client');
+        // console.log('✅ Extension logged out from web client');
         // 사이드패널은 자동으로 랜딩페이지로 전환됨 (isAuthenticated가 false로 변경되므로)
         sendResponse({ success: true });
       }).catch(error => {
@@ -101,33 +203,63 @@ export default defineBackground(() => {
     if (request.action === 'openSidePanel') {
       handleOpenSidePanel(sender)
         .then(() => {
-          isSidePanelOpen = true;
+          if (sender.tab?.id) {
+            setSidebarState(sender.tab.id, true);
+          }
           sendResponse({ success: true });
         })
         .catch(error => {
           console.error('❌ Background side panel error:', error);
           sendResponse({ success: false, error: error.message });
         });
-      
+
       // Return true to indicate we will respond asynchronously
       return true;
     }
 
     if (request.action === 'closeSidePanel') {
       // Send close message to side panel
-      isSidePanelOpen = false;
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
       sendResponse({ success: true });
       return true;
     }
 
     if (request.action === 'getSidePanelState') {
-      sendResponse({ success: true, isOpen: isSidePanelOpen });
+      const tabId = sender.tab?.id;
+      if (tabId) {
+        const state = getSidebarState(tabId);
+        const response: SidebarStateResponse = { success: true, isOpen: state.isOpen };
+        sendResponse(response);
+      } else {
+        sendResponse({ success: false, isOpen: false });
+      }
       return true;
     }
 
     if (request.action === 'sidePanelClosed') {
       // Notify that side panel has been closed
-      isSidePanelOpen = false;
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
+    // Handle sidebar state notifications from content script
+    if (request.action === 'sidebarOpened') {
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, true);
+      }
+      sendResponse({ success: true });
+      return true;
+    }
+
+    if (request.action === 'sidebarClosed') {
+      if (sender.tab?.id) {
+        setSidebarState(sender.tab.id, false);
+      }
       sendResponse({ success: true });
       return true;
     }
@@ -135,7 +267,7 @@ export default defineBackground(() => {
     if (request.action === 'analytics:capture') {
       (async () => {
         try {
-          console.log('[analytics] capture (bg):', request.event, request.properties)
+          // console.log('[analytics] capture (bg):', request.event, request.properties)
           await captureInBackground(request.event, request.properties)
           sendResponse({ success: true })
         } catch (error) {
@@ -146,39 +278,192 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (request.action === 'openOptionsPage') {
+      // Handle options page opening from content script context
+      (async () => {
+        try {
+          if (browser.runtime.openOptionsPage) {
+            await browser.runtime.openOptionsPage();
+            sendResponse({ success: true });
+          } else {
+            console.error('browser.runtime.openOptionsPage is not available');
+            sendResponse({ success: false, error: 'Options page not available' });
+          }
+        } catch (error) {
+          console.error('❌ Failed to open options page:', error);
+          sendResponse({ success: false, error: (error as Error)?.message });
+        }
+      })();
+      return true;
+    }
+
+    if (request.action === 'openFullscreenEditor') {
+      // Handle fullscreen editor opening from content script context
+      (async () => {
+        try {
+          const { editorUrl } = request;
+          if (!editorUrl) {
+            sendResponse({ success: false, error: 'Editor URL is required' });
+            return;
+          }
+
+          await browser.tabs.create({
+            url: editorUrl,
+            active: true
+          });
+          sendResponse({ success: true });
+        } catch (error) {
+          console.error('❌ Failed to open fullscreen editor:', error);
+          sendResponse({ success: false, error: (error as Error)?.message });
+        }
+      })();
+      return true;
+    }
+
+    if (request.action === 'openViewer') {
+      // Handle viewer opening from sidepanel context
+      // console.log('🚀 Background: Received openViewer request:', request);
+      (async () => {
+        try {
+          const { url, type, id } = request;
+          // console.log('📝 Background: Extracted params - url:', url, 'type:', type, 'id:', id);
+
+          if (!url) {
+            console.error('❌ Background: Missing URL in openViewer request');
+            sendResponse({ success: false, error: 'Viewer URL is required' });
+            return;
+          }
+
+          // console.log(`🔧 Opening ${type} viewer for ID ${id}:`, url);
+
+          // Check if browser.tabs.create is available
+          if (!browser.tabs || !browser.tabs.create) {
+            console.error('❌ Background: browser.tabs.create is not available');
+            sendResponse({ success: false, error: 'Tabs API not available' });
+            return;
+          }
+
+          const newTab = await browser.tabs.create({
+            url: url,
+            active: true
+          });
+
+          // console.log('✅ Background: Successfully created new tab:', newTab.id);
+          sendResponse({ success: true, tabId: newTab.id });
+        } catch (error) {
+          console.error('❌ Background: Failed to open viewer:', error);
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          sendResponse({ success: false, error: errorMessage });
+        }
+      })();
+      return true;
+    }
+
+    if (request.action === 'getActiveTabInfo') {
+      handleGetActiveTabInfo()
+        .then(response => {
+          sendResponse({ success: true, data: response });
+        })
+        .catch(error => {
+          console.error('❌ Background getActiveTabInfo error:', error);
+          sendResponse({ success: false, error: error?.message || String(error) || 'Failed to get active tab info' });
+        });
+      return true;
+    }
+
   });
 
   /**
-   * Handle opening side panel
+   * Handle opening sidebar via content script
    */
   async function handleOpenSidePanel(sender: Browser.runtime.MessageSender) {
     try {
-      if (sender.tab?.id) {
-        await browser.sidePanel.open({ tabId: sender.tab.id });
-      } else {
+      if (!sender.tab?.id) {
         throw new Error('No tab ID available');
       }
+
+      // Check if content script is loaded first
+      try {
+        await browser.tabs.sendMessage(sender.tab.id, { type: 'PING' });
+      } catch (pingError) {
+        // Content script not loaded, inject it
+        await browser.scripting.executeScript({
+          target: { tabId: sender.tab.id },
+          files: ['content-scripts/content.js']
+        });
+
+        // Wait briefly for content script to initialize
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Send message to content script to open sidebar
+      await browser.tabs.sendMessage(sender.tab.id, {
+        action: 'openSidebar'
+      });
     } catch (error) {
-      console.error('❌ Background: Failed to open side panel:', error);
+      console.error('❌ Background: Failed to open sidebar:', error);
       throw error;
     }
   }
 
+  /**
+   * Get current active tab information (requested from content script)
+   */
+  async function handleGetActiveTabInfo() {
+    try {
+      // Try to get active tab in current window first
+      let tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      let tab = tabs[0];
+
+      // If no active tab found in current window (can happen in sidepanel context),
+      // try to get the last focused window's active tab
+      if (!tab || !tab.id) {
+        // console.log('No active tab in current window, trying lastFocusedWindow...');
+        tabs = await browser.tabs.query({ active: true, lastFocusedWindow: true });
+        tab = tabs[0];
+      }
+
+      // If still no tab, try to get any active tab
+      if (!tab || !tab.id) {
+        // console.log('No active tab in lastFocusedWindow, trying any active tab...');
+        tabs = await browser.tabs.query({ active: true });
+        tab = tabs[0];
+      }
+
+      if (!tab || !tab.id) {
+        throw new Error('Cannot find active tab');
+      }
+
+      // console.log('✅ Found active tab:', tab.id, tab.url, tab.title);
+
+      return {
+        id: tab.id,
+        url: tab.url || '',
+        title: tab.title || ''
+      };
+    } catch (error) {
+      console.error('❌ Background: Failed to get active tab info:', error);
+      throw new Error(`Failed to get active tab info: ${(error as any)?.message || String(error)}`);
+    }
+  }
 
   /**
    * Handle current page clipping and scraping (executed in Background Script)
    */
   async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSender) {
+    // console.log('🔄 Background: Starting handleClipAndScrapCurrentPage');
     try {
       // Get current active tab info
       let tabId = sender.tab?.id;
+      // console.log('📝 Background: Sender tab ID:', tabId);
 
       // Query active tab if sender.tab is not available (when requested from Sidepanel)
       if (!tabId) {
         const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
         tabId = activeTab?.id;
+        // console.log('📝 Background: Queried active tab ID:', tabId);
       }
-      
+
       if (!tabId) {
         throw new Error('No active tab found');
       }
@@ -207,15 +492,33 @@ export default defineBackground(() => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Request clipping from Content Script
-      const response = await browser.tabs.sendMessage(tabId, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: false }
-      });
-
-      if (!response.success) {
-        throw new Error(response.error || 'Clipping failed');
+      // Request clipping from Content Script with timeout and error handling
+      // console.log('📤 Background: Sending CLIP_PAGE message to tab:', tabId);
+      let response;
+      try {
+        response = await browser.tabs.sendMessage(tabId, {
+          type: 'CLIP_PAGE',
+          options: { includeMetadata: false }
+        });
+        // console.log('📨 Background: Received response from content script:', response);
+      } catch (messageError) {
+        // Handle cases where sendMessage fails (e.g., content script not loaded, tab closed)
+        console.error('❌ Background: Failed to send message to content script:', messageError);
+        throw new Error('Could not communicate with content script. The page may need to be refreshed.');
       }
+
+      // Add proper null/undefined checks for the response
+      if (!response) {
+        console.error('❌ Background: Content script response is null/undefined');
+        throw new Error('Content script did not respond to CLIP_PAGE message');
+      }
+
+      if (response.success !== true) {
+        console.error('❌ Background: Content script reported failure:', response);
+        throw new Error(response.error || response.message || 'Clipping failed');
+      }
+
+      // console.log('✅ Background: Content script clipping successful');
 
       // Create scrap data
       const scrapResult = {
@@ -305,14 +608,26 @@ export default defineBackground(() => {
         await new Promise(resolve => setTimeout(resolve, 500));
       }
 
-      // Request clipping from Content Script
-      const response = await browser.tabs.sendMessage(tabId, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: true }
-      });
+      // Request clipping from Content Script with timeout and error handling
+      let response;
+      try {
+        response = await browser.tabs.sendMessage(tabId, {
+          type: 'CLIP_PAGE',
+          options: { includeMetadata: true }
+        });
+      } catch (messageError) {
+        // Handle cases where sendMessage fails (e.g., content script not loaded, tab closed)
+        console.error('Failed to send message to content script:', messageError);
+        throw new Error('Could not communicate with content script. The page may need to be refreshed.');
+      }
 
-      if (!response.success) {
-        throw new Error(response.error || 'Clipping failed');
+      // Add proper null/undefined checks for the response
+      if (!response) {
+        throw new Error('Content script did not respond to CLIP_PAGE message');
+      }
+
+      if (response.success !== true) {
+        throw new Error(response.error || response.message || 'Clipping failed');
       }
 
       // Return only clipping result (without calling scrap API)

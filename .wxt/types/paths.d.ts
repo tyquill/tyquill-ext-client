@@ -18,7 +18,6 @@ declare module "wxt/browser" {
     | "/icon48.png"
     | "/options.html"
     | "/pdf.worker.min.js"
-    | "/sidepanel.html"
     | "/webviewer.html"
   type HtmlPublicPath = Extract<PublicPath, `${string}.html`>
   export interface WxtRuntime {

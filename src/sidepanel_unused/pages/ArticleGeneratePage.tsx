@@ -107,6 +107,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
+  const keyMessageRef = useRef<HTMLTextAreaElement>(null);
 
   const [isStyleDropdownOpen, setIsStyleDropdownOpen] = useState<boolean>(false);
   const styleDropdownButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -288,42 +289,35 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
     try {
       setAnalyzing(true);
-      
-      // 현재 활성 탭 정보 가져오기
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      
+
+      // 현재 활성 탭 정보 가져오기 - background script를 통해
+      const tabInfoResponse = await browser.runtime.sendMessage({ action: 'getActiveTabInfo' });
+
+      if (!tabInfoResponse || !tabInfoResponse.success) {
+        throw new Error(tabInfoResponse?.error || t('articleGenerate_cannotFindActiveTab'));
+      }
+
+      const tab = tabInfoResponse.data;
+
       if (!tab?.id) {
         throw new Error(t('articleGenerate_cannotFindActiveTab'));
       }
 
       // URL 체크 - 제한된 페이지에서는 스크랩 불가
-      if (tab.url?.startsWith('chrome://') || 
+      if (tab.url?.startsWith('chrome://') ||
           tab.url?.startsWith('chrome-extension://') ||
+          tab.url?.startsWith('browser://') ||
+          tab.url?.startsWith('browser-extension://') ||
           tab.url?.startsWith('edge://') ||
           tab.url?.startsWith('about:')) {
         throw new Error(t('articleGenerate_cannotScrapThisPage'));
       }
 
-      // Content Script가 로드되었는지 확인
-      try {
-        await browser.tabs.sendMessage(tab.id, { type: 'PING' });
-      } catch (pingError) {
-        // Content script 수동 주입 시도
-        await browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content/index.js']
-        });
-        
-        // 잠시 대기 후 재시도
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-
       showInfo(t('articleGenerate_pageAnalysis'), t('articleGenerate_analysisDescription'));
 
-      // 페이지 콘텐츠 스크랩
-      const response = await browser.tabs.sendMessage(tab.id, {
-        type: 'CLIP_PAGE',
-        options: { includeMetadata: false }
+      // 페이지 콘텐츠 스크랩 - background script를 통해 처리
+      const response = await browser.runtime.sendMessage({
+        action: 'clipCurrentPageForStyle'
       });
 
       if (!response.success) {
@@ -592,14 +586,90 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     setSelectedUploads(prev => prev.map(u => u.uploadedFileId === uploadedFileId ? { ...u, usagePrompt: value } : u));
   };
 
+  // Calculate initial height based on placeholder
+  const calculatePlaceholderHeight = (textarea: HTMLTextAreaElement): number => {
+    const tempDiv = document.createElement('div');
+    const styles = window.getComputedStyle(textarea);
+
+    // Copy relevant styles
+    tempDiv.style.cssText = styles.cssText;
+    tempDiv.style.height = 'auto';
+    tempDiv.style.width = textarea.offsetWidth + 'px';
+    tempDiv.style.position = 'absolute';
+    tempDiv.style.visibility = 'hidden';
+    tempDiv.style.whiteSpace = 'pre-wrap';
+    tempDiv.style.wordWrap = 'break-word';
+    tempDiv.textContent = textarea.placeholder;
+
+    document.body.appendChild(tempDiv);
+    const height = tempDiv.scrollHeight;
+    document.body.removeChild(tempDiv);
+
+    // Add extra padding for better visual appearance (approximately two more lines)
+    return height + 60;
+  };
+
+  // Auto-resize textarea function
+  const resizeTextarea = (textarea: HTMLTextAreaElement) => {
+    if (!textarea) return;
+
+    if (textarea.value && textarea.value.trim()) {
+      // If there's content, adjust to exact content height
+      // Save scroll position to prevent jumping
+      const scrollPos = window.scrollY;
+
+      // Reset height to get accurate scrollHeight
+      textarea.style.height = '0px';
+
+      // Set height to match content exactly
+      const contentHeight = textarea.scrollHeight;
+      textarea.style.height = contentHeight + 'px';
+
+      // Restore scroll position
+      window.scrollTo(0, scrollPos);
+    } else {
+      // If empty, use placeholder height with extra padding for comfortable initial view
+      const placeholderHeight = calculatePlaceholderHeight(textarea);
+      textarea.style.height = placeholderHeight + 'px';
+    }
+  };
+
   // 키메시지 textarea 자동 높이 조정
   useEffect(() => {
-    const textarea = document.getElementById('message') as HTMLTextAreaElement;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = textarea.scrollHeight + 'px';
+    if (keyMessageRef.current) {
+      resizeTextarea(keyMessageRef.current);
     }
-  }, [keyInsight]);
+  }, [keyInsight, t]); // Trigger on value or language change
+
+  // Initial setup on mount
+  useEffect(() => {
+    // Set initial height based on placeholder when component mounts
+    const setInitialHeight = () => {
+      if (keyMessageRef.current) {
+        resizeTextarea(keyMessageRef.current);
+      }
+    };
+
+    // Use multiple timing strategies to ensure proper initialization
+    setInitialHeight();
+    requestAnimationFrame(setInitialHeight);
+    setTimeout(setInitialHeight, 0);
+    setTimeout(setInitialHeight, 100);
+  }, []); // Only run on mount
+
+  // 섹션 아이디어 textareas 자동 높이 조정 (placeholder 텍스트 고려)
+  useEffect(() => {
+    // Give time for DOM to update
+    setTimeout(() => {
+      const textareas = document.querySelectorAll(`.${articleStyles.ideaTextarea}`) as NodeListOf<HTMLTextAreaElement>;
+      textareas.forEach(textarea => {
+        // Reset height to auto to get the correct scrollHeight
+        textarea.style.height = 'auto';
+        // Set height based on scrollHeight (includes placeholder)
+        textarea.style.height = Math.max(textarea.scrollHeight, 80) + 'px';
+      });
+    }, 0);
+  }, [templateStructure]);
 
   useEffect(() => {
     const fetchScraps = async () => {
@@ -721,14 +791,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               {t('articleGenerate_keyMessageLabel')}
             </label>
             <textarea
+              ref={keyMessageRef}
               id="message"
               className={articleStyles.keyMessageTextarea}
               value={keyInsight}
               onChange={(e) => {
                 setKeyInsight(e.target.value);
-                // 자동 높이 조정
-                e.target.style.height = 'auto';
-                e.target.style.height = e.target.scrollHeight + 'px';
+                resizeTextarea(e.target);
               }}
               onBlur={async () => {
                 if (keyInsight && keyInsight.trim()) {
@@ -740,14 +809,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                   } catch {}
                 }
               }}
-              onInput={(e) => {
-                // 입력 시에도 높이 조정
-                const target = e.target as HTMLTextAreaElement;
-                target.style.height = 'auto';
-                target.style.height = target.scrollHeight + 'px';
-              }}
               placeholder={t('articleGenerate_keyMessageFormPlaceholder')}
-              rows={1}
             />
           </div>
 
@@ -859,8 +921,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       <textarea
                         value={section.keyIdea || ''}
                         onChange={(e) => handleIdeaChange(section.id!, e.target.value)}
-                        rows={3}
+                        placeholder={t('articleGenerate_sectionIdeaPlaceholder')}
                         className={articleStyles.ideaTextarea}
+                        onInput={(e) => {
+                          // Auto-resize based on content
+                          const target = e.target as HTMLTextAreaElement;
+                          target.style.height = 'auto';
+                          target.style.height = target.scrollHeight + 'px';
+                        }}
+                        style={{
+                          minHeight: '80px',
+                          resize: 'none'
+                        }}
                       />
                     </div>
                   );

@@ -58,18 +58,23 @@ class AuthService {
    * 일반 OAuth 방식으로 Google 인증 처리
    */
   private async performOAuthFlow(): Promise<string> {
+    // Content script에서는 OAuth flow를 직접 실행할 수 없음
+    if (this.isContentScriptContext()) {
+      throw new Error('OAuth flow must be initiated from background script context. Please use the extension popup or background script.');
+    }
+
     // 1. 서버에서 OAuth URL 생성
     const oauthConfig = await this.getOAuthConfig();
-    
+
     // 2. 새 탭에서 Google OAuth 페이지 열기
     const authTab = await this.openOAuthTab(oauthConfig.url);
-    
+
     // 3. 콜백 URL에서 인증 코드 추출
     const authCode = await this.waitForAuthCode(authTab);
-    
+
     // 4. 탭 닫기
     browser.tabs.remove(authTab.id!);
-    
+
     return authCode;
   }
 
@@ -191,6 +196,12 @@ class AuthService {
    */
   async syncAuthFromWebClient(): Promise<boolean> {
     try {
+      // Content script 컨텍스트에서는 동기화할 수 없음
+      if (this.isContentScriptContext()) {
+        // console.log('🔐 Skipping web client auth sync in content script context');
+        return false;
+      }
+
       // 이미 인증되고 토큰이 유효한 경우에만 스킵
       if (this.authState.isAuthenticated && this.authState.accessToken && !this.isTokenExpired()) {
         return false;
@@ -211,7 +222,7 @@ class AuthService {
         await this.saveAuthState();
         this.notifyStateChange();
 
-        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+        // console.log('✅ Authentication synced from web client:', webAuth.user.email);
 
         // Analytics
         try {
@@ -233,10 +244,28 @@ class AuthService {
   }
 
   /**
+   * 실행 컨텍스트 확인 (content script vs background script)
+   */
+  private isContentScriptContext(): boolean {
+    try {
+      // content script에서는 tabs API에 접근할 수 없음
+      return !browser.tabs || typeof browser.tabs.query !== 'function';
+    } catch {
+      return true;
+    }
+  }
+
+  /**
    * 웹 클라이언트에서 인증 정보 가져오기 시도
    */
   private async tryGetAuthFromWebClient(): Promise<AuthResponse | null> {
     try {
+      // Content script 컨텍스트에서는 tabs API를 사용할 수 없으므로 건너뜀
+      if (this.isContentScriptContext()) {
+        // console.log('🔐 Skipping web client auth check in content script context');
+        return null;
+      }
+
       // 웹 클라이언트 탭 찾기
       const tabs = await browser.tabs.query({
         url: ['http://localhost:5173/*', 'https://app.tyquill.ai/*']
@@ -264,7 +293,7 @@ class AuthService {
             });
 
             if (result?.result?.accessToken) {
-              console.log('🔐 Found auth from web client');
+              // console.log('🔐 Found auth from web client');
               const authData = result.result;
 
               // AuthResponse 형식으로 변환
@@ -276,12 +305,12 @@ class AuthService {
               };
             }
           } catch (error) {
-            console.log('Failed to get auth from tab:', error);
+            // console.log('Failed to get auth from tab:', error);
           }
         }
       }
     } catch (error) {
-      console.log('Failed to query tabs:', error);
+      // console.log('Failed to query tabs:', error);
     }
 
     return null;
@@ -295,7 +324,7 @@ class AuthService {
       this.authState.isLoading = true;
       this.notifyStateChange();
 
-      // 0. 먼저 웹 클라이언트에서 인증 정보 확인
+      // 0. 먼저 웹 클라이언트에서 인증 정보 확인 (background script에서만)
       const webAuth = await this.tryGetAuthFromWebClient();
       if (webAuth) {
         // 웹 클라이언트의 인증 정보 사용
@@ -311,7 +340,7 @@ class AuthService {
         await this.saveAuthState();
         this.notifyStateChange();
 
-        console.log('✅ Authentication synced from web client:', webAuth.user.email);
+        // console.log('✅ Authentication synced from web client:', webAuth.user.email);
 
         // Analytics
         try {
@@ -325,10 +354,53 @@ class AuthService {
         return webAuth;
       }
 
-      // 1. 일반 OAuth 플로우로 인증 코드 획득
+      // 1. Content script에서는 background script에 OAuth 요청
+      if (this.isContentScriptContext()) {
+        // console.log('🔐 Requesting OAuth from background script...');
+        const response = await browser.runtime.sendMessage({ action: 'performOAuth' });
+        if (!response.success) {
+          throw new Error(response.error || 'OAuth failed');
+        }
+        const authResponse = response.data;
+
+        // 3. 인증 상태 업데이트
+        this.authState = {
+          isAuthenticated: true,
+          user: authResponse.user,
+          accessToken: authResponse.accessToken,
+          refreshToken: authResponse.refreshToken,
+          isLoading: false,
+        };
+
+        // 4. 로컬 스토리지에 저장
+        await this.saveAuthState();
+        this.notifyStateChange();
+
+        // Analytics 처리는 동일
+        try {
+          await analytics.identify(authResponse.user.id, {
+            email: authResponse.user.email,
+            full_name: authResponse.user.fullName,
+            provider: authResponse.user.provider,
+          });
+          try {
+            await trackLoginBridge({
+              provider: authResponse.user.provider || 'google',
+              method: 'oauth',
+            })
+          } catch {}
+          await analytics.track('sign_up', {
+            method: authResponse.user.provider || 'google',
+          });
+        } catch {}
+
+        return authResponse;
+      }
+
+      // 1. 일반 OAuth 플로우로 인증 코드 획득 (background script에서만)
       // console.log('🔐 Starting OAuth flow...');
       const authCode = await this.performOAuthFlow();
-      
+
       // 2. 서버에서 JWT 토큰 발급
       // console.log('🔐 Authenticating with server...');
       const authResponse = await this.authenticateWithServer(authCode);
@@ -424,6 +496,12 @@ class AuthService {
    */
   private async notifyWebClientLogout(): Promise<void> {
     try {
+      // Content script 컨텍스트에서는 tabs API를 사용할 수 없음
+      if (this.isContentScriptContext()) {
+        // console.log('🔐 Skipping web client logout notification in content script context');
+        return;
+      }
+
       // 웹 클라이언트 탭 찾기
       const tabs = await browser.tabs.query({
         url: ['http://localhost:5173/*', 'https://app.tyquill.ai/*']
@@ -443,14 +521,14 @@ class AuthService {
                 }, window.location.origin);
               },
             });
-            console.log('✅ Notified web client of logout');
+            // console.log('✅ Notified web client of logout');
           } catch (error) {
-            console.log('Failed to notify tab of logout:', error);
+            // console.log('Failed to notify tab of logout:', error);
           }
         }
       }
     } catch (error) {
-      console.log('Failed to notify web client of logout:', error);
+      // console.log('Failed to notify web client of logout:', error);
     }
   }
 

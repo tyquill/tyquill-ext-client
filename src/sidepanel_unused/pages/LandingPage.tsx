@@ -3,6 +3,9 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToastHelpers } from '../../hooks/useToast';
 import { useI18n } from '../../hooks/useI18n';
 import styles from './LandingPage.module.css';
+import ghostLogoDark from '../../assets/logos/ghost-logo-dark.png';
+import substackWordmark from '../../assets/logos/substack_wordmark.png';
+import linkedInLogo from '../../assets/logos/LinkedIn_Logo.svg';
 
 interface LandingPageProps {
   onStart: () => void;
@@ -29,11 +32,6 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
 
   return (
     <div className={styles.landingPage}>
-      {/* Header */}
-      <header className={styles.header}>
-        <h1 className={styles.logo}>Tyquill</h1>
-      </header>
-
       {/* Core content */}
       <main className={styles.mainContent}>
         <h2 className={styles.title}>
@@ -55,15 +53,37 @@ const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           <div className={styles.platforms}>
             <span className={styles.platformsLabel}>{t('landingPage_supportedPlatforms')}</span>
             <div className={styles.platformsList}>
-              <div className={styles.platform}>
-                <img 
-                  src="https://cdn.maily.so/images/green_logo.png"
-                  alt="Maily.so"
-                  className={styles.platformLogo}
-                />
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className={styles.platform}>
+                  <img
+                    src={substackWordmark}
+                    alt="Substack"
+                    className={styles.platformLogo}
+                    />
+                </div>
+                <div className={styles.platform}>
+                  <img
+                    src={ghostLogoDark}
+                    alt="Ghost"
+                    className={styles.platformLogo}
+                    />
+                </div>
               </div>
-              <div className={styles.platformComingSoon}>
-                {t('landingPage_comingSoon')}
+              <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div className={styles.platform}>
+                  <img
+                    src={linkedInLogo}
+                    alt="LinkedIn"
+                    className={styles.platformLogo}
+                    />
+                </div>
+                <div className={styles.platform}>
+                  <img
+                    src="https://cdn.maily.so/images/green_logo.png"
+                    alt="Maily.so"
+                    className={styles.platformLogo}
+                    />
+                </div>
               </div>
             </div>
           </div>

@@ -188,9 +188,13 @@ const getTextContent = (element: Element): string => {
  */
 export const markdownToHtml = (markdown: string): string => {
   if (!markdown) return '';
-  
+
   // 간단한 마크다운 to HTML 변환
   return markdown
+    // 수평선 처리 (---, ***, ___) - 줄바꿈 처리 전에 해야 함
+    .replace(/^---\s*$/gm, '<hr>')
+    .replace(/^\*\*\*\s*$/gm, '<hr>')
+    .replace(/^___\s*$/gm, '<hr>')
     // 헤딩
     .replace(/^### (.*$)/gim, '<h3>$1</h3>')
     .replace(/^## (.*$)/gim, '<h2>$1</h2>')

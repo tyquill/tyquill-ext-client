@@ -24,9 +24,20 @@ export const useContentScript = (): UseContentScriptReturn => {
       switch (message.type) {
         case 'CLIP_PAGE':
           handleClipPage(message.options)
-            .then(sendResponse)
+            .then(result => {
+              // Ensure we always send a proper response structure
+              if (result && typeof result === 'object') {
+                sendResponse(result);
+              } else {
+                sendResponse({ success: false, error: 'Invalid clip result' });
+              }
+            })
             .catch((error: any) => {
-              sendResponse({ success: false, error: error.message });
+              console.error('CLIP_PAGE error:', error);
+              sendResponse({
+                success: false,
+                error: error?.message || error?.toString() || 'Unknown error during clipping'
+              });
             });
           return true;
 
@@ -55,7 +66,8 @@ export const useContentScript = (): UseContentScriptReturn => {
           return true;
 
         default:
-          sendResponse({ success: false, error: 'Unknown message type' });
+          // 다른 리스너가 처리할 수 있도록 false 반환
+          return false;
       }
     };
 
@@ -93,12 +105,24 @@ export const useContentScript = (): UseContentScriptReturn => {
   const handleClipPage = useCallback(async (options: any = {}): Promise<ClipResult> => {
     try {
       const result = await webClipper.clipPage(options);
+
+      // Ensure result has the expected structure
+      if (!result || typeof result !== 'object') {
+        throw new Error('WebClipper returned invalid result');
+      }
+
       return {
         success: true,
         data: result
       };
     } catch (error: any) {
-      throw error;
+      console.error('handleClipPage error:', error);
+      // Don't re-throw, return error result instead
+      return {
+        success: false,
+        error: error?.message || error?.toString() || 'Failed to clip page content',
+        data: null
+      };
     }
   }, []);
 

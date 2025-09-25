@@ -265,7 +265,7 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
         addTemplateSection: (parentId?: string, title = '새 섹션') => set((state) => {
           const newSectionId = `section_${state.sectionIdCounter}`;
           const newSection: TemplateSection = {
-            title: parentId ? '새 하위 섹션' : title,
+            title: title,
             keyIdea: '',
             children: [],
             id: newSectionId,

@@ -30,6 +30,7 @@ declare module '#imports' {
   export { initLinkedInInjector } from '../src/utils/linkedinInjector';
   export { htmlToMarkdown, markdownToHtml, markdownToPlainTextPreview } from '../src/utils/markdownConverter';
   export { default as markdownRenderer } from '../src/utils/markdownRenderer';
+  export { ExportPlatform, ExportPlatform, detectPlatform, isSupportedPlatform, getPlatformDisplayName, PlatformInfo } from '../src/utils/platformDetection';
   export { initRedditInjector } from '../src/utils/redditInjector';
   export { clipAndScrapCurrentPage, clipCurrentPageForStyle, initialScrapState, scrapStateHelpers, ScrapStatus, ScrapState } from '../src/utils/scrapHelper';
   export { initThreadsInjector } from '../src/utils/threadsInjector';

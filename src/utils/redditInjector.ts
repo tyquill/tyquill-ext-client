@@ -410,48 +410,48 @@ async function doScrapFromRedditButton(buttonEl: HTMLElement): Promise<void> {
 }
 
 function injectIntoPostCards(): void {
-  console.log('[Tyquill Reddit] Starting injection...');
+  // console.log('[Tyquill Reddit] Starting injection...');
 
   // Find posts by ID pattern (t3_*) - simpler approach
   const postElements = document.querySelectorAll('[id^="t3_"]');
-  console.log(`[Tyquill Reddit] Found ${postElements.length} posts with t3_ IDs`);
+  // console.log(`[Tyquill Reddit] Found ${postElements.length} posts with t3_ IDs`);
 
   postElements.forEach((postElement, index) => {
-    console.log(`[Tyquill Reddit] Processing post ${index + 1} with ID: ${postElement.id}`);
+    // console.log(`[Tyquill Reddit] Processing post ${index + 1} with ID: ${postElement.id}`);
 
     // Skip if already injected
     if (postElement.querySelector('[data-tyquill="reddit-action-wrapper"]')) {
-      console.log(`[Tyquill Reddit] Post ${index + 1} already has Tyquill button`);
+      // console.log(`[Tyquill Reddit] Post ${index + 1} already has Tyquill button`);
       return;
     }
 
     // Look for the target span with class "flex items-center pl-xs"
     const targetSpan = postElement.querySelector('span.flex.items-center.pl-xs');
     if (targetSpan) {
-      console.log(`[Tyquill Reddit] Found target span with pl-xs class in post ${index + 1}`);
+      // console.log(`[Tyquill Reddit] Found target span with pl-xs class in post ${index + 1}`);
 
       // Find the overflow menu to insert before it
       const overflowMenu = targetSpan.querySelector('shreddit-async-loader, shreddit-post-overflow-menu');
       if (overflowMenu) {
         // Create and insert the Tyquill button
         const tyquillButton = createTyquillButton();
-        console.log(`[Tyquill Reddit] Inserting Tyquill button before overflow menu in post ${index + 1}`);
+        // console.log(`[Tyquill Reddit] Inserting Tyquill button before overflow menu in post ${index + 1}`);
 
         try {
           // Insert before the overflow menu (to the left of dots)
           targetSpan.insertBefore(tyquillButton, overflowMenu);
-          console.log(`[Tyquill Reddit] Successfully inserted button before overflow menu in post ${index + 1}`);
+          // console.log(`[Tyquill Reddit] Successfully inserted button before overflow menu in post ${index + 1}`);
         } catch (error) {
           console.error(`[Tyquill Reddit] Failed to insert button before overflow menu in post ${index + 1}:`, error);
         }
       } else {
         // Fallback: insert at the end if no overflow menu found
         const tyquillButton = createTyquillButton();
-        console.log(`[Tyquill Reddit] No overflow menu found, inserting at end of span in post ${index + 1}`);
+        // console.log(`[Tyquill Reddit] No overflow menu found, inserting at end of span in post ${index + 1}`);
 
         try {
           targetSpan.appendChild(tyquillButton);
-          console.log(`[Tyquill Reddit] Successfully inserted button at end of span in post ${index + 1}`);
+          // console.log(`[Tyquill Reddit] Successfully inserted button at end of span in post ${index + 1}`);
         } catch (error) {
           console.error(`[Tyquill Reddit] Failed to insert button at end of span in post ${index + 1}:`, error);
         }
@@ -461,7 +461,7 @@ function injectIntoPostCards(): void {
 
     // Fallback: Look for any span with "flex items-center" that contains buttons
     const flexSpans = postElement.querySelectorAll('span.flex.items-center');
-    console.log(`[Tyquill Reddit] Found ${flexSpans.length} flex spans in post ${index + 1}`);
+    // console.log(`[Tyquill Reddit] Found ${flexSpans.length} flex spans in post ${index + 1}`);
 
     flexSpans.forEach((span, spanIndex) => {
       // Check if this span contains buttons or overflow menu
@@ -470,7 +470,7 @@ function injectIntoPostCards(): void {
                         span.querySelector('shreddit-join-button');
 
       if (hasButtons) {
-        console.log(`[Tyquill Reddit] Found action flex span at index ${spanIndex} in post ${index + 1}`);
+        // console.log(`[Tyquill Reddit] Found action flex span at index ${spanIndex} in post ${index + 1}`);
 
         // Check if we already injected here
         if (span.querySelector('[data-tyquill="reddit-action-wrapper"]')) {
@@ -480,17 +480,17 @@ function injectIntoPostCards(): void {
         // Find the overflow menu to insert before it, or append at end
         const overflowMenu = span.querySelector('shreddit-async-loader, shreddit-post-overflow-menu');
         const tyquillButton = createTyquillButton();
-        console.log(`[Tyquill Reddit] Inserting Tyquill button in post ${index + 1}, flex span ${spanIndex}`);
+        // console.log(`[Tyquill Reddit] Inserting Tyquill button in post ${index + 1}, flex span ${spanIndex}`);
 
         try {
           if (overflowMenu) {
             // Insert before the overflow menu (to the left of dots)
             span.insertBefore(tyquillButton, overflowMenu);
-            console.log(`[Tyquill Reddit] Successfully inserted button before overflow menu in post ${index + 1}`);
+            // console.log(`[Tyquill Reddit] Successfully inserted button before overflow menu in post ${index + 1}`);
           } else {
             // Insert at the end of the span (after existing buttons)
             span.appendChild(tyquillButton);
-            console.log(`[Tyquill Reddit] Successfully inserted button at end of span in post ${index + 1}`);
+            // console.log(`[Tyquill Reddit] Successfully inserted button at end of span in post ${index + 1}`);
           }
         } catch (error) {
           console.error(`[Tyquill Reddit] Failed to insert button in post ${index + 1}:`, error);
@@ -501,7 +501,7 @@ function injectIntoPostCards(): void {
 
   // Final fallback: also try the original approach
   const articles = document.querySelectorAll('article');
-  console.log(`[Tyquill Reddit] Final fallback: Found ${articles.length} article elements`);
+  // console.log(`[Tyquill Reddit] Final fallback: Found ${articles.length} article elements`);
 
   articles.forEach((article, index) => {
     if (article.querySelector('[data-tyquill="reddit-action-wrapper"]')) {
@@ -514,14 +514,14 @@ function injectIntoPostCards(): void {
       const tyquillButton = createTyquillButton();
       try {
         overflowMenu.parentElement.insertBefore(tyquillButton, overflowMenu);
-        console.log(`[Tyquill Reddit] Final fallback injection successful for article ${index + 1}`);
+        // console.log(`[Tyquill Reddit] Final fallback injection successful for article ${index + 1}`);
       } catch (error) {
         console.error(`[Tyquill Reddit] Final fallback injection failed for article ${index + 1}:`, error);
       }
     }
   });
 
-  console.log('[Tyquill Reddit] Injection complete');
+  // console.log('[Tyquill Reddit] Injection complete');
 }
 
 function observeRedditChanges(): CleanupFn {
@@ -568,51 +568,51 @@ function observeRedditChanges(): CleanupFn {
 }
 
 export function initRedditInjector(): CleanupFn {
-  console.log('[Tyquill Reddit] Initializing Reddit injector...');
+  // console.log('[Tyquill Reddit] Initializing Reddit injector...');
 
   if (!isRedditSite()) {
-    console.log('[Tyquill Reddit] Not a Reddit site, skipping');
+    // console.log('[Tyquill Reddit] Not a Reddit site, skipping');
     return () => {};
   }
 
-  console.log('[Tyquill Reddit] Reddit site detected, proceeding with injection');
+  // console.log('[Tyquill Reddit] Reddit site detected, proceeding with injection');
   ensureStylesInjected();
 
   // Initial injection with multiple attempts to handle dynamic loading
   const attemptInjection = () => {
-    console.log('[Tyquill Reddit] Attempting injection...');
+    // console.log('[Tyquill Reddit] Attempting injection...');
     injectIntoPostCards();
     // Try again after delays for dynamic content
     setTimeout(() => {
-      console.log('[Tyquill Reddit] Retry injection after 1s...');
+      // console.log('[Tyquill Reddit] Retry injection after 1s...');
       injectIntoPostCards();
     }, 1000);
     setTimeout(() => {
-      console.log('[Tyquill Reddit] Retry injection after 3s...');
+      // console.log('[Tyquill Reddit] Retry injection after 3s...');
       injectIntoPostCards();
     }, 3000);
     setTimeout(() => {
-      console.log('[Tyquill Reddit] Final retry injection after 5s...');
+      // console.log('[Tyquill Reddit] Final retry injection after 5s...');
       injectIntoPostCards();
     }, 5000);
   };
 
   // Initial injection
-  console.log(`[Tyquill Reddit] Document ready state: ${document.readyState}`);
+  // console.log(`[Tyquill Reddit] Document ready state: ${document.readyState}`);
   if (document.readyState === 'loading') {
-    console.log('[Tyquill Reddit] Waiting for DOMContentLoaded...');
+    // console.log('[Tyquill Reddit] Waiting for DOMContentLoaded...');
     document.addEventListener('DOMContentLoaded', attemptInjection);
   } else {
-    console.log('[Tyquill Reddit] Document already loaded, attempting immediate injection');
+    // console.log('[Tyquill Reddit] Document already loaded, attempting immediate injection');
     attemptInjection();
   }
 
   // Set up observer for dynamic content
-  console.log('[Tyquill Reddit] Setting up mutation observer...');
+  // console.log('[Tyquill Reddit] Setting up mutation observer...');
   const cleanupObserver = observeRedditChanges();
 
   return () => {
-    console.log('[Tyquill Reddit] Cleaning up injector...');
+    // console.log('[Tyquill Reddit] Cleaning up injector...');
     cleanupObserver();
     document.removeEventListener('DOMContentLoaded', attemptInjection);
     // Remove injected styles

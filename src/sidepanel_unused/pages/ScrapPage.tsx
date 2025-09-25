@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { IoAdd, IoTrash, IoClose, IoClipboard, IoCheckmark, IoRefresh, IoDocument, IoLink } from 'react-icons/io5';
+import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
+import { IoAdd, IoTrash, IoClose, IoCheckmark, IoDocument } from 'react-icons/io5';
+import { FaBookmark } from 'react-icons/fa6';
+import { LuLink } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
+import layoutStyles from './CommonLayout.module.css';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
@@ -11,14 +14,17 @@ import { useAuth } from '../../hooks/useAuth';
 import { useI18n } from '../../hooks/useI18n';
 import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
-import { markdownToPlainTextPreview } from '../../utils/markdownConverter';
 import Tooltip from '../../components/common/Tooltip';
 import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
 import { libraryItemService, type LibraryItemDto } from '../../services/libraryItemService';
 import { globalApiClient } from '../../services/globalApiClient';
 import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
-const ScrapPage: React.FC = () => {
+export interface ScrapPageRef {
+  refreshList: () => void;
+}
+
+const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const { showSuccess, showError, showWarning } = useToastHelpers();
   const { logout } = useAuth();
   const { t } = useI18n();
@@ -39,6 +45,10 @@ const ScrapPage: React.FC = () => {
   const [uploadsError, setUploadsError] = useState<string | null>(null);
   // createdAt timestamp map for scraps (ms since epoch)
   const [scrapTimestamps, setScrapTimestamps] = useState<Record<string, number>>({});
+  // Undo delete state for scraps
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [deleteTimeoutId, setDeleteTimeoutId] = useState<NodeJS.Timeout | null>(null);
+  const [deletedScrap, setDeletedScrap] = useState<Scrap | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
   const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -46,6 +56,15 @@ const ScrapPage: React.FC = () => {
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPDFUploadModal, setShowPDFUploadModal] = useState(false);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimeoutId) {
+        clearTimeout(deleteTimeoutId);
+      }
+    };
+  }, [deleteTimeoutId]);
 
   useEffect(() => {
     const fetchAllTags = async () => {
@@ -95,6 +114,7 @@ const ScrapPage: React.FC = () => {
           minute: '2-digit',
         }),
         tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [], // 태그 객체에서 name만 추출
+        faviconUrl: scrap.webpage?.site?.favicon_url, // 파비콘 URL 추가
       }));
       
       setScraps(convertedScraps);
@@ -164,9 +184,9 @@ const ScrapPage: React.FC = () => {
       setClipStatus('loading');
 
       // 공통 헬퍼를 통해 스크랩 처리
-      const scrapResponse = await clipAndScrapCurrentPage();
+      await clipAndScrapCurrentPage();
 
-      // console.log('✅ 스크랩 완료:', scrapResponse);
+      // console.log('✅ 스크랩 완료');
       setClipStatus('success');
       showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
       
@@ -373,6 +393,86 @@ const ScrapPage: React.FC = () => {
     }
   }, [handleAddUploadTag]);
 
+  // Handle scrap delete with undo pattern
+  const handleDeleteScrap = (scrapId: string) => {
+    // If there's already a pending delete, complete it immediately
+    if (pendingDeleteId !== null && deleteTimeoutId) {
+      clearTimeout(deleteTimeoutId);
+      executeDeleteScrap(pendingDeleteId);
+    }
+
+    // Find and store the scrap to be deleted
+    const scrapToDelete = scraps.find(scrap => scrap.id === scrapId);
+    if (!scrapToDelete) return;
+
+    // Mark as pending delete and remove from UI immediately
+    setPendingDeleteId(scrapId);
+    setDeletedScrap(scrapToDelete);
+    setScraps(scraps.filter(scrap => scrap.id !== scrapId));
+
+    // Show success toast with undo information
+    showSuccess(
+      t('scrapPage_deleteScrapSuccessUndo'),
+      t('scrapPage_undoMessage'),
+      6000 // 6 seconds to see the message
+    );
+
+    // Set timeout to actually delete after 5 seconds
+    const timeoutId = setTimeout(() => {
+      executeDeleteScrap(scrapId);
+    }, 5000);
+
+    setDeleteTimeoutId(timeoutId);
+  };
+
+  const handleUndoDeleteScrap = () => {
+    if (pendingDeleteId && deleteTimeoutId && deletedScrap) {
+      clearTimeout(deleteTimeoutId);
+      setDeleteTimeoutId(null);
+
+      // Restore the scrap to the list in the correct position
+      setScraps(prevScraps => {
+        const restored = [...prevScraps, deletedScrap];
+        // Sort by timestamp (newest first)
+        return restored.sort((a, b) => {
+          const aTime = scrapTimestamps[a.id] || new Date(a.date).getTime();
+          const bTime = scrapTimestamps[b.id] || new Date(b.date).getTime();
+          return bTime - aTime;
+        });
+      });
+
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      showSuccess(t('scrapPage_undoSuccess'), '', 3000);
+    }
+  };
+
+  const executeDeleteScrap = async (scrapId: string) => {
+    try {
+      await scrapService.deleteScrap(parseInt(scrapId));
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      setDeleteTimeoutId(null);
+    } catch (err: any) {
+      // If delete fails, restore the scrap
+      if (deletedScrap) {
+        setScraps(prevScraps => {
+          const restored = [...prevScraps, deletedScrap];
+          // Sort by timestamp (newest first)
+          return restored.sort((a, b) => {
+            const aTime = scrapTimestamps[a.id] || new Date(a.date).getTime();
+            const bTime = scrapTimestamps[b.id] || new Date(b.date).getTime();
+            return bTime - aTime;
+          });
+        });
+      }
+      setPendingDeleteId(null);
+      setDeletedScrap(null);
+      setDeleteTimeoutId(null);
+      showError(t('scrapPage_deleteScrapFailed'), err.message || t('scrapPage_deleteScrapError'));
+    }
+  };
+
   // 키보드 입력 처리
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, scrapId: string) => {
     if (e.key === 'Enter') {
@@ -392,7 +492,7 @@ const ScrapPage: React.FC = () => {
   // 스크랩 목록 새로고침
   const handleRefresh = useCallback(async () => {
     if (!isAuthenticated || isRefreshing) return;
-    
+
     try {
       setIsRefreshing(true);
       await Promise.all([loadScraps(), loadUploads()]);
@@ -403,6 +503,11 @@ const ScrapPage: React.FC = () => {
       setIsRefreshing(false);
     }
   }, [isAuthenticated, isRefreshing, loadScraps, loadUploads, showSuccess, showError]);
+
+  // ref를 통해 refreshList 함수 노출
+  useImperativeHandle(ref, () => ({
+    refreshList: handleRefresh
+  }));
 
   // PDF 업로드 성공 시 처리
   const handlePDFUploadSuccess = useCallback(() => {
@@ -512,10 +617,35 @@ const ScrapPage: React.FC = () => {
 
 
   const openScrapInNewTab = useCallback(async (scrapId: string) => {
+    // console.log('🚀 ScrapPage: Opening scrap viewer for ID:', scrapId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
-      await browser.tabs.create({ url });
+      // console.log('📝 ScrapPage: Generated viewer URL:', url);
+
+      const message = {
+        action: 'openViewer',
+        url: url,
+        type: 'SCRAP',
+        id: scrapId
+      };
+      // console.log('📤 ScrapPage: Sending message to background:', message);
+
+      const response = await browser.runtime.sendMessage(message);
+      // console.log('📥 ScrapPage: Received response from background:', response);
+
+      if (!response) {
+        console.error('❌ ScrapPage: No response received from background');
+        throw new Error('No response from background script');
+      }
+
+      if (!response.success) {
+        console.error('❌ ScrapPage: Background returned error:', response.error);
+        throw new Error(response.error || 'Failed to open viewer');
+      }
+
+      // console.log('✅ ScrapPage: Successfully opened scrap viewer');
     } catch (e) {
+      console.error('❌ ScrapPage: Failed to open scrap viewer:', e);
       showError(t('common_error'), t('scrapPage_openViewerError'));
     }
   }, [showError]);
@@ -530,7 +660,37 @@ const ScrapPage: React.FC = () => {
       >
         <div className={styles.contentHeader}>
           <div className={styles.contentTitleWrapper}>
-            <IoLink size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
+            {scrap.faviconUrl ? (
+              <img
+                src={scrap.faviconUrl}
+                alt="Site favicon"
+                style={{
+                  width: 16,
+                  height: 16,
+                  marginRight: 6,
+                  verticalAlign: 'text-bottom',
+                  flexShrink: 0
+                }}
+                onError={(e) => {
+                  // Fallback to LuLink icon on error
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                  const fallbackIcon = target.nextElementSibling as HTMLElement;
+                  if (fallbackIcon) {
+                    fallbackIcon.style.display = 'inline';
+                  }
+                }}
+              />
+            ) : null}
+            <LuLink
+              size={16}
+              style={{
+                marginRight: 6,
+                verticalAlign: 'text-bottom',
+                display: scrap.faviconUrl ? 'none' : 'inline',
+                flexShrink: 0
+              }}
+            />
             <span className={styles.titleText}>
               <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
                 {scrap.title}
@@ -602,16 +762,41 @@ const ScrapPage: React.FC = () => {
   });
 
   const openUploadInNewTab = useCallback(async (uploadedId: number) => {
+    // console.log('🚀 ScrapPage: Opening upload viewer for ID:', uploadedId);
     try {
       const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
-      await browser.tabs.create({ url });
+      // console.log('📝 ScrapPage: Generated upload viewer URL:', url);
+
+      const message = {
+        action: 'openViewer',
+        url: url,
+        type: 'UPLOAD',
+        id: uploadedId
+      };
+      // console.log('📤 ScrapPage: Sending upload message to background:', message);
+
+      const response = await browser.runtime.sendMessage(message);
+      // console.log('📥 ScrapPage: Received upload response from background:', response);
+
+      if (!response) {
+        console.error('❌ ScrapPage: No response received from background for upload');
+        throw new Error('No response from background script');
+      }
+
+      if (!response.success) {
+        console.error('❌ ScrapPage: Background returned upload error:', response.error);
+        throw new Error(response.error || 'Failed to open viewer');
+      }
+
+      // console.log('✅ ScrapPage: Successfully opened upload viewer');
     } catch (e) {
+      console.error('❌ ScrapPage: Failed to open upload viewer:', e);
       showError(t('common_error'), t('scrapPage_openUploadViewerError'));
     }
   }, [showError]);
 
   return (
-    <div className={styles.pageContainer}>
+    <div className={layoutStyles.pageLayout}>
       <div className={styles.fixedContent}>
         <div className={styles.addButtonContainer}>
           {!authChecked ? (
@@ -647,12 +832,12 @@ const ScrapPage: React.FC = () => {
                   </>
                 ) : clipStatus === 'loading' || isClipping ? (
                   <>
-                    <IoClipboard size={20} />
+                    <FaBookmark size={18} />
                     {t('scrapPage_clipping')}
                   </>
                 ) : (
                   <>
-                    <IoClipboard size={20} />
+                    <FaBookmark size={18} />
                     {t('scrapPage_pageScrap')}
                   </>
                 )}
@@ -682,26 +867,15 @@ const ScrapPage: React.FC = () => {
           <TagSelector
             availableTags={allTags}
             selectedTags={selectedTags}
-            onTagSelect={(tag) => setSelectedTags(prev => 
+            onTagSelect={(tag) => setSelectedTags(prev =>
               prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
             )}
             onTagRemove={(tag) => setSelectedTags(prev => prev.filter(t => t !== tag))}
           />
-          {isAuthenticated && (
-            <Tooltip content={t('scrapPage_refreshTooltip')} side='bottom'>
-              <button
-                className={`${styles.refreshButton} ${isRefreshing ? styles.loading : ''}`}
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                >
-                <IoRefresh size={16} />
-              </button>
-            </Tooltip>
-          )}
         </div>
       </div>
 
-      <div className={styles.scrollableContent}>
+      <div className={layoutStyles.scrollableContent}>
         <div className={styles.scrapList}>
           {(() => {
             const isInitialLoading = (scrapsLoading || uploadsLoading) && combinedItems.length === 0;
@@ -737,15 +911,7 @@ const ScrapPage: React.FC = () => {
                   <ScrapItem
                     key={item.key}
                     scrap={scrap}
-                    onDelete={async () => {
-                      try {
-                        await scrapService.deleteScrap(parseInt(scrap.id));
-                        await loadScraps();
-                        showSuccess(t('common_delete'), t('scrapPage_deleteScrapSuccess'));
-                      } catch (error: any) {
-                        showError(t('common_delete'), error?.message || t('scrapPage_deleteScrapFailed'));
-                      }
-                    }}
+                    onDelete={() => handleDeleteScrap(scrap.id)}
                   />
                 );
               }
@@ -878,6 +1044,19 @@ const ScrapPage: React.FC = () => {
         )}
       </div>
 
+      {/* Floating Undo Button */}
+      {pendingDeleteId && (
+        <div className={styles.undoContainer}>
+          <button
+            className={styles.undoButton}
+            onClick={handleUndoDeleteScrap}
+            aria-label={t('scrapPage_undo')}
+          >
+            {t('scrapPage_undo')}
+          </button>
+        </div>
+      )}
+
       {/* PDF Upload Modal */}
       <PDFUploadModal
         isOpen={showPDFUploadModal}
@@ -886,6 +1065,6 @@ const ScrapPage: React.FC = () => {
       />
     </div>
   );
-};
+});
 
 export default ScrapPage; 

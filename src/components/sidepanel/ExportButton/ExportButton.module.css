@@ -10,14 +10,16 @@
   border: 1px solid #333;
   border-radius: 8px;
   cursor: pointer;
-  /* Remove CSS transitions as Framer Motion handles them */
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .exportButton:hover {
   background-color: #000;
   border-color: #000;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 .exportButton:active {
@@ -46,15 +48,15 @@
 
 .tooltipContainer {
   position: relative;
-  display: flex;
+  display: inline-flex;
 }
 
 .tooltip {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  background-color: #333;
+  background-color: rgba(0, 0, 0, 0.9);
   color: #fff;
   padding: 6px 10px;
   border-radius: 4px;
@@ -62,10 +64,9 @@
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none;
-  z-index: 1000;
-  margin-bottom: 4px;
+  z-index: 10000;
 }
 
 .tooltip::after {
@@ -75,7 +76,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 4px solid transparent;
-  border-top-color: #333;
+  border-top-color: rgba(0, 0, 0, 0.9);
 }
 
 .tooltipContainer:hover .tooltip {
@@ -85,4 +86,170 @@
 
 .loadingIcon {
   opacity: 0.7;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Platform available animations */
+.exportButton.available {
+  background-color: #333;
+  border-color: #ff6b35;
+  color: #fff;
+  animation: breatheOutline 3s ease-in-out infinite;
+  position: relative;
+}
+
+.exportButton.available::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border: 2px solid #ff6b35;
+  border-radius: 8px;
+  transform: translate(-50%, -50%);
+  animation: rippleSpread 2.5s ease-out infinite;
+  opacity: 0;
+  z-index: -1;
+}
+
+.exportButton.available::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  border: 1px solid #ff8c42;
+  border-radius: 10px;
+  transform: translate(-50%, -50%);
+  animation: rippleSpread 2.5s ease-out infinite 0.8s;
+  opacity: 0;
+  z-index: -1;
+}
+
+.exportButton.available:hover {
+  background-color: #000;
+  border-color: #ff6b35;
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+  animation: none; /* Stop breathing on hover for better UX */
+}
+
+/* Platform ready indicator badge */
+.exportButton.available .platformBadge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+/* Enhanced hover effects */
+.exportButton.available:hover .platformBadge {
+  animation: none;
+  transform: scale(1.2);
+}
+
+/* Success state animation */
+.exportButton.success {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-color: #10b981;
+  animation: successPulse 0.6s ease-out;
+}
+
+/* Keyframe animations */
+@keyframes breatheOutline {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.6);
+  }
+}
+
+@keyframes rippleSpread {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Accessibility: Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .exportButton.available {
+    animation: none;
+    box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.6);
+  }
+
+  .exportButton.available::before {
+    animation: none;
+    opacity: 0;
+  }
+
+  .exportButton.available::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .exportButton.available .platformBadge {
+    animation: none;
+  }
+
+  .exportButton:hover {
+    transform: none;
+  }
+
+  .exportButton.available:hover {
+    transform: none;
+  }
 }

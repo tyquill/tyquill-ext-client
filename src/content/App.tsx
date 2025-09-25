@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useContentScript } from './hooks/useContentScript';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
@@ -12,7 +11,6 @@ import { initXInjector } from '../utils/xInjector';
 import { initRedditInjector } from '../utils/redditInjector';
 
 const App: React.FC = () => {
-  const { isReady, currentSelection } = useContentScript();
   const { initializeLanguage } = useLanguageStore();
   const isThreads = (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
@@ -37,70 +35,18 @@ const App: React.FC = () => {
     initializeLanguage();
   }, [initializeLanguage]);
 
-  // 웹 클라이언트로부터 인증 정보 요청 및 로그아웃 알림 처리
-  useEffect(() => {
-    const handleWebClientMessage = async (event: MessageEvent) => {
-      // 웹 클라이언트로부터 인증 요청인지 확인
-      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
-          typeof event.data === 'object' && event.data !== null &&
-          event.data.type === 'TYQUILL_GET_AUTH_REQUEST' &&
-          event.data.source === 'tyquill-web-client') {
-
-        try {
-          // Background script에 인증 정보 요청
-          const response = await browser.runtime.sendMessage({
-            action: 'getAuthState'
-          });
-
-          // 웹 클라이언트에 응답
-          window.postMessage({
-            type: 'TYQUILL_AUTH_RESPONSE',
-            source: 'tyquill-extension',
-            authState: response?.authState || null
-          }, event.origin);
-        } catch (error) {
-          console.error('Failed to get auth state from extension:', error);
-          // 에러 발생 시에도 응답
-          window.postMessage({
-            type: 'TYQUILL_AUTH_RESPONSE',
-            source: 'tyquill-extension',
-            authState: null
-          }, event.origin);
-        }
-      }
-
-      // 웹 클라이언트로부터 로그아웃 알림 처리
-      if ((event.origin === 'http://localhost:5173' || event.origin === 'https://app.tyquill.ai') &&
-          typeof event.data === 'object' && event.data !== null &&
-          event.data.type === 'TYQUILL_LOGOUT_NOTIFICATION' &&
-          event.data.source === 'tyquill-web-client') {
-
-        console.log('📤 Received logout notification from web client');
-
-        try {
-          // Background script에 로그아웃 요청
-          await browser.runtime.sendMessage({
-            action: 'logoutFromWebClient'
-          });
-
-          console.log('✅ Extension logout triggered from web client');
-        } catch (error) {
-          console.error('Failed to trigger extension logout:', error);
-        }
-      }
-    };
-
-    window.addEventListener('message', handleWebClientMessage);
-
-    return () => {
-      window.removeEventListener('message', handleWebClientMessage);
-    };
-  }, []);
-
-  // Background Script로부터의 메시지 처리
+  // Background Script로부터의 메시지 처리 (FloatingButton 관련만)
   useEffect(() => {
     const handleMessage = async (request: any, _sender: any, sendResponse: any) => {
-      // console.log('Content Script 메시지 수신:', request);
+      // console.log('Main App 메시지 수신:', request);
+
+      // PING 요청 처리 (content script 로드 확인용)
+      if (request.type === 'PING') {
+        if (sendResponse) {
+          sendResponse({ success: true, loaded: true });
+        }
+        return;
+      }
 
       if (request.type === 'SETTINGS_CHANGED') {
         // console.log('설정 변경 감지:', request.settings);
@@ -118,7 +64,7 @@ const App: React.FC = () => {
 
       // 인증 상태 변경 처리
       if (request.type === 'AUTH_STATE_CHANGED') {
-        console.log('Auth state changed in content script:', request.isAuthenticated);
+        // console.log('Auth state changed in content script:', request.isAuthenticated);
         // FloatingButton과 다른 컴포넌트들에 인증 상태 변경 알림
         window.dispatchEvent(new CustomEvent('tyquill-auth-changed', {
           detail: { isAuthenticated: request.isAuthenticated }
@@ -199,6 +145,7 @@ const App: React.FC = () => {
     };
   }, [initializeLanguage]);
 
+
   // DOM이 준비되면 FloatingButton 표시
   useEffect(() => {
     const showFloatingButton = () => {
@@ -240,9 +187,9 @@ const App: React.FC = () => {
     if (!isThreads) return;
     let cleanup: (() => void) | undefined;
     try {
-      console.log('[Tyquill][App] initThreadsInjector() start');
+      // console.log('[Tyquill][App] initThreadsInjector() start');
       cleanup = initThreadsInjector();
-      console.log('[Tyquill][App] initThreadsInjector() done');
+      // console.log('[Tyquill][App] initThreadsInjector() done');
     } catch {}
     return () => {
       try { cleanup && cleanup(); } catch {}
@@ -295,12 +242,12 @@ const App: React.FC = () => {
   }, [isReddit]);
 
   return (
-    <div id="tyquill-content-root">
+    <div id="tyquill-main-app" className="tyquill-main-root">
       <FloatingButton />
-      
+
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
-      <div id="tyquill-content-components" style={{ display: 'none' }}>
-        {/* 여기에 추가적인 content-script UI 컴포넌트들이 들어갈 수 있습니다 */}
+      <div id="tyquill-main-components" style={{ display: 'none' }}>
+        {/* 여기에 추가적인 main app UI 컴포넌트들이 들어갈 수 있습니다 */}
       </div>
     </div>
   );

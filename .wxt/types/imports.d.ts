@@ -3,6 +3,7 @@ export {}
 declare global {
   const ContentScriptContext: typeof import('wxt/utils/content-script-context')['ContentScriptContext']
   const ErrorBoundary: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/components/ErrorBoundary')['default']
+  const ExportPlatform: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection')['ExportPlatform']
   const InvalidMatchPattern: typeof import('wxt/utils/match-patterns')['InvalidMatchPattern']
   const LINKEDIN_SELECTORS: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['LINKEDIN_SELECTORS']
   const LINKEDIN_STYLE_TEXT: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/constants')['LINKEDIN_STYLE_TEXT']
@@ -34,8 +35,10 @@ declare global {
   const defineContentScript: typeof import('wxt/utils/define-content-script')['defineContentScript']
   const defineUnlistedScript: typeof import('wxt/utils/define-unlisted-script')['defineUnlistedScript']
   const defineWxtPlugin: typeof import('wxt/utils/define-wxt-plugin')['defineWxtPlugin']
+  const detectPlatform: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection')['detectPlatform']
   const fakeBrowser: typeof import('wxt/testing')['fakeBrowser']
   const getAnimation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['getAnimation']
+  const getPlatformDisplayName: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection')['getPlatformDisplayName']
   const getReducedMotion: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/animations')['getReducedMotion']
   const getTranslation: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/translations')['getTranslation']
   const htmlToMarkdown: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['htmlToMarkdown']
@@ -46,6 +49,7 @@ declare global {
   const initYouTubeInjector: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/youtubeInjector')['initYouTubeInjector']
   const initialScrapState: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')['initialScrapState']
   const injectScript: typeof import('wxt/utils/inject-script')['injectScript']
+  const isSupportedPlatform: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection')['isSupportedPlatform']
   const markdownRenderer: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownRenderer')['default']
   const markdownToHtml: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['markdownToHtml']
   const markdownToPlainTextPreview: typeof import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/markdownConverter')['markdownToPlainTextPreview']
@@ -100,6 +104,9 @@ declare global {
   // @ts-ignore
   export type { PageTrackingOptions } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking'
   import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/hooks/usePageTracking')
+  // @ts-ignore
+  export type { ExportPlatform, PlatformInfo } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection'
+  import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/platformDetection')
   // @ts-ignore
   export type { ScrapStatus, ScrapState } from '/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper'
   import('/Users/hippoo/Desktop/SoMA/tyquill/ext/tyquill-ext-client/src/utils/scrapHelper')
