@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoClipboard, IoSparkles, IoArchive, IoSettings } from 'react-icons/io5';
+import { IoClipboard, IoSparkles, IoArchive } from 'react-icons/io5';
 import { IconBaseProps } from 'react-icons';
 
 function TablerMasksTheater({ size = 20, ...props }: IconBaseProps) {
@@ -75,16 +75,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
     { key: 'archive', label: t('menu_archive'), icon: IoArchive },
   ];
 
-  const handleSettingsClick = async () => {
-    // Send message to background script to open options page
-    try {
-      if (typeof browser !== 'undefined' && browser.runtime) {
-        await browser.runtime.sendMessage({ action: 'openOptionsPage' });
-      }
-    } catch (error) {
-      console.error('Failed to open options page:', error);
-    }
-  };
 
   return (
     <motion.div 
@@ -147,34 +137,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
           );
         })}
       </div>
-
-      {/* 설정 버튼 - 제일 아래쪽에 배치 */}
-      <motion.button
-        className={styles.settingsButton}
-        variants={menuItemVariants}
-        whileHover="hover"
-        whileTap="tap"
-        onClick={handleSettingsClick}
-      >
-        <motion.span 
-          className={styles.menuIcon}
-          whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
-          transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-        >
-          <IoSettings size={20} />
-        </motion.span>
-        
-        <motion.span 
-          className={styles.menuLabel}
-          animate={{
-            color: '#666666',
-            fontWeight: 500
-          }}
-          transition={{ duration: 0.2 }}
-        >
-          {t('menu_settings')}
-        </motion.span>
-      </motion.button>
     </motion.div>
   );
 };
