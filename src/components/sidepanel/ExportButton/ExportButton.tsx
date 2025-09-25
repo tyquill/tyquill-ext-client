@@ -481,19 +481,13 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
           }
 
         } else if (currentPlatformInfo.platform === ExportPlatform.GHOST) {
-          // Ghost export - simplified approach to avoid Lexical errors
+          // Ghost export - using safer approach for Lexical editor
           const exportToGhost = async (titleToExport: string, contentToExport: string) => {
             try {
               // Find title field - try multiple selectors for Ghost editor
               const titleField = document.querySelector('textarea.gh-editor-title, textarea[data-test-editor-title-input]') as HTMLTextAreaElement;
               if (!titleField) {
                 return { success: false, error: 'Title field not found' };
-              }
-
-              // Find content editor - Ghost uses Lexical with contenteditable div
-              const contentEditor = document.querySelector('div[data-kg="editor"] div.kg-prose[contenteditable="true"]') as HTMLElement;
-              if (!contentEditor) {
-                return { success: false, error: 'Content editor not found' };
               }
 
               // Set title using standard form field approach
@@ -509,7 +503,16 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
                 titleField.blur();
               }
 
-              // Set content using simplified HTML that Lexical can handle
+              // Wait a bit before handling content to let title settle
+              await new Promise(resolve => setTimeout(resolve, 200));
+
+              // Find content editor - Ghost uses Lexical with contenteditable div
+              let contentEditor = document.querySelector('div[data-kg="editor"] div.kg-prose[contenteditable="true"]') as HTMLElement;
+              if (!contentEditor) {
+                return { success: false, error: 'Content editor not found' };
+              }
+
+              // Set content with proper initialization
               if (contentToExport.trim()) {
                 // Convert markdown to clean HTML for Lexical
                 const convertMarkdownToHtml = (markdown: string): string => {
@@ -519,24 +522,17 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
                   // Process inline formatting
                   const processInlineFormatting = (text: string): string => {
-                    // Escape HTML entities first
-                    text = text.replace(/&/g, '&amp;')
-                               .replace(/</g, '&lt;')
-                               .replace(/>/g, '&gt;');
-
-                    // Then apply formatting
-                    text = text.replace(/&lt;/g, '<').replace(/&gt;/g, '>'); // Restore for our tags
-
-                    // Images
-                    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
-                    // Links
-                    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+                    // Process formatting without escaping first (to preserve user content)
                     // Bold (must come before italic)
                     text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
                     // Italic
                     text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                    // Links
+                    text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
                     // Inline code
                     text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                    // Images
+                    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1">');
 
                     return text;
                   };
@@ -628,79 +624,129 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
                 const htmlContent = convertMarkdownToHtml(cleanedContent);
 
-                // Focus the editor
-                contentEditor.focus();
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Initialize editor state properly
+                // First, ensure editor is in a clean state by simulating user interaction
+                contentEditor.click();
+                await new Promise(resolve => setTimeout(resolve, 300));
 
-                // Try to clear existing content with execCommand (more compatible)
-                try {
-                  document.execCommand('selectAll', false);
-                  await new Promise(resolve => setTimeout(resolve, 50));
-                  document.execCommand('delete', false);
-                  await new Promise(resolve => setTimeout(resolve, 100));
-                } catch (e) {
-                  // If execCommand fails, try to clear the content directly
-                  contentEditor.innerHTML = '';
+                // Check if there's existing content and position cursor
+                if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                  // If there's content, select all
+                  const selection = window.getSelection();
+                  if (selection) {
+                    selection.removeAllRanges();
+                    const range = document.createRange();
+                    range.selectNodeContents(contentEditor);
+                    selection.addRange(range);
+                  }
+                } else {
+                  // If empty, just focus
+                  contentEditor.focus();
                 }
 
-                // Method 1: Try paste event with HTML
-                const clipboardData = new DataTransfer();
-                clipboardData.setData('text/html', htmlContent);
-                clipboardData.setData('text/plain', cleanedContent);
+                // Wait for Lexical to stabilize
+                await new Promise(resolve => setTimeout(resolve, 200));
 
-                const pasteEvent = new ClipboardEvent('paste', {
-                  bubbles: true,
-                  cancelable: true,
-                  clipboardData: clipboardData
-                });
-
-                let pasteSuccess = false;
-                try {
-                  pasteSuccess = contentEditor.dispatchEvent(pasteEvent);
-                } catch (e) {
-                  console.log('Paste event failed:', e);
-                }
-
-                // If paste didn't work, try execCommand
-                if (!pasteSuccess || pasteEvent.defaultPrevented) {
+                // Attempt to insert content
+                const insertContent = async (): Promise<boolean> => {
                   try {
-                    document.execCommand('insertHTML', false, htmlContent);
-                  } catch (e) {
-                    // If insertHTML fails, try setting innerHTML directly
+                    // Method 1: Try using clipboard API with proper paste event
+                    const clipboardData = new DataTransfer();
+                    clipboardData.setData('text/html', htmlContent);
+                    clipboardData.setData('text/plain', cleanedContent);
+
+                    const pasteEvent = new ClipboardEvent('paste', {
+                      bubbles: true,
+                      cancelable: true,
+                      clipboardData: clipboardData
+                    });
+
+                    // Dispatch paste event
+                    let pasteResult = false;
+                    try {
+                      pasteResult = contentEditor.dispatchEvent(pasteEvent);
+
+                      // If paste succeeded and wasn't prevented, we're done
+                      if (pasteResult && !pasteEvent.defaultPrevented) {
+                        // Give Lexical time to process the paste
+                        await new Promise(resolve => setTimeout(resolve, 300));
+
+                        // Check if content was inserted
+                        if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                          return true;
+                        }
+                      }
+                    } catch (pasteError) {
+                      console.log('Paste event error, trying next method');
+                    }
+
+                    // Method 2: Try execCommand as fallback
+                    try {
+                      // First clear if needed
+                      if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                        document.execCommand('selectAll', false);
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        document.execCommand('delete', false);
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                      }
+
+                      // Insert HTML
+                      const insertResult = document.execCommand('insertHTML', false, htmlContent);
+                      if (insertResult) {
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                        if (contentEditor.textContent && contentEditor.textContent.trim().length > 0) {
+                          return true;
+                        }
+                      }
+                    } catch (execError) {
+                      console.log('execCommand error, trying final method');
+                    }
+
+                    // Method 3: Direct innerHTML as last resort
                     contentEditor.innerHTML = htmlContent;
+
+                    // Trigger input event for Lexical
+                    const inputEvent = new Event('input', { bubbles: true });
+                    contentEditor.dispatchEvent(inputEvent);
+
+                    await new Promise(resolve => setTimeout(resolve, 200));
+                    return contentEditor.textContent?.trim().length! > 0;
+
+                  } catch (error) {
+                    console.log('Content insertion error:', error);
+                    return false;
+                  }
+                };
+
+                // Try to insert content with internal retry
+                let success = await insertContent();
+
+                // If first attempt failed, wait and retry once more
+                if (!success) {
+                  console.log('First insertion attempt failed, retrying after delay...');
+
+                  // Wait for any Ghost state changes to complete
+                  await new Promise(resolve => setTimeout(resolve, 1000));
+
+                  // Re-query and re-focus the editor
+                  contentEditor = document.querySelector('div[data-kg="editor"] div.kg-prose[contenteditable="true"]') as HTMLElement;
+                  if (contentEditor) {
+                    contentEditor.click();
+                    contentEditor.focus();
+                    await new Promise(resolve => setTimeout(resolve, 300));
+
+                    // Try insertion again
+                    success = await insertContent();
                   }
                 }
 
-                // Trigger input events to notify Ghost of changes
-                try {
-                  const inputEvent = new Event('input', { bubbles: true });
-                  contentEditor.dispatchEvent(inputEvent);
-
-                  const changeEvent = new Event('change', { bubbles: true });
-                  contentEditor.dispatchEvent(changeEvent);
-                } catch (e) {
-                  console.log('Event dispatch failed:', e);
-                }
-
-                // Wait a bit for content to be processed
-                await new Promise(resolve => setTimeout(resolve, 200));
-
-                // Verify content was inserted
-                const hasContent = contentEditor.textContent?.trim().length! > 0;
-                if (!hasContent) {
-                  // Last attempt: try to write to clipboard and paste manually
+                if (!success) {
+                  // If still failed, copy to clipboard as fallback
                   try {
-                    // Try copying the HTML to clipboard
-                    const blob = new Blob([htmlContent], { type: 'text/html' });
-                    const clipboardItem = new ClipboardItem({ 'text/html': blob });
-                    await navigator.clipboard.write([clipboardItem]);
-
-                    // Focus and paste
-                    contentEditor.focus();
-                    document.execCommand('paste');
+                    await navigator.clipboard.writeText(cleanedContent);
+                    return { success: false, error: 'Content copied to clipboard. Please paste manually (Ctrl/Cmd+V).' };
                   } catch (clipErr) {
-                    // Final fallback: just set the text content
-                    contentEditor.textContent = cleanedContent;
+                    return { success: false, error: 'Failed to insert content. Please try again.' };
                   }
                 }
 
