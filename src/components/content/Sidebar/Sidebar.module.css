@@ -196,17 +196,57 @@
   overscroll-behavior: contain;
 }
 
-/* Sidebar Header - dedicated space for controls */
+/* Sidebar Header - improved structure */
 .sidebarHeader {
   display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  position: relative !important;
-  height: 48px !important;
-  min-height: 48px !important;
-  padding: 8px 12px !important;
-  background: #ffffff !important;
+  flex-direction: column !important;
+  background: linear-gradient(to bottom, #ffffff 0%, #fafbfc 100%) !important;
   border-radius: 16px 16px 0 0 !important; /* Match sidebar border radius at top */
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+}
+
+/* Main header row */
+.headerMain {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  height: 52px !important;
+  min-height: 52px !important;
+  padding: 10px 16px !important;
+  position: relative !important;
+}
+
+/* Left side of header */
+.headerLeft {
+  display: flex !important;
+  align-items: center !important;
+  gap: 0 !important;
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+/* Brand area */
+.brandArea {
+  display: flex !important;
+  align-items: center !important;
+  padding-left: 16px !important;
+}
+
+.brandText {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  letter-spacing: -0.3px !important;
+  user-select: none !important;
+}
+
+/* Right side of header */
+.headerRight {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 /* Sidebar Content - main content area below header */
@@ -216,44 +256,52 @@
   flex-direction: column !important;
   overflow: hidden !important;
   border-radius: 0 0 16px 16px !important; /* Match sidebar border radius at bottom */
+  position: relative !important; /* Enable positioning for settings overlay */
 }
 
-/* Close button styles - positioned absolutely on the right */
+/* Action buttons - uniform styling */
+.actionButton,
 .closeButton {
-  position: absolute !important;
-  right: 12px !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  z-index: 1 !important;
-  width: 28px !important;
-  height: 28px !important;
+  width: 36px !important;
+  height: 36px !important;
   padding: 0 !important;
   margin: 0 !important;
-  background-color: rgba(255, 255, 255, 0.8) !important;
+  background-color: transparent !important;
   border: none !important;
-  border-radius: 6px !important;
+  border-radius: 8px !important;
   cursor: pointer !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   color: #6b7280 !important;
   outline: none !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative !important;
+}
+
+.actionButton:hover,
+.closeButton:hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  color: #111827 !important;
+  transform: scale(1.05) !important;
 }
 
 .closeButton:hover {
-  background-color: rgba(255, 255, 255, 1) !important;
-  color: #374151 !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-  transform: translateY(-50%) !important;
+  background-color: rgba(239, 68, 68, 0.08) !important;
+  color: #dc2626 !important;
+}
+
+.actionButton:active,
+.closeButton:active {
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  transform: scale(0.98) !important;
 }
 
 .closeButton:active {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  transform: translateY(-50%) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
+  background-color: rgba(239, 68, 68, 0.12) !important;
 }
 
+.actionButton:focus-visible,
 .closeButton:focus-visible {
   outline: 2px solid rgba(59, 130, 246, 0.5) !important;
   outline-offset: 2px !important;
@@ -281,71 +329,50 @@
   }
 }
 
-/* Drag handle styles - now positioned within header */
+/* Drag handle styles - centered single grip design */
 .dragHandle {
-  position: relative !important;
+  position: absolute !important;
+  left: 50% !important;
+  top: 0 !important;
+  transform: translateX(-50%) !important;
   width: 48px !important;
-  height: 32px !important;
-  background: rgba(255, 255, 255, 0.8) !important;
+  height: 20px !important;
+  background: transparent !important;
   border: none !important;
   cursor: move !important;
-  z-index: auto !important;
+  z-index: 10 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  border-radius: 8px !important;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease !important;
-  padding: 4px !important;
+  border-radius: 10px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding: 4px 12px !important;
   margin: 0 !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
 }
 
 .dragHandle:hover {
-  background-color: rgba(255, 255, 255, 1) !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15) !important;
-  transform: scale(1.02) !important;
+  background-color: rgba(0, 0, 0, 0.04) !important;
+  transform: translateX(-50%) scale(1.02) !important;
 }
 
 .dragHandle:active {
-  background-color: rgba(0, 0, 0, 0.05) !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15) !important;
-  transform: scale(0.98) !important;
+  background-color: rgba(0, 0, 0, 0.08) !important;
+  transform: translateX(-50%) scale(0.98) !important;
 }
 
-/* Drag handle grip indicator - three dots */
+/* Drag handle grip indicator - single centered bar */
 .dragGrip {
-  width: 20px !important;
+  width: 24px !important;
   height: 4px !important;
   background-color: #d1d5db !important;
   border-radius: 2px !important;
-  transition: background-color 0.2s ease !important;
+  transition: all 0.2s ease !important;
   position: relative !important;
 }
 
-.dragGrip::before,
-.dragGrip::after {
-  content: '' !important;
-  position: absolute !important;
-  width: 4px !important;
-  height: 4px !important;
-  background-color: #d1d5db !important;
-  border-radius: 50% !important;
-  top: 0 !important;
-  transition: background-color 0.2s ease !important;
-}
-
-.dragGrip::before {
-  left: -2px !important;
-}
-
-.dragGrip::after {
-  right: -2px !important;
-}
-
-.dragHandle:hover .dragGrip,
-.dragHandle:hover .dragGrip::before,
-.dragHandle:hover .dragGrip::after {
+.dragHandle:hover .dragGrip {
   background-color: #9ca3af !important;
+  width: 28px !important;
 }
 
 /* Dragging state styles */
@@ -391,6 +418,161 @@
 }
 
 /* This rule is now consolidated with the main .sidebar.dragging rule above */
+
+/* Tooltip styles for action buttons */
+.actionButton::after,
+.closeButton::after,
+.dragHandle::after {
+  content: attr(title) !important;
+  position: absolute !important;
+  bottom: -30px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  padding: 4px 8px !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+  color: white !important;
+  font-size: 11px !important;
+  border-radius: 4px !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s ease !important;
+  z-index: 1000 !important;
+}
+
+.actionButton:hover::after,
+.closeButton:hover::after,
+.dragHandle:hover::after {
+  opacity: 0 !important; /* Hide tooltip for drag handle */
+}
+
+/* Sub-header section for save/context */
+.subHeaderSection {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px 16px !important;
+  background: #fafbfc !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+  gap: 12px !important;
+}
+
+.pageContext {
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  min-width: 0 !important;
+}
+
+.pageIcon {
+  width: 20px !important;
+  height: 20px !important;
+  flex-shrink: 0 !important;
+  color: #6b7280 !important;
+}
+
+.pageDetails {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.pageName {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: #374151 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.3 !important;
+}
+
+.pageUrl {
+  font-size: 11px !important;
+  color: #9ca3af !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  line-height: 1.2 !important;
+  margin-top: 2px !important;
+}
+
+.quickSaveButton {
+  padding: 6px 14px !important;
+  background: #111827 !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 6px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  white-space: nowrap !important;
+}
+
+.quickSaveButton:hover {
+  background: #1f2937 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12) !important;
+}
+
+.quickSaveButton:active {
+  transform: translateY(0) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .sidebarHeader {
+    background: linear-gradient(to bottom, #1f2937 0%, #111827 100%) !important;
+    border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .brandText {
+    color: #f9fafb !important;
+  }
+
+
+  .actionButton,
+  .closeButton {
+    color: #9ca3af !important;
+  }
+
+  .actionButton:hover,
+  .closeButton:hover {
+    background-color: rgba(255, 255, 255, 0.08) !important;
+    color: #f3f4f6 !important;
+  }
+
+  .closeButton:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+    color: #ef4444 !important;
+  }
+
+  .subHeaderSection {
+    background: #111827 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  .pageName {
+    color: #f3f4f6 !important;
+  }
+
+  .pageUrl {
+    color: #6b7280 !important;
+  }
+
+  .quickSaveButton {
+    background: #374151 !important;
+  }
+
+  .quickSaveButton:hover {
+    background: #4b5563 !important;
+  }
+}
 
 /* Print styles - hide sidebar when printing */
 @media print {

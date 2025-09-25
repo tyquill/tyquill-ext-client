@@ -6,7 +6,8 @@ import { useLanguageStore } from '../../../stores/languageStore';
 import { ToastProvider } from '../../../hooks/useToast';
 import { trackPageViewBridge, trackPageExitBridge } from '../../../analytics/bridge';
 import { authService } from '../../../services/auth.service';
-import { IoClose } from 'react-icons/io5';
+import { IoClose, IoRefresh, IoSettings } from 'react-icons/io5';
+import Settings from '../Settings/Settings';
 
 // Import all the sidepanel components (now in sidepanel_unused)
 import LandingPage from '../../../sidepanel_unused/pages/LandingPage';
@@ -56,6 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const previousPageRef = useRef<PageState>({ type: 'landing' });
   const pageStartTimeRef = useRef<number>(Date.now());
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Calculate default Y position (properly center the 98vh sidebar)
   const getDefaultY = useCallback(() => {
@@ -552,25 +554,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
           onClick={handleSidebarClick}
         >
-          {/* Dedicated header area */}
+          {/* Improved header structure */}
           <div className={styles.sidebarHeader}>
-            <button
-              ref={dragHandleRef}
-              className={styles.dragHandle}
-              onMouseDown={handleDragStart}
-              aria-label="Drag to move sidebar"
-              type="button"
-            >
-              <div className={styles.dragGrip} />
-            </button>
-            <button
-              className={styles.closeButton}
-              onClick={onClose}
-              aria-label="Close sidebar"
-              type="button"
-            >
-              <IoClose size={20} />
-            </button>
+            {/* Main header row */}
+            <div className={styles.headerMain}>
+              {/* Centered drag handle */}
+              <button
+                ref={dragHandleRef}
+                className={styles.dragHandle}
+                onMouseDown={handleDragStart}
+                aria-label="Drag to move sidebar"
+                type="button"
+                title="Drag to move"
+              >
+                <div className={styles.dragGrip} />
+              </button>
+
+              {/* Left side: Brand area */}
+              <div className={styles.headerLeft}>
+                <div className={styles.brandArea}>
+                  <span className={styles.brandText}>Tyquill</span>
+                </div>
+              </div>
+
+              {/* Right side: Action buttons */}
+              <div className={styles.headerRight}>
+                <button
+                  className={styles.actionButton}
+                  onClick={() => window.location.reload()}
+                  aria-label="Refresh page"
+                  type="button"
+                  title="Refresh"
+                >
+                  <IoRefresh size={18} />
+                </button>
+                <button
+                  className={styles.actionButton}
+                  onClick={() => setShowSettings(true)}
+                  aria-label="Open settings"
+                  type="button"
+                  title="Settings"
+                >
+                  <IoSettings size={18} />
+                </button>
+                <button
+                  className={styles.closeButton}
+                  onClick={onClose}
+                  aria-label="Close sidebar"
+                  type="button"
+                  title="Close"
+                >
+                  <IoClose size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Sub-header: Context/URL info will be added by the Header component */}
           </div>
 
           {/* Main content area */}
@@ -578,6 +617,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <ToastProvider>
               <LandingPage onStart={navigateToMain} />
             </ToastProvider>
+
+            {/* Settings overlay */}
+            <Settings
+              isOpen={showSettings}
+              onClose={() => setShowSettings(false)}
+            />
           </div>
         </div>
       </div>
@@ -592,25 +637,62 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         className={`${styles.sidebar} ${dragState.isDragging ? styles.dragging : ''}`}
         onClick={handleSidebarClick}
       >
-        {/* Dedicated header area */}
+        {/* Improved header structure */}
         <div className={styles.sidebarHeader}>
-          <button
-            ref={dragHandleRef}
-            className={styles.dragHandle}
-            onMouseDown={handleDragStart}
-            aria-label="Drag to move sidebar"
-            type="button"
-          >
-            <div className={styles.dragGrip} />
-          </button>
-          <button
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Close sidebar"
-            type="button"
-          >
-            <IoClose size={20} />
-          </button>
+          {/* Main header row */}
+          <div className={styles.headerMain}>
+            {/* Centered drag handle */}
+            <button
+              ref={dragHandleRef}
+              className={styles.dragHandle}
+              onMouseDown={handleDragStart}
+              aria-label="Drag to move sidebar"
+              type="button"
+              title="Drag to move"
+            >
+              <div className={styles.dragGrip} />
+            </button>
+
+            {/* Left side: Brand area */}
+            <div className={styles.headerLeft}>
+              <div className={styles.brandArea}>
+                <span className={styles.brandText}>Tyquill</span>
+              </div>
+            </div>
+
+            {/* Right side: Action buttons */}
+            <div className={styles.headerRight}>
+              <button
+                className={styles.actionButton}
+                onClick={() => window.location.reload()}
+                aria-label="Refresh page"
+                type="button"
+                title="Refresh"
+              >
+                <IoRefresh size={18} />
+              </button>
+              <button
+                className={styles.actionButton}
+                onClick={() => setShowSettings(true)}
+                aria-label="Open settings"
+                type="button"
+                title="Settings"
+              >
+                <IoSettings size={16} />
+              </button>
+              <button
+                className={styles.closeButton}
+                onClick={onClose}
+                aria-label="Close sidebar"
+                type="button"
+                title="Close"
+              >
+                <IoClose size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Sub-header: Context/URL info will be added by the Header component */}
         </div>
 
         {/* Main content area */}
@@ -645,6 +727,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               </div>
             </div>
           </ToastProvider>
+
+          {/* Settings overlay */}
+          <Settings
+            isOpen={showSettings}
+            onClose={() => setShowSettings(false)}
+          />
         </div>
       </div>
     </div>

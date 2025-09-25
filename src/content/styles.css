@@ -1,4 +1,7 @@
 /* Global styles for the content script shadow DOM */
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&display=swap');
+
 /* Reset and base styles for shadow DOM isolation */
 
 :host {

@@ -1,0 +1,509 @@
+/* Settings Overlay - slides up from bottom */
+.settingsOverlay {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background: #ffffff !important;
+  z-index: 1000 !important;
+  transform: translateY(100%) !important;
+  transition: transform 0.2s ease-out !important;
+  border-radius: 0 !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.settingsOverlay.open {
+  transform: translateY(0) !important;
+}
+
+/* Settings Container */
+.settingsContainer {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* Settings Header */
+.settingsHeader {
+  display: flex !important;
+  align-items: center !important;
+  padding: 20px 24px 16px 24px !important;
+  background: #ffffff !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+  gap: 16px !important;
+  min-height: 72px !important;
+}
+
+.backButton {
+  width: 32px !important;
+  height: 32px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #6b6b6b !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.backButton:hover {
+  background-color: #f3f3f3 !important;
+  color: #000000 !important;
+}
+
+.backButton:active {
+  background-color: #e5e5e5 !important;
+}
+
+.settingsTitle {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #000000 !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  letter-spacing: -0.01em !important;
+}
+
+/* Settings Content */
+.settingsContent {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  padding: 24px !important;
+  background: #ffffff !important;
+}
+
+/* Profile Section */
+.profileSection {
+  margin-bottom: 32px !important;
+  padding-bottom: 20px !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+}
+
+.profileContainer {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+}
+
+.profileImage {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  object-fit: cover !important;
+  border: 2px solid #e5e5e5 !important;
+}
+
+.profileFallback {
+  width: 48px !important;
+  height: 48px !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  color: white !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  border: 2px solid #e5e5e5 !important;
+  flex-shrink: 0 !important;
+}
+
+.profileInfo {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.profileName {
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  color: #000000 !important;
+  margin-bottom: 2px !important;
+  text-transform: capitalize !important;
+}
+
+.profileEmail {
+  font-size: 13px !important;
+  color: #6b6b6b !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Settings Sections */
+.settingsSection {
+  margin-bottom: 40px !important;
+}
+
+.settingsSection:last-child {
+  margin-bottom: 24px !important;
+}
+
+.sectionHeader {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 20px !important;
+}
+
+.sectionIcon {
+  width: 16px !important;
+  height: 16px !important;
+  color: #6b6b6b !important;
+  flex-shrink: 0 !important;
+}
+
+.sectionTitle {
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  color: #000000 !important;
+  margin: 0 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+}
+
+/* Setting Groups */
+.settingGroup {
+  margin-bottom: 24px !important;
+}
+
+.settingGroup:last-child {
+  margin-bottom: 0 !important;
+}
+
+.settingLabel {
+  display: block !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #6b6b6b !important;
+  margin-bottom: 12px !important;
+}
+
+/* Setting Item */
+.settingItem {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 20px !important;
+  background: #fafafa !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 6px !important;
+  transition: all 0.15s ease !important;
+  margin-bottom: 12px !important;
+}
+
+.settingItem:hover {
+  background: #f3f3f3 !important;
+  border-color: #d1d5db !important;
+}
+
+.settingInfo {
+  flex: 1 !important;
+  min-width: 0 !important;
+}
+
+.settingDescription {
+  font-size: 12px !important;
+  color: #6b6b6b !important;
+  margin: 4px 0 0 0 !important;
+  line-height: 1.4 !important;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative !important;
+  display: inline-block !important;
+  width: 48px !important;
+  height: 24px !important;
+  cursor: pointer !important;
+}
+
+.toggle input {
+  opacity: 0 !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.slider {
+  position: absolute !important;
+  cursor: pointer !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  background-color: #d1d5db !important;
+  transition: 0.2s ease !important;
+  border-radius: 24px !important;
+}
+
+.slider:before {
+  position: absolute !important;
+  content: "" !important;
+  height: 18px !important;
+  width: 18px !important;
+  left: 3px !important;
+  bottom: 3px !important;
+  background-color: white !important;
+  transition: 0.2s ease !important;
+  border-radius: 50% !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+input:checked + .slider {
+  background-color: #000000 !important;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px) !important;
+}
+
+
+/* About Content */
+.aboutContent {
+  background: #fafafa !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 6px !important;
+  padding: 20px !important;
+}
+
+.aboutItem {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 10px 0 !important;
+  border-bottom: 1px solid #e5e5e5 !important;
+}
+
+.aboutItem:last-child {
+  border-bottom: none !important;
+  padding-bottom: 0 !important;
+}
+
+.aboutItem:first-child {
+  padding-top: 0 !important;
+}
+
+.aboutLabel {
+  font-size: 14px !important;
+  color: #6b6b6b !important;
+  font-weight: 500 !important;
+}
+
+.aboutValue {
+  font-size: 14px !important;
+  color: #000000 !important;
+  font-weight: 500 !important;
+}
+
+.aboutLink {
+  font-size: 14px !important;
+  color: #000000 !important;
+  font-weight: 500 !important;
+  text-decoration: none !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.aboutLink:hover {
+  opacity: 0.7 !important;
+  text-decoration: underline !important;
+}
+
+/* Options Button */
+.optionsButton {
+  width: 100% !important;
+  padding: 14px 16px !important;
+  background: #fafafa !important;
+  border: 1px solid #e5e5e5 !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #6b6b6b !important;
+  transition: all 0.15s ease !important;
+  text-align: center !important;
+}
+
+.optionsButton:hover {
+  background: #f3f3f3 !important;
+  border-color: #d1d5db !important;
+  color: #000000 !important;
+}
+
+.optionsButton:active {
+  background: #e5e5e5 !important;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .settingsOverlay {
+    background: #000000 !important;
+  }
+
+  .settingsHeader {
+    background: #000000 !important;
+    border-bottom-color: #1a1a1a !important;
+  }
+
+  .settingsTitle {
+    color: #ffffff !important;
+  }
+
+  .backButton {
+    color: #6b6b6b !important;
+  }
+
+  .backButton:hover {
+    background-color: #1a1a1a !important;
+    color: #ffffff !important;
+  }
+
+  .backButton:active {
+    background-color: #333333 !important;
+  }
+
+  .settingsContent {
+    background: #000000 !important;
+  }
+
+  /* Profile Section Dark Mode */
+  .profileSection {
+    border-bottom-color: #1a1a1a !important;
+  }
+
+  .profileImage {
+    border-color: #333333 !important;
+  }
+
+  .profileFallback {
+    border-color: #333333 !important;
+  }
+
+  .profileName {
+    color: #ffffff !important;
+  }
+
+  .profileEmail {
+    color: #6b6b6b !important;
+  }
+
+  .sectionTitle {
+    color: #ffffff !important;
+  }
+
+  .sectionIcon {
+    color: #6b6b6b !important;
+  }
+
+  .settingLabel {
+    color: #9ca3af !important;
+  }
+
+  .settingItem {
+    background: #1a1a1a !important;
+    border-color: #333333 !important;
+  }
+
+  .settingItem:hover {
+    background: #333333 !important;
+    border-color: #4b5563 !important;
+  }
+
+  .settingDescription {
+    color: #9ca3af !important;
+  }
+
+  .slider {
+    background-color: #4b5563 !important;
+  }
+
+  input:checked + .slider {
+    background-color: #ffffff !important;
+  }
+
+  .languageOption {
+    background: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #9ca3af !important;
+  }
+
+  .languageOption:hover {
+    background: #333333 !important;
+    border-color: #4b5563 !important;
+    color: #ffffff !important;
+  }
+
+  .languageOption.active {
+    background: #ffffff !important;
+    border-color: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .languageOption.active:hover {
+    background: #e5e5e5 !important;
+    border-color: #e5e5e5 !important;
+  }
+
+  .aboutContent {
+    background: #1a1a1a !important;
+    border-color: #333333 !important;
+  }
+
+  .aboutItem {
+    border-bottom-color: #333333 !important;
+  }
+
+  .aboutLabel {
+    color: #6b6b6b !important;
+  }
+
+  .aboutValue {
+    color: #ffffff !important;
+  }
+
+  .aboutLink {
+    color: #ffffff !important;
+  }
+
+  .aboutLink:hover {
+    opacity: 0.7 !important;
+  }
+
+  .optionsButton {
+    background: #1a1a1a !important;
+    border-color: #333333 !important;
+    color: #9ca3af !important;
+  }
+
+  .optionsButton:hover {
+    background: #333333 !important;
+    border-color: #4b5563 !important;
+    color: #ffffff !important;
+  }
+
+  .optionsButton:active {
+    background: #4b5563 !important;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .settingsOverlay {
+    transition: none !important;
+  }
+
+  .backButton,
+  .toggle,
+  .slider,
+  .languageOption,
+  .optionsButton,
+  .aboutLink {
+    transition: none !important;
+  }
+}
