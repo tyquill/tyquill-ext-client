@@ -21,11 +21,15 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
   React.useEffect(() => {
     const loadPreferences = async () => {
       try {
-        const result = await browser.storage.local.get(['floatingButtonVisible', 'authState']);
-        if (typeof result.floatingButtonVisible === 'boolean') {
-          setFloatingButtonVisible(result.floatingButtonVisible);
+        // Load floating button setting from the same storage location as FloatingButton component
+        const { tyquillSettings } = await browser.storage.sync.get('tyquillSettings');
+        if (tyquillSettings?.floatingButtonVisible !== undefined) {
+          setFloatingButtonVisible(tyquillSettings.floatingButtonVisible);
         }
-        if (result.authState) setAuthState(result.authState);
+
+        // Load auth state from local storage
+        const { authState } = await browser.storage.local.get('authState');
+        if (authState) setAuthState(authState);
       } catch (error) {
         console.error('Failed to load preferences:', error);
       }
@@ -36,11 +40,33 @@ const Settings: React.FC<SettingsProps> = ({ isOpen, onClose }) => {
     }
   }, [isOpen]);
 
+  // Listen for storage changes to keep settings in sync
+  React.useEffect(() => {
+    const handleStorageChange = (changes: { [key: string]: any }) => {
+      if (changes.tyquillSettings) {
+        const newSettings = changes.tyquillSettings.newValue;
+        if (newSettings?.floatingButtonVisible !== undefined) {
+          setFloatingButtonVisible(newSettings.floatingButtonVisible);
+        }
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, []);
+
   // Save floating button preference
   const handleFloatingButtonToggle = async (enabled: boolean) => {
     setFloatingButtonVisible(enabled);
     try {
-      await browser.storage.local.set({ floatingButtonVisible: enabled });
+      // Save to the same storage location as FloatingButton component expects
+      const { tyquillSettings } = await browser.storage.sync.get('tyquillSettings');
+      await browser.storage.sync.set({
+        tyquillSettings: { ...tyquillSettings, floatingButtonVisible: enabled }
+      });
     } catch (error) {
       console.error('Failed to save floating button preference:', error);
     }
