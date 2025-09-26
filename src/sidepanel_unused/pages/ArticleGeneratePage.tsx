@@ -586,90 +586,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     setSelectedUploads(prev => prev.map(u => u.uploadedFileId === uploadedFileId ? { ...u, usagePrompt: value } : u));
   };
 
-  // Calculate initial height based on placeholder
-  const calculatePlaceholderHeight = (textarea: HTMLTextAreaElement): number => {
-    const tempDiv = document.createElement('div');
-    const styles = window.getComputedStyle(textarea);
 
-    // Copy relevant styles
-    tempDiv.style.cssText = styles.cssText;
-    tempDiv.style.height = 'auto';
-    tempDiv.style.width = textarea.offsetWidth + 'px';
-    tempDiv.style.position = 'absolute';
-    tempDiv.style.visibility = 'hidden';
-    tempDiv.style.whiteSpace = 'pre-wrap';
-    tempDiv.style.wordWrap = 'break-word';
-    tempDiv.textContent = textarea.placeholder;
 
-    document.body.appendChild(tempDiv);
-    const height = tempDiv.scrollHeight;
-    document.body.removeChild(tempDiv);
-
-    // Add extra padding for better visual appearance (approximately two more lines)
-    return height + 60;
-  };
-
-  // Auto-resize textarea function
-  const resizeTextarea = (textarea: HTMLTextAreaElement) => {
-    if (!textarea) return;
-
-    if (textarea.value && textarea.value.trim()) {
-      // If there's content, adjust to exact content height
-      // Save scroll position to prevent jumping
-      const scrollPos = window.scrollY;
-
-      // Reset height to get accurate scrollHeight
-      textarea.style.height = '0px';
-
-      // Set height to match content exactly
-      const contentHeight = textarea.scrollHeight;
-      textarea.style.height = contentHeight + 'px';
-
-      // Restore scroll position
-      window.scrollTo(0, scrollPos);
-    } else {
-      // If empty, use placeholder height with extra padding for comfortable initial view
-      const placeholderHeight = calculatePlaceholderHeight(textarea);
-      textarea.style.height = placeholderHeight + 'px';
-    }
-  };
-
-  // 키메시지 textarea 자동 높이 조정
-  useEffect(() => {
-    if (keyMessageRef.current) {
-      resizeTextarea(keyMessageRef.current);
-    }
-  }, [keyInsight, t]); // Trigger on value or language change
-
-  // Initial setup on mount
-  useEffect(() => {
-    // Set initial height based on placeholder when component mounts
-    const setInitialHeight = () => {
-      if (keyMessageRef.current) {
-        resizeTextarea(keyMessageRef.current);
-      }
-    };
-
-    // Use multiple timing strategies to ensure proper initialization
-    setInitialHeight();
-    requestAnimationFrame(setInitialHeight);
-    setTimeout(setInitialHeight, 0);
-    setTimeout(setInitialHeight, 100);
-  }, []); // Only run on mount
-
-  // 섹션 아이디어 textareas 자동 높이 조정 (placeholder 텍스트 고려)
-  useEffect(() => {
-    // Give time for DOM to update
-    setTimeout(() => {
-      const textareas = document.querySelectorAll(`.${articleStyles.ideaTextarea}`) as NodeListOf<HTMLTextAreaElement>;
-      textareas.forEach(textarea => {
-        // Reset height to auto to get the correct scrollHeight
-        textarea.style.height = 'auto';
-        // Set height based on scrollHeight (includes placeholder)
-        textarea.style.height = Math.max(textarea.scrollHeight, 80) + 'px';
-      });
-    }, 0);
-  }, [templateStructure]);
 
   useEffect(() => {
     const fetchScraps = async () => {
@@ -795,10 +713,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               id="message"
               className={articleStyles.keyMessageTextarea}
               value={keyInsight}
-              onChange={(e) => {
-                setKeyInsight(e.target.value);
-                resizeTextarea(e.target);
-              }}
+              onChange={(e) => setKeyInsight(e.target.value)}
               onBlur={async () => {
                 if (keyInsight && keyInsight.trim()) {
                   try {
@@ -923,16 +838,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         onChange={(e) => handleIdeaChange(section.id!, e.target.value)}
                         placeholder={t('articleGenerate_sectionIdeaPlaceholder')}
                         className={articleStyles.ideaTextarea}
-                        onInput={(e) => {
-                          // Auto-resize based on content
-                          const target = e.target as HTMLTextAreaElement;
-                          target.style.height = 'auto';
-                          target.style.height = target.scrollHeight + 'px';
-                        }}
-                        style={{
-                          minHeight: '80px',
-                          resize: 'none'
-                        }}
                       />
                     </div>
                   );
@@ -1060,11 +965,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                       value={scrap.opinion || ''}
                       maxLength={75}
                       onChange={(e) => {
-                        const ta = e.target as HTMLTextAreaElement;
-                        const v = ta.value.slice(0, 75);
+                        const v = e.target.value.slice(0, 75);
                         handleOpinionChange(scrap.scrapId, v);
-                        ta.style.height = 'auto';
-                        ta.style.height = ta.scrollHeight + 'px';
                       }}
                       onKeyDown={(e) => {
                         const len = (scrap.opinion?.length || 0);
@@ -1082,6 +984,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         resize: 'none',
                         overflow: 'hidden',
                         minHeight: '36px',
+                        fieldSizing: 'content'
                       }}
                       placeholder={t('articleGenerate_howToUseThisMaterial')}
                     />
@@ -1111,13 +1014,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                           value={u.usagePrompt || ''}
                           maxLength={75}
                           onChange={(e) => {
-                            const ta = e.target as HTMLTextAreaElement;
-                            // 막히는 느낌: maxLength로 추가 입력 차단 + 카운터/테두리 피드백
-                            const v = ta.value.slice(0, 75);
+                            const v = e.target.value.slice(0, 75);
                             setUploadUsagePrompt(u.uploadedFileId, v);
-                            // auto-resize (초기 높이는 기존 input과 비슷하게 rows=1 + minHeight)
-                            ta.style.height = 'auto';
-                            ta.style.height = ta.scrollHeight + 'px';
                           }}
                           onKeyDown={(e) => {
                             const len = (u.usagePrompt?.length || 0);
@@ -1135,6 +1033,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                             resize: 'none',
                             overflow: 'hidden',
                             minHeight: '36px',
+                            fieldSizing: 'content'
                           }}
                           placeholder={t('articleGenerate_howToUseThisMaterial')}
                         />

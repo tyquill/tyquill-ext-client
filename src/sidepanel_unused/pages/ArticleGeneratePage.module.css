@@ -300,7 +300,7 @@
   transform: none;
 }
 
-/* 아이디어 입력 필드 */
+/* 아이디어 입력 필드 - Modern field-sizing approach */
 .ideaTextarea {
   width: 100%;
   min-height: 80px;
@@ -313,9 +313,10 @@
   background-color: #f8fafc;
   color: #1e293b;
   resize: none;
-  overflow-y: hidden;
+  overflow: hidden;
   transition: all 0.2s;
   box-sizing: border-box;
+  field-sizing: content;
 }
 
 .ideaTextarea::placeholder {
@@ -366,14 +367,14 @@
   font-size: 14px;
 }
 
-/* 키메시지 textarea */
+/* 키메시지 textarea - Modern field-sizing approach */
 .keyMessageTextarea {
   padding: 16px;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
   font-family: 'Inter', 'Apple SD Gothic Neo', Arial, sans-serif;
-  transition: border-color 0.2s ease, background-color 0.2s ease, height 0.1s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
   background-color: #f8fafc;
   width: 100%;
   box-sizing: border-box;
@@ -383,6 +384,9 @@
   white-space: pre-wrap;
   overflow: hidden;
   resize: none;
+  min-height: 4rem;
+  /* Modern auto-sizing approach */
+  field-sizing: content;
 }
 
 .keyMessageTextarea::placeholder {
