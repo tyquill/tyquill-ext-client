@@ -27,6 +27,7 @@ declare module '#imports' {
   export { ToastProvider, useToast, useToastHelpers } from '../src/hooks/useToast';
   export { animations, createBounceAnimation, getReducedMotion, getAnimation } from '../src/utils/animations';
   export { WHITE_LOGO_URL, X_SELECTORS, X_STYLE_TEXT, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT, YT_SELECTORS, YT_STYLE_TEXT, THREADS_SELECTORS, THREADS_STYLE_TEXT } from '../src/utils/constants';
+  export { exportToMaily, exportToSubstack, exportToGhost, exportToLinkedIn, performExport } from '../src/utils/exportHelper';
   export { initLinkedInInjector } from '../src/utils/linkedinInjector';
   export { htmlToMarkdown, markdownToHtml, markdownToPlainTextPreview } from '../src/utils/markdownConverter';
   export { default as markdownRenderer } from '../src/utils/markdownRenderer';

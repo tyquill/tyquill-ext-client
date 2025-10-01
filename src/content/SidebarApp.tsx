@@ -4,6 +4,8 @@ import { useLanguageStore } from '../stores/languageStore';
 import Sidebar from '../components/content/Sidebar/Sidebar';
 import { authService } from '../services/auth.service';
 import { WebClipper } from '../utils/webClipper';
+import { performExport } from '../utils/exportHelper';
+import { ExportPlatform } from '../utils/platformDetection';
 import type { ExtensionMessage, MessageResponse } from '../types/messages';
 
 const SidebarApp: React.FC = () => {
@@ -118,6 +120,22 @@ const SidebarApp: React.FC = () => {
         })();
 
         return true; // 비동기 응답을 위해 true 반환
+      }
+
+      // Export to editor 처리 (EXPORT_TO_EDITOR 메시지)
+      if (request.type === 'EXPORT_TO_EDITOR') {
+        try {
+          const { title, content, platform } = request;
+          const result = performExport(platform as ExportPlatform, title, content);
+          sendResponse(result);
+        } catch (error) {
+          console.error('📄 Content script: Export failed:', error);
+          sendResponse({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
+          });
+        }
+        return true;
       }
 
       return false;
