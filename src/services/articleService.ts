@@ -76,6 +76,7 @@ export interface UploadWithUsagePromptDto {
 export interface UpdateArticleDto {
     title?: string;
     content?: string;
+    contentFormat?: 'markdown' | 'tiptap-json';
     summary?: string;
     tags?: string[];
 }
@@ -151,6 +152,7 @@ export interface ArchiveResponse {
     archiveId: number;
     title: string;
     content: string;
+    contentFormat?: 'markdown' | 'tiptap-json';
     versionNumber: number;
     createdAt: string;
 }
@@ -162,6 +164,7 @@ export interface ArticleResponse {
     articleId: number;
     title: string;
     content: string;
+    contentFormat?: 'markdown' | 'tiptap-json';
     topic: string;
     keyInsight: string;
     generationParams?: string;

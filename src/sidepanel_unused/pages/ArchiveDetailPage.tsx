@@ -12,11 +12,15 @@ import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../../components/sidepanel/ExportButton/ExportButton';
 import CopyButton from '../../components/sidepanel/CopyButton/CopyButton';
-import { useEditor } from '@tiptap/react'
-import { CharacterCount } from '@tiptap/extension-character-count'
-import Document from '@tiptap/extension-document'
-import Paragraph from '@tiptap/extension-paragraph'
-import Text from '@tiptap/extension-text'
+import { useEditor } from '@tiptap/react';
+import { generateHTML } from '@tiptap/core';
+import { CharacterCount } from '@tiptap/extension-character-count';
+import Document from '@tiptap/extension-document';
+import Paragraph from '@tiptap/extension-paragraph';
+import Text from '@tiptap/extension-text';
+import StarterKit from '@tiptap/starter-kit';
+import TextAlign from '@tiptap/extension-text-align';
+import { TextStyle } from '@tiptap/extension-text-style';
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 import { useI18n } from '../../hooks/useI18n';
 import {
@@ -41,7 +45,8 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState('');
-  const [editContent, setEditContent] = useState('');
+  const [editContent, setEditContent] = useState<string | object>('');
+  const [editContentFormat, setEditContentFormat] = useState<'markdown' | 'tiptap-json'>('markdown');
   const [saving, setSaving] = useState(false);
   const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
   const [currentArchive, setCurrentArchive] = useState<ArchiveResponse | null>(null);
@@ -272,23 +277,41 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       });
     } catch {}
 
+    // Content format 확인 및 설정
+    const archive = currentArchive || article?.archives?.[0];
+    const format = (archive as any)?.contentFormat || 'markdown';
+    setEditContentFormat(format);
+
+    // JSON 형식이면 파싱
+    if (format === 'tiptap-json' && typeof editContent === 'string') {
+      try {
+        setEditContent(JSON.parse(editContent));
+      } catch {
+        // 파싱 실패 시 마크다운으로 처리
+        setEditContentFormat('markdown');
+      }
+    }
+
     setIsEditing(true);
   };
 
   const handleSave = async () => {
     if (!article) return;
-    
+
     try {
       setSaving(true);
-      
-      // 저장 전에 콘텐츠 정리
-      const normalizedContent = editContent.replace(/\n{2,}/g, '\n').trim();
-      
+
+      // Content 준비 (JSON 형식이면 문자열로 변환)
+      const contentToSave = typeof editContent === 'object'
+        ? JSON.stringify(editContent)
+        : editContent.replace(/\n{2,}/g, '\n').trim();
+
       const updateData: UpdateArticleDto = {
         title: editTitle,
-        content: normalizedContent,
+        content: contentToSave,
+        contentFormat: editContentFormat,
       };
-      
+
       const updatedArticle = await articleService.updateArticle(article.articleId, updateData);
       
       // 응답 데이터 정리
@@ -685,20 +708,69 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             <div className={styles.previewContent}>
               {isEditing ? (
                 <ErrorBoundary>
-                    <EditorWrapper
+                  <EditorWrapper
                     key={`editor-${article.articleId}-${isEditing}`}
-                    content={markdownToHtml(editContent)}
-                    onChange={setEditContent}
+                    content={editContent}
+                    contentFormat={editContentFormat}
+                    onChange={(content, format) => {
+                      setEditContent(content);
+                      setEditContentFormat(format);
+                    }}
                     placeholder={t('archiveDetailPage_contentPlaceholder')}
                     readOnly={false}
                   />
                 </ErrorBoundary>
-              ) : (
-                <MarkdownRenderer 
-                  content={currentArchive?.content || article.content || ''}
-                  className={styles.contentDisplay}
-                />
-              )}
+              ) : (() => {
+                const content = currentArchive?.content || article.content || '';
+                const format = (currentArchive as any)?.contentFormat || 'markdown';
+
+                // TipTap JSON 형식이면 HTML로 변환하여 직접 렌더링
+                if (format === 'tiptap-json' && typeof content === 'string') {
+                  try {
+                    const jsonObj = JSON.parse(content);
+
+                    // generateHTML로 JSON을 HTML로 변환
+                    const html = generateHTML(jsonObj, [
+                      TextStyle,
+                      StarterKit.configure({
+                        heading: {
+                          levels: [1, 2, 3, 4, 5, 6],
+                        },
+                        horizontalRule: {
+                          HTMLAttributes: {
+                            class: 'editor-hr',
+                          },
+                        },
+                      }),
+                      TextAlign.configure({
+                        types: ['heading', 'paragraph'],
+                      }),
+                    ]);
+
+                    return (
+                      <div
+                        className={`${styles.contentDisplay} ProseMirror`}
+                        dangerouslySetInnerHTML={{ __html: html }}
+                      />
+                    );
+                  } catch (error) {
+                    console.error('Error converting TipTap JSON to HTML:', error);
+                    return (
+                      <div className={styles.contentDisplay}>
+                        {content}
+                      </div>
+                    );
+                  }
+                }
+
+                // 마크다운이면 MarkdownRenderer 사용
+                return (
+                  <MarkdownRenderer
+                    content={content}
+                    className={styles.contentDisplay}
+                  />
+                );
+              })()}
             </div>
           </div>
         </div>

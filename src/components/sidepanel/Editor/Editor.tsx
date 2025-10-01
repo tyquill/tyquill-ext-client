@@ -27,8 +27,9 @@ import { TbMoodPuzzled } from "react-icons/tb";
 import styles from './Editor.module.css';
 
 interface EditorWrapperProps {
-  content: string; // HTML content (with backward compatibility for markdown)
-  onChange: (content: string) => void; // Returns Markdown content for AI editing
+  content: string | object; // HTML, Markdown, or TipTap JSON object
+  contentFormat?: 'markdown' | 'tiptap-json'; // Format of input content
+  onChange: (content: string | object, format: 'markdown' | 'tiptap-json') => void; // Returns content with format
   placeholder?: string;
   readOnly?: boolean;
   onHistoryStateChange?: (canUndo: boolean, canRedo: boolean) => void; // Callback for history state changes
@@ -588,6 +589,7 @@ const CustomBubbleMenu: React.FC<CustomBubbleMenuProps> = ({ editor }) => {
 
 const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   content,
+  contentFormat = 'markdown',
   onChange,
   placeholder,
   readOnly = false,
@@ -597,17 +599,27 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
   const actualPlaceholder = placeholder || t('editor_placeholder');
   const isUpdatingRef = useRef(false);
 
-  // Markdown을 HTML로 변환하는 함수 (입력 호환성을 위해)
-  const convertMarkdownToHtml = useCallback((markdown: string): string => {
-    if (!markdown) return '<p></p>';
-    
-    // 이미 HTML인지 확인 (< 태그로 시작하는지)
-    if (markdown.trim().startsWith('<')) {
-      return markdown;
+  // Content를 TipTap이 이해할 수 있는 형식으로 변환
+  const convertContentForEditor = useCallback((content: string | object, format: string): string | object => {
+    if (!content) return '<p></p>';
+
+    // TipTap JSON 형식인 경우 그대로 사용
+    if (format === 'tiptap-json' && typeof content === 'object') {
+      return content;
     }
-    
-    // markdownConverter의 함수 사용
-    return markdownToHtml(markdown);
+
+    // String인 경우 처리
+    if (typeof content === 'string') {
+      // 이미 HTML인지 확인 (< 태그로 시작하는지)
+      if (content.trim().startsWith('<')) {
+        return content;
+      }
+
+      // Markdown을 HTML로 변환
+      return markdownToHtml(content);
+    }
+
+    return '<p></p>';
   }, []);
 
   const extensions = useMemo(() => {
@@ -640,18 +652,18 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
 
   const editor = useEditor({
     extensions,
-    content: convertMarkdownToHtml(content),
+    content: convertContentForEditor(content, contentFormat),
     editable: !readOnly,
     onUpdate: ({ editor }) => {
       if (isUpdatingRef.current) return;
-      
+
       try {
         isUpdatingRef.current = true;
-        const html = editor.getHTML();
-        // AI 편집을 위해 마크다운으로 변환하여 반환
-        const markdown = htmlToMarkdown(html);
-        onChange(markdown);
-        
+
+        // TipTap JSON 형식으로 저장 (권장)
+        const json = editor.getJSON();
+        onChange(json, 'tiptap-json');
+
         // 히스토리 상태 변경 알림
         if (onHistoryStateChange) {
           const canUndo = editor.can().chain().focus().undo().run();
@@ -659,10 +671,17 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
           onHistoryStateChange(canUndo, canRedo);
         }
       } catch (error) {
-        console.error('Error converting HTML to Markdown:', error);
-        // 변환 실패 시 텍스트만 반환
-        const textContent = editor.getText().trim();
-        onChange(textContent);
+        console.error('Error getting editor content:', error);
+        // 폴백: 마크다운으로 변환
+        try {
+          const html = editor.getHTML();
+          const markdown = htmlToMarkdown(html);
+          onChange(markdown, 'markdown');
+        } catch {
+          // 최종 폴백: 텍스트만 반환
+          const textContent = editor.getText().trim();
+          onChange(textContent, 'markdown');
+        }
       } finally {
         setTimeout(() => {
           isUpdatingRef.current = false;
@@ -684,10 +703,19 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
 
   useEffect(() => {
     if (editor && !isUpdatingRef.current) {
-      const newHtml = convertMarkdownToHtml(content);
-      if (editor.getHTML() !== newHtml) {
-        editor.commands.setContent(newHtml);
-        
+      const newContent = convertContentForEditor(content, contentFormat);
+
+      // 현재 콘텐츠와 비교 (JSON 형식인 경우 JSON 문자열로 비교)
+      const currentContent = contentFormat === 'tiptap-json'
+        ? JSON.stringify(editor.getJSON())
+        : editor.getHTML();
+      const newContentStr = typeof newContent === 'object'
+        ? JSON.stringify(newContent)
+        : newContent;
+
+      if (currentContent !== newContentStr) {
+        editor.commands.setContent(newContent);
+
         // 콘텐츠 설정 후 히스토리 상태 업데이트
         if (onHistoryStateChange) {
           setTimeout(() => {
@@ -698,7 +726,7 @@ const EditorWrapper: React.FC<EditorWrapperProps> = React.memo(({
         }
       }
     }
-  }, [content, editor, convertMarkdownToHtml, onHistoryStateChange]);
+  }, [content, contentFormat, editor, convertContentForEditor, onHistoryStateChange]);
 
   // 키보드 단축키 설정
   useHotkeys('ctrl+alt+1, cmd+alt+1', () => {
