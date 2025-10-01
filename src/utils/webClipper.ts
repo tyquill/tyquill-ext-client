@@ -1,6 +1,6 @@
 /**
  * Web Clipper Utility
- * 
+ *
  * @description Obsidian Clipper 스타일의 웹 페이지 스크랩 기능
  * turndown을 사용하여 HTML을 Markdown으로 변환
  */
@@ -67,7 +67,9 @@ export class WebClipper {
 
     const walk = (node: ParentNode) => {
       // children을 안전하게 접근 (Document, ShadowRoot, Element 모두 대응)
-      const childElements = (node as any).children ? Array.from((node as any).children) as Element[] : [];
+      const childElements = (node as any).children
+        ? (Array.from((node as any).children) as Element[])
+        : [];
       for (const el of childElements) {
         elements.push(el);
         // open shadow root 내부 순회
@@ -81,7 +83,9 @@ export class WebClipper {
     };
 
     // documentElement부터 순회 시작
-    const start = (root as any).documentElement ? (root as any).documentElement as Element : root as Element;
+    const start = (root as any).documentElement
+      ? ((root as any).documentElement as Element)
+      : (root as Element);
     if (start) {
       // 시작 노드 자체도 포함되지 않으므로, 시작 노드의 자식부터 순회
       walk(start as unknown as ParentNode);
@@ -93,7 +97,10 @@ export class WebClipper {
   /**
    * Shadow DOM 포함 전체 트리에서 selector 매칭 요소 수집
    */
-  private queryAllDeep(selector: string, root: ParentNode = document): Element[] {
+  private queryAllDeep(
+    selector: string,
+    root: ParentNode = document
+  ): Element[] {
     const all = this.collectAllElementsDeep(root);
     const results: Element[] = [];
     for (const el of all) {
@@ -111,7 +118,10 @@ export class WebClipper {
   /**
    * Shadow DOM 포함 selector 매칭 첫 요소 반환
    */
-  private queryDeep(selector: string, root: ParentNode = document): Element | null {
+  private queryDeep(
+    selector: string,
+    root: ParentNode = document
+  ): Element | null {
     const results = this.queryAllDeep(selector, root);
     return results.length > 0 ? results[0] : null;
   }
@@ -121,11 +131,11 @@ export class WebClipper {
    */
   async clipPage(options?: Partial<ClipperOptions>): Promise<ScrapResult> {
     const finalOptions = { ...this.options, ...options };
-    
+
     // 선택된 텍스트가 있는지 확인
     const selection = window.getSelection();
     const hasSelection = selection && !selection.isCollapsed;
-    
+
     let content: string;
     let selectionOnly = false;
 
@@ -140,11 +150,12 @@ export class WebClipper {
     }
 
     const metadata = this.extractMetadata();
-    
+
     // 메타데이터 헤더 추가
     let finalContent = content;
     if (finalOptions.includeMetadata) {
-      finalContent = this.generateMetadataHeader(metadata) + '\n\n---\n\n' + content;
+      finalContent =
+        this.generateMetadataHeader(metadata) + '\n\n---\n\n' + content;
     }
 
     return {
@@ -162,7 +173,7 @@ export class WebClipper {
     const range = selection.getRangeAt(0);
     const container = document.createElement('div');
     container.appendChild(range.cloneContents());
-    
+
     return this.convertToMarkdown(container);
   }
 
@@ -171,11 +182,11 @@ export class WebClipper {
    */
   private clipMainContent(): string {
     const mainContent = this.detectMainContent();
-    
+
     if (mainContent) {
       return this.convertToMarkdown(mainContent);
     }
-    
+
     // 대체: body에서 불필요한 요소 제거 후 변환
     const cleanedBody = this.getCleanedBody();
     return this.convertToMarkdown(cleanedBody);
@@ -185,12 +196,29 @@ export class WebClipper {
    * HTML을 Markdown으로 변환
    */
   private convertToMarkdown(element: Element): string {
-    let html = element.innerHTML;
-    
+    // Shadow DOM 또는 Declarative Shadow DOM(template[shadowrootmode])의 실제 렌더 트리를 우선 사용
+    const scope = this.getDeepContentScope(element) as any;
+    let html = '';
+
+    // Element처럼 innerHTML을 제공하는 경우 그대로 사용
+    if (scope && typeof (scope as Element).innerHTML === 'string') {
+      html = (scope as Element).innerHTML;
+    } else {
+      // ShadowRoot/DocumentFragment인 경우 컨테이너를 만들어 자식들을 복제하여 innerHTML 생성
+      const container = document.createElement('div');
+      try {
+        const childNodes = Array.from((scope as ParentNode).childNodes || []);
+        for (const node of childNodes) {
+          container.appendChild(node.cloneNode(true));
+        }
+      } catch {}
+      html = container.innerHTML;
+    }
+
     if (this.options.cleanHtml) {
       html = this.cleanHtml(html);
     }
-    
+
     return this.turndownService.turndown(html);
   }
 
@@ -203,6 +231,9 @@ export class WebClipper {
       // 뉴스레터/이메일 본문 컨테이너 우선 처리
       '.email-content',
       '[class*="email-content"]',
+      // Declarative Shadow DOM 내부의 스티비/뉴스레터 컨테이너
+      '.public-email',
+      '.stb-container-full',
       '[accesslevel="full"]',
       '[class*="ContentBodyWrapper"]',
       'article',
@@ -224,7 +255,7 @@ export class WebClipper {
       '.mail_view_contents_inner', // NAVER Mail 본문
       '.mail_view_contents',
       '[itemprop="articleBody"]',
-      '[data-article-body]'
+      '[data-article-body]',
     ];
 
     for (const selector of contentSelectors) {
@@ -245,7 +276,9 @@ export class WebClipper {
    * 요소가 실질적인 콘텐츠를 포함하는지 확인
    */
   private hasSubstantialContent(element: Element): boolean {
-    const text = element.textContent?.trim() || '';
+    // Shadow host인 경우 shadowRoot/Declarative Shadow DOM(template[shadowrootmode])까지 텍스트 포함
+    const scope = this.getDeepContentScope(element);
+    const text = (scope as any)?.textContent?.trim() || '';
     const wordCount = text.split(/\s+/).length;
 
     // 본문 힌트가 강하게 매칭되는 경우 임계치를 완화
@@ -261,13 +294,24 @@ export class WebClipper {
   private isNavigationElement(element: Element): boolean {
     const className = element.className.toLowerCase();
     const tagName = element.tagName.toLowerCase();
-    
-    const navKeywords = ['nav', 'menu', 'sidebar', 'header', 'footer', 'aside', 'gnb', 'lnb', 'breadcrumb'];
-    
-    return navKeywords.some(keyword => 
-      className.includes(keyword) || 
-      tagName === keyword ||
-      element.getAttribute('role') === keyword
+
+    const navKeywords = [
+      'nav',
+      'menu',
+      'sidebar',
+      'header',
+      'footer',
+      'aside',
+      'gnb',
+      'lnb',
+      'breadcrumb',
+    ];
+
+    return navKeywords.some(
+      (keyword) =>
+        className.includes(keyword) ||
+        tagName === keyword ||
+        element.getAttribute('role') === keyword
     );
   }
 
@@ -277,9 +321,14 @@ export class WebClipper {
   private findLargestTextContainer(): Element | null {
     // Shadow DOM 포함 후보 수집
     const deepElements = this.collectAllElementsDeep();
-    const candidates = deepElements.filter(el => {
+    const candidates = deepElements.filter((el) => {
       const tag = el.tagName.toLowerCase();
-      return tag === 'div' || tag === 'section' || tag === 'article' || tag === 'main';
+      return (
+        tag === 'div' ||
+        tag === 'section' ||
+        tag === 'article' ||
+        tag === 'main'
+      );
     });
     let maxScore = 0;
     let bestElement: Element | null = null;
@@ -299,15 +348,24 @@ export class WebClipper {
    * 콘텐츠 점수 계산
    */
   private calculateContentScore(element: Element): number {
-    const text = element.textContent?.trim() || '';
+    // Shadow host인 경우 shadowRoot/Declarative Shadow DOM(template[shadowrootmode]) 기준으로 점수 계산
+    const scope = this.getDeepContentScope(element) as any;
+    const text = (scope?.textContent || '').trim();
     const wordCount = text.split(/\s+/).length;
-    const paragraphs = element.querySelectorAll('p').length;
-    const headings = element.querySelectorAll('h1, h2, h3, h4, h5, h6').length;
-    const links = element.querySelectorAll('a').length;
-    const linkDensity = paragraphs > 0 ? links / Math.max(paragraphs, 1) : (links > 0 ? links : 0);
+    const paragraphs = scope?.querySelectorAll
+      ? scope.querySelectorAll('p').length
+      : 0;
+    const headings = scope?.querySelectorAll
+      ? scope.querySelectorAll('h1, h2, h3, h4, h5, h6').length
+      : 0;
+    const links = scope?.querySelectorAll
+      ? scope.querySelectorAll('a').length
+      : 0;
+    const linkDensity =
+      paragraphs > 0 ? links / Math.max(paragraphs, 1) : links > 0 ? links : 0;
 
     // 기본 점수 (문단 가중치 상향)
-    let score = wordCount + (paragraphs * 15) + (headings * 5);
+    let score = wordCount + paragraphs * 15 + headings * 5;
 
     // 본문 힌트 보너스
     if (this.matchesContentHint(element)) {
@@ -335,12 +393,52 @@ export class WebClipper {
     const cls = `${el.className || ''}`.toLowerCase();
     const id = `${el.id || ''}`.toLowerCase();
     const hints = [
-      'article', 'content', 'post', 'entry', 'markdown-body',
-      'et_pb_post_content', 'mail_view_contents_inner', 'mail_view_contents',
+      'article',
+      'content',
+      'post',
+      'entry',
+      'markdown-body',
+      'et_pb_post_content',
+      'mail_view_contents_inner',
+      'mail_view_contents',
       // 뉴스레터/이메일 본문 힌트
-      'email-content', 'emailcontent', 'contentbody', 'content-body', 'newsletter'
+      'email-content',
+      'emailcontent',
+      'contentbody',
+      'content-body',
+      'newsletter',
+      // 스티비/뉴스레터 구조 힌트
+      'public-email',
+      'stb-container',
+      'stb-container-full',
+      'stb-block',
     ];
-    return hints.some(h => cls.includes(h) || id.includes(h));
+    return hints.some((h) => cls.includes(h) || id.includes(h));
+  }
+
+  /**
+   * 해당 요소의 콘텐츠 스코프를 반환
+   * - open ShadowRoot가 있으면 shadowRoot
+   * - Declarative Shadow DOM(template[shadowrootmode])이 있으면 그 content
+   * - 아니면 요소 자체
+   */
+  private getDeepContentScope(element: Element): ParentNode {
+    const anyEl = element as any;
+    const shadow: ShadowRoot | null | undefined = anyEl?.shadowRoot;
+    if (shadow && (shadow as any).childNodes?.length > 0)
+      return shadow as unknown as ParentNode;
+
+    // Declarative Shadow DOM fallback
+    try {
+      const tmpl = element.querySelector(
+        'template[shadowrootmode]'
+      ) as HTMLTemplateElement | null;
+      if (tmpl?.content && tmpl.content.childNodes.length > 0) {
+        return tmpl.content as unknown as ParentNode;
+      }
+    } catch {}
+
+    return element as unknown as ParentNode;
   }
 
   /**
@@ -348,7 +446,7 @@ export class WebClipper {
    */
   private getCleanedBody(): Element {
     const body = document.body.cloneNode(true) as Element;
-    
+
     // 불필요한 요소들 제거
     const unwantedSelectors = [
       'script',
@@ -389,19 +487,25 @@ export class WebClipper {
       '[class*="subscribe"]',
       '[class*="signup"]',
       '[class*="share"]',
-      '[class*="breadcrumb"]'
+      '[class*="breadcrumb"]',
     ];
 
-    unwantedSelectors.forEach(selector => {
+    unwantedSelectors.forEach((selector) => {
       const elements = body.querySelectorAll(selector);
-      elements.forEach(el => el.remove());
+      elements.forEach((el) => el.remove());
     });
 
     // 폼/컨트롤 요소 제거 (일반적 관례상 본문 제외)
-    body.querySelectorAll('form, button, input, select, textarea, label').forEach(el => el.remove());
+    body
+      .querySelectorAll('form, button, input, select, textarea, label')
+      .forEach((el) => el.remove());
 
     // 숨김 요소 제거
-    body.querySelectorAll('[hidden], [style*="display:none"], [style*="visibility:hidden"]').forEach(el => el.remove());
+    body
+      .querySelectorAll(
+        '[hidden], [style*="display:none"], [style*="visibility:hidden"]'
+      )
+      .forEach((el) => el.remove());
 
     return body;
   }
@@ -410,60 +514,83 @@ export class WebClipper {
    * HTML 정리
    */
   private cleanHtml(html: string): string {
-    return html
-      // 스크립트와 스타일 제거
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
-      // 주석 제거
-      .replace(/<!--[\s\S]*?-->/g, '')
-      // 불필요한 속성 제거
-      .replace(/\s*(class|id|style|onclick|onload)="[^"]*"/g, '')
-      .replace(/\s*aria-[a-z\-]+="[^"]*"/gi, '')
-      .replace(/\s*data-[a-z\-]+="[^"]*"/gi, '')
-      // 빈 요소 제거
-      .replace(/<(\w+)[^>]*>\s*<\/\1>/g, '');
+    return (
+      html
+        // 스크립트와 스타일 제거
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+        // 주석 제거
+        .replace(/<!--[\s\S]*?-->/g, '')
+        // 불필요한 속성 제거
+        .replace(/\s*(class|id|style|onclick|onload)="[^"]*"/g, '')
+        .replace(/\s*aria-[a-z\-]+="[^"]*"/gi, '')
+        .replace(/\s*data-[a-z\-]+="[^"]*"/gi, '')
+        // 빈 요소 제거
+        .replace(/<(\w+)[^>]*>\s*<\/\1>/g, '')
+    );
   }
 
   /**
    * 페이지 메타데이터 추출
    */
   private extractMetadata(): PageMetadata {
-    const title = document.title || 
-                  document.querySelector('h1')?.textContent?.trim() || 
-                  'Untitled';
+    const title =
+      document.title ||
+      document.querySelector('h1')?.textContent?.trim() ||
+      'Untitled';
 
     const url = window.location.href;
 
     // Open Graph 메타 태그 우선
-    const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
-    const ogDescription = document.querySelector('meta[property="og:description"]')?.getAttribute('content');
-    const ogSiteName = document.querySelector('meta[property="og:site_name"]')?.getAttribute('content');
+    const ogTitle = document
+      .querySelector('meta[property="og:title"]')
+      ?.getAttribute('content');
+    const ogDescription = document
+      .querySelector('meta[property="og:description"]')
+      ?.getAttribute('content');
+    const ogSiteName = document
+      .querySelector('meta[property="og:site_name"]')
+      ?.getAttribute('content');
 
     // 일반 메타 태그
-    const metaDescription = document.querySelector('meta[name="description"]')?.getAttribute('content');
-    const metaAuthor = document.querySelector('meta[name="author"]')?.getAttribute('content');
+    const metaDescription = document
+      .querySelector('meta[name="description"]')
+      ?.getAttribute('content');
+    const metaAuthor = document
+      .querySelector('meta[name="author"]')
+      ?.getAttribute('content');
 
     // 구조화된 데이터에서 작성자 찾기
-    const authorElement = document.querySelector('[rel="author"], .author, .byline, [itemprop="author"]');
+    const authorElement = document.querySelector(
+      '[rel="author"], .author, .byline, [itemprop="author"]'
+    );
     const author = metaAuthor || authorElement?.textContent?.trim();
 
     // 게시일 찾기
-    const timeElement = document.querySelector('time[datetime], [itemprop="datePublished"]');
-    const publishedDate = timeElement?.getAttribute('datetime') || 
-                         timeElement?.textContent?.trim();
+    const timeElement = document.querySelector(
+      'time[datetime], [itemprop="datePublished"]'
+    );
+    const publishedDate =
+      timeElement?.getAttribute('datetime') || timeElement?.textContent?.trim();
 
     // 파비콘
-    const faviconElement = document.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+    const faviconElement = document.querySelector(
+      'link[rel="icon"], link[rel="shortcut icon"]'
+    );
     const favicon = faviconElement?.getAttribute('href');
 
     return {
       title: ogTitle || title,
       url,
       author: author || undefined,
-      publishedDate: publishedDate ? new Date(publishedDate).toLocaleDateString('ko-KR') : undefined,
+      publishedDate: publishedDate
+        ? new Date(publishedDate).toLocaleDateString('ko-KR')
+        : undefined,
       description: ogDescription || metaDescription || undefined,
       siteName: ogSiteName || window.location.hostname,
-      favicon: favicon ? new URL(favicon, window.location.origin).href : undefined,
+      favicon: favicon
+        ? new URL(favicon, window.location.origin).href
+        : undefined,
     };
   }
 
@@ -472,22 +599,22 @@ export class WebClipper {
    */
   private generateMetadataHeader(metadata: PageMetadata): string {
     let header = `# ${metadata.title}\n\n`;
-    
+
     if (metadata.author) {
       header += `**작성자**: ${metadata.author}\n`;
     }
-    
+
     if (metadata.publishedDate) {
       header += `**게시일**: ${metadata.publishedDate}\n`;
     }
-    
+
     if (metadata.description) {
       header += `**요약**: ${metadata.description}\n`;
     }
-    
+
     header += `**출처**: [${metadata.siteName}](${metadata.url})\n`;
     header += `**스크랩 일시**: ${new Date().toLocaleString('ko-KR')}\n`;
-    
+
     return header;
   }
 
@@ -513,7 +640,19 @@ export class WebClipper {
 
     // 불필요한 요소 제거
     this.turndownService.addRule('removeUnwanted', {
-      filter: ['script', 'style', 'noscript', 'iframe', 'embed', 'form', 'button', 'input', 'select', 'textarea', 'label'],
+      filter: [
+        'script',
+        'style',
+        'noscript',
+        'iframe',
+        'embed',
+        'form',
+        'button',
+        'input',
+        'select',
+        'textarea',
+        'label',
+      ],
       replacement: () => '',
     });
 
@@ -524,20 +663,36 @@ export class WebClipper {
         const el = node as HTMLElement;
         const cls = `${el.className || ''}`.toLowerCase();
         const id = `${el.id || ''}`.toLowerCase();
-        const uiHints = ['cookie', 'consent', 'popup', 'modal', 'tooltip', 'popover', 'share', 'breadcrumb', 'gnb', 'lnb'];
-        return uiHints.some(k => cls.includes(k) || id.includes(k));
+        const uiHints = [
+          'cookie',
+          'consent',
+          'popup',
+          'modal',
+          'tooltip',
+          'popover',
+          'share',
+          'breadcrumb',
+          'gnb',
+          'lnb',
+        ];
+        return uiHints.some((k) => cls.includes(k) || id.includes(k));
       },
-      replacement: () => ''
+      replacement: () => '',
     });
 
     // 코드 블록 개선
     this.turndownService.addRule('improvedCodeBlock', {
       filter: function (node: any) {
-        return node.nodeName === 'PRE' && node.firstChild && node.firstChild.nodeName === 'CODE';
+        return (
+          node.nodeName === 'PRE' &&
+          node.firstChild &&
+          node.firstChild.nodeName === 'CODE'
+        );
       },
       replacement: function (content: any, node: any) {
         const firstChild = node.firstChild as HTMLElement;
-        const language = firstChild?.className?.match(/language-(\w+)/)?.[1] || '';
+        const language =
+          firstChild?.className?.match(/language-(\w+)/)?.[1] || '';
         return `\n\`\`\`${language}\n${firstChild?.textContent}\n\`\`\`\n\n`;
       },
     });
@@ -565,7 +720,7 @@ export async function clipSelection(): Promise<ScrapResult> {
  * 최소한의 메타데이터로 스크랩
  */
 export async function clipMinimal(): Promise<ScrapResult> {
-  return webClipper.clipPage({ 
+  return webClipper.clipPage({
     includeMetadata: false,
     preserveImages: false,
   });
