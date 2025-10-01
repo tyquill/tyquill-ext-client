@@ -5,6 +5,7 @@ import '../content/styles.css'; // Import CSS for shadow DOM
 import { browser } from 'wxt/browser';
 import { performExport } from '../utils/exportHelper';
 import { ExportPlatform } from '../utils/platformDetection';
+import { webClipper } from '../utils/webClipper';
 
 export default defineContentScript({
   matches: ['<all_urls>'],
@@ -19,6 +20,29 @@ export default defineContentScript({
       if (request.type === 'PING') {
         sendResponse({ success: true, data: { loaded: true } });
         return true;
+      }
+
+      // Clip page handler
+      if (request.type === 'CLIP_PAGE') {
+        (async () => {
+          try {
+            const result = await webClipper.clipPage(request.options);
+
+            if (!result || typeof result !== 'object') {
+              sendResponse({ success: false, error: 'Invalid clip result' });
+              return;
+            }
+
+            sendResponse({ success: true, data: result });
+          } catch (error) {
+            console.error('📄 Content script: CLIP_PAGE failed:', error);
+            sendResponse({
+              success: false,
+              error: error instanceof Error ? error.message : 'Failed to clip page content'
+            });
+          }
+        })();
+        return true; // Keep channel open for async response
       }
 
       // Export to editor handler
