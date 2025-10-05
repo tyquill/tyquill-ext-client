@@ -110,6 +110,8 @@ export interface ScrapResponse {
   }>;
   type?: string;
   from?: string;
+  mimeType?: string; // PDF 등 업로드 파일의 MIME 타입
+  fileName?: string; // 업로드 파일명
 }
 
 /**
@@ -137,7 +139,7 @@ export class ScrapService {
   private async apiRequest<T>(
     endpoint: string,
     options: RequestInit = {},
-    version: 'v1' | 'v2' = 'v1'
+    version: 'v1' | 'v2' | 'v3' = 'v1'
   ): Promise<T> {
     const versionedEndpoint = `/${version}${endpoint}`;
     return globalApiClient.request<T>(versionedEndpoint, options as any);
@@ -266,6 +268,48 @@ export class ScrapService {
       return response;
     } catch (error) {
       // console.error('❌ Failed to fetch scraps:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 스크랩 목록 조회 (v3 - 무한스크롤 지원)
+   */
+  async getScrapsV3(params: {
+    type?: 'webclip' | 'upload';
+    page?: number;
+    limit?: number;
+    sortBy?: 'created_at' | 'updated_at' | 'title';
+    sortOrder?: 'ASC' | 'DESC';
+  } = {}): Promise<{
+    scraps: ScrapResponse[];
+    total: number;
+    hasMore: boolean;
+    page: number;
+    limit: number;
+  }> {
+    try {
+      const queryParams = new URLSearchParams();
+      if (params.type) queryParams.append('type', params.type);
+      if (params.page) queryParams.append('page', params.page.toString());
+      if (params.limit) queryParams.append('limit', params.limit.toString());
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.sortOrder) queryParams.append('sortOrder', params.sortOrder);
+
+      const endpoint = `/scraps${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+
+      const response = await this.apiRequest<{
+        scraps: ScrapResponse[];
+        total: number;
+        hasMore: boolean;
+        page: number;
+        limit: number;
+      }>(endpoint, {
+        method: 'GET',
+      }, 'v3');
+
+      return response;
+    } catch (error) {
       throw error;
     }
   }

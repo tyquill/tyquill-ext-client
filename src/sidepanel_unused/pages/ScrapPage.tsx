@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { IoAdd, IoTrash, IoClose, IoCheckmark, IoDocument } from 'react-icons/io5';
 import { FaBookmark } from 'react-icons/fa6';
-import { LuLink } from 'react-icons/lu';
+import { LuLink, LuFileText, LuImage, LuVideo, LuMusic, LuFile } from 'react-icons/lu';
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import scrapStyles from './ScrapPage.module.css';
@@ -16,8 +16,6 @@ import { Scrap } from '../../types/scrap.d';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
 import Tooltip from '../../components/common/Tooltip';
 import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
-import { libraryItemService, type LibraryItemDto } from '../../services/libraryItemService';
-import { globalApiClient } from '../../services/globalApiClient';
 import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
 export interface ScrapPageRef {
@@ -29,7 +27,6 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const { logout } = useAuth();
   const { t } = useI18n();
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
   const [activeInputId, setActiveInputId] = useState<string | null>(null);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
@@ -40,18 +37,17 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   const [scraps, setScraps] = useState<Scrap[]>([]);
   const [scrapsLoading, setScrapsLoading] = useState(false);
   const [scrapsError, setScrapsError] = useState<string | null>(null);
-  const [uploads, setUploads] = useState<LibraryItemDto[]>([]);
-  const [uploadsLoading, setUploadsLoading] = useState(false);
-  const [uploadsError, setUploadsError] = useState<string | null>(null);
   // createdAt timestamp map for scraps (ms since epoch)
   const [scrapTimestamps, setScrapTimestamps] = useState<Record<string, number>>({});
+  // 무한스크롤 상태
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
   // Undo delete state for scraps
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [deleteTimeoutId, setDeleteTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [deletedScrap, setDeletedScrap] = useState<Scrap | null>(null);
   const observerRef = useRef<IntersectionObserver>();
   const lastScrapRef = useRef<HTMLDivElement>(null);
-  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const inputRef = useRef<HTMLInputElement>(null);
   const [allTags, setAllTags] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -88,70 +84,68 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
     });
   }, [scraps, selectedTags]);
 
-  // 스크랩 목록 불러오기
-  const loadScraps = useCallback(async () => {
+  // 스크랩 목록 불러오기 (v3 무한스크롤 지원)
+  const loadScraps = useCallback(async (page: number = 1, append: boolean = false) => {
     if (!isAuthenticated) return;
-    
+
     try {
-      // console.log('🔄 Loading scraps...');
       setScrapsLoading(true);
       setScrapsError(null);
-      
-      const scrapList = await scrapService.getScraps();
-      // console.log('📋 Loaded scraps:', scrapList.length, 'items');
-      
+
+      const result = await scrapService.getScrapsV3({
+        page,
+        limit: 20,
+        sortBy: 'created_at',
+        sortOrder: 'DESC',
+      });
+
       // ScrapResponse를 Scrap 형태로 변환
-      const convertedScraps: Scrap[] = scrapList.map(scrap => ({
-        id: scrap.scrapId.toString(),
-        title: scrap.title,
-        content: scrap.contentInfo?.text || scrap.content, // contentInfo.text 우선, 없으면 content 폴백
-        url: scrap.url,
-        date: new Date(scrap.createdAt).toLocaleString('ko-KR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [], // 태그 객체에서 name만 추출
-        faviconUrl: scrap.webpage?.site?.favicon_url, // 파비콘 URL 추가
-      }));
-      
-      setScraps(convertedScraps);
+      const convertedScraps: Scrap[] = result.scraps.map(scrap => {
+        // 서버의 원본 type을 그대로 보존 (pdf, image, video, audio, upload, webclip)
+        const originalType = scrap.type as 'webclip' | 'pdf' | 'image' | 'video' | 'audio' | 'upload';
+
+        return {
+          id: scrap.scrapId.toString(),
+          title: scrap.title,
+          content: scrap.contentInfo?.text || scrap.content,
+          url: scrap.url,
+          date: new Date(scrap.createdAt).toLocaleString('ko-KR', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
+          tags: scrap.tags ? scrap.tags.map(tag => tag.name) : [],
+          faviconUrl: scrap.webpage?.site?.favicon_url,
+          type: originalType,
+        };
+      });
+
+      // append가 true면 기존 데이터에 추가, false면 새로 설정
+      setScraps(prev => append ? [...prev, ...convertedScraps] : convertedScraps);
+
+      // 페이지네이션 상태 업데이트
+      setHasMore(result.hasMore);
+      setCurrentPage(page);
+
       // createdAt 타임스탬프 저장 (정렬용)
       const tsMap: Record<string, number> = {};
-      for (const s of scrapList) {
+      for (const s of result.scraps) {
         tsMap[s.scrapId.toString()] = new Date(s.createdAt).getTime();
       }
-      setScrapTimestamps(tsMap);
-      // console.log('✅ Scraps state updated with', convertedScraps.length, 'items');
+      setScrapTimestamps(prev => ({ ...prev, ...tsMap }));
     } catch (error: any) {
-      // console.error('❌ Failed to load scraps:', error);
       setScrapsError(error.message || t('scrapPage_loadScrapsError'));
-      
+
       if (error.message.includes('Authentication')) {
         setIsAuthenticated(false);
       }
     } finally {
       setScrapsLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, t]);
 
-  // 업로드 목록 불러오기
-  const loadUploads = useCallback(async () => {
-    if (!isAuthenticated) return;
-    try {
-      setUploadsLoading(true);
-      setUploadsError(null);
-      const items = await libraryItemService.list('UPLOAD');
-      setUploads(items);
-    } catch (error: any) {
-      setUploadsError(error.message || t('scrapPage_loadUploadsError'));
-      if (error.message?.includes('Authentication')) setIsAuthenticated(false);
-    } finally {
-      setUploadsLoading(false);
-    }
-  }, [isAuthenticated]);
 
   // 인증 상태 확인
   const checkAuthStatus = useCallback(async () => {
@@ -189,10 +183,12 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       // console.log('✅ 스크랩 완료');
       setClipStatus('success');
       showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
-      
-      // 스크랩 목록 새로고침
-      await loadScraps();
-      
+
+      // 스크랩 목록 새로고침 (첫 페이지부터)
+      setCurrentPage(1);
+      setHasMore(true);
+      await loadScraps(1, false);
+
       // 성공 상태 2초 후 리셋
       setTimeout(() => setClipStatus('idle'), 2000);
       
@@ -225,46 +221,50 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
   useEffect(() => {
     if (!isAuthenticated || !authChecked) {
       setScraps([]);
-      setUploads([]);
+      setCurrentPage(1);
+      setHasMore(true);
       return;
     }
-    // 둘 다 로드
-    loadScraps();
-    loadUploads();
-  }, [isAuthenticated, authChecked, loadScraps, loadUploads]);
+    // 첫 페이지부터 로드
+    loadScraps(1, false);
+  }, [isAuthenticated, authChecked]);
 
   // 페이지 visibility 변경 시 스크랩 목록 새로고침
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && isAuthenticated && authChecked) {
-        loadScraps();
-        loadUploads();
+        setCurrentPage(1);
+        setHasMore(true);
+        loadScraps(1, false);
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isAuthenticated, authChecked, loadScraps, loadUploads]);
+  }, [isAuthenticated, authChecked]);
 
   // Background script로부터 스크랩 생성 알림 수신
   useEffect(() => {
     let isActive = true;
-    
+
     const handleScrapCreatedMessage = (message: any) => {
       if (isActive && message.action === 'scrapCreated' && isAuthenticated) {
-        loadScraps();
+        // 새 스크랩 추가 시 첫 페이지 새로고침
+        setCurrentPage(1);
+        setHasMore(true);
+        loadScraps(1, false);
       }
     };
 
     browser.runtime.onMessage.addListener(handleScrapCreatedMessage);
-    
+
     return () => {
       isActive = false;
     };
-  }, [isAuthenticated, loadScraps]);
+  }, [isAuthenticated]);
 
   // 스크랩에 태그 추가
   const handleAddTag = useCallback(async (scrapId: string, tag: string) => {
@@ -348,50 +348,6 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
     }
   }, [scraps, loadScraps]);
 
-  // 업로드에 태그 추가
-  const handleAddUploadTag = useCallback(async (itemId: number, tag: string) => {
-    if (!tag.trim() || isAddingTag) return;
-    try {
-      setIsAddingTag(true);
-      await libraryItemService.addTag(itemId, 'UPLOAD', tag.trim());
-      await loadUploads();
-      setActiveInputId(null);
-    } catch (error: any) {
-      showError(t('scrapPage_tagAddFailed'), `${error.message || t('scrapPage_unknownError')}`);
-      if (error.message?.includes('Authentication')) setIsAuthenticated(false);
-    } finally {
-      setIsAddingTag(false);
-    }
-  }, [isAddingTag, loadUploads, showError]);
-
-  // 업로드에서 태그 삭제
-  const handleRemoveUploadTag = useCallback(async (itemId: number, tagName: string) => {
-    try {
-      const tags = await libraryItemService.getTags(itemId, 'UPLOAD');
-      const tag = tags.find(t => t.name === tagName);
-      if (!tag) throw new Error(t('scrapPage_tagNotFound'));
-      await libraryItemService.removeTag(itemId, 'UPLOAD', tag.tagId);
-      await loadUploads();
-    } catch (error: any) {
-      showError(t('scrapPage_tagRemoveFailed'), `${error.message || t('scrapPage_unknownError')}`);
-      if (error.message?.includes('Authentication')) setIsAuthenticated(false);
-    }
-  }, [loadUploads, showError]);
-
-  // 업로드 태그 입력 키 핸들러
-  const handleUploadKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>, itemId: number) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      const tagValue = e.currentTarget.value.trim();
-      if (tagValue) {
-        handleAddUploadTag(itemId, tagValue);
-        e.currentTarget.value = '';
-      }
-    } else if (e.key === 'Escape') {
-      setActiveInputId(null);
-      e.currentTarget.value = '';
-    }
-  }, [handleAddUploadTag]);
 
   // Handle scrap delete with undo pattern
   const handleDeleteScrap = (scrapId: string) => {
@@ -495,14 +451,17 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
 
     try {
       setIsRefreshing(true);
-      await Promise.all([loadScraps(), loadUploads()]);
+      // 첫 페이지부터 다시 로드
+      setCurrentPage(1);
+      setHasMore(true);
+      await loadScraps(1, false);
       showSuccess(t('common_success'), t('scrapPage_listRefreshSuccess'));
     } catch (error: any) {
       showError(t('common_error'), error.message || t('scrapPage_listRefreshFailed'));
     } finally {
       setIsRefreshing(false);
     }
-  }, [isAuthenticated, isRefreshing, loadScraps, loadUploads, showSuccess, showError]);
+  }, [isAuthenticated, isRefreshing, loadScraps, showSuccess, showError, t]);
 
   // ref를 통해 refreshList 함수 노출
   useImperativeHandle(ref, () => ({
@@ -511,26 +470,20 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
 
   // PDF 업로드 성공 시 처리
   const handlePDFUploadSuccess = useCallback(() => {
-    // 업로드 성공 시 업로드 목록을 갱신
-    loadUploads();
-  }, [loadUploads]);
+    // 업로드 성공 시 스크랩 목록을 갱신 (v3 API는 webclip + upload 통합)
+    setCurrentPage(1);
+    setHasMore(true);
+    loadScraps(1, false);
+  }, [loadScraps]);
 
-  // 스크랩과 업로드를 합친 통합 목록 (최신순)
-  const combinedItems = useMemo(() => {
-    type Combined = { type: 'SCRAP' | 'UPLOAD'; ts: number; key: string; scrap?: Scrap; upload?: LibraryItemDto };
-    const items: Combined[] = [];
-    // 스크랩: 태그 필터 적용된 것만 포함
-    for (const s of filteredScraps) {
-      const ts = scrapTimestamps[s.id] ?? new Date(s.date).getTime();
-      items.push({ type: 'SCRAP', ts, key: `scrap-${s.id}`, scrap: s });
-    }
-    // 업로드: 항상 포함
-    for (const u of uploads) {
-      const ts = u.createdAt ? new Date(u.createdAt).getTime() : 0;
-      items.push({ type: 'UPLOAD', ts, key: `upload-${u.id}`, upload: u });
-    }
-    return items.sort((a, b) => b.ts - a.ts);
-  }, [filteredScraps, uploads, scrapTimestamps]);
+  // 태그 필터 적용된 스크랩 목록 (v3 API는 webclip + upload 통합)
+  const filteredItems = useMemo(() => {
+    return filteredScraps.map(s => ({
+      type: 'SCRAP' as const,
+      key: `scrap-${s.id}`,
+      scrap: s,
+    }));
+  }, [filteredScraps]);
 
   // 로그인 페이지로 이동 (또는 로그아웃 처리)
   const handleLogin = useCallback(async () => {
@@ -574,24 +527,16 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [activeInputId, showAllTags]);
 
-  // 불필요한 useEffect 제거 (inputRef.current?.focus())
-
+  // 무한스크롤 IntersectionObserver 설정
   useEffect(() => {
-    if (loading) return;
+    // 로딩 중이거나 더 이상 데이터가 없으면 중단
+    if (scrapsLoading || !hasMore || !isAuthenticated) return;
 
     const observer = new IntersectionObserver(
       entries => {
-        if (entries[0].isIntersecting) {
-          setLoading(true);
-          // 이전 타임아웃이 있다면 클리어
-          if (loadingTimeoutRef.current) {
-            clearTimeout(loadingTimeoutRef.current);
-          }
-          // 새로운 타임아웃 설정
-          loadingTimeoutRef.current = setTimeout(() => {
-            // TODO: Implement actual data fetching
-            setLoading(false);
-          }, 1000);
+        if (entries[0].isIntersecting && hasMore && !scrapsLoading) {
+          // 다음 페이지 로드
+          loadScraps(currentPage + 1, true);
         }
       },
       { threshold: 0.5 }
@@ -607,25 +552,24 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       if (observerRef.current) {
         observerRef.current.disconnect();
       }
-      // 컴포넌트 언마운트 시 타임아웃 클리어
-      if (loadingTimeoutRef.current) {
-        clearTimeout(loadingTimeoutRef.current);
-      }
     };
-  }, [loading]);
+  }, [scrapsLoading, hasMore, currentPage, loadScraps, isAuthenticated]);
 
 
 
-  const openScrapInNewTab = useCallback(async (scrapId: string) => {
-    // console.log('🚀 ScrapPage: Opening scrap viewer for ID:', scrapId);
+  const openScrapInNewTab = useCallback(async (scrapId: string, scrapType?: 'webclip' | 'pdf' | 'image' | 'video' | 'audio' | 'upload') => {
+    // console.log('🚀 ScrapPage: Opening viewer for ID:', scrapId, 'type:', scrapType);
     try {
-      const url = browser.runtime.getURL(`/webviewer.html#type=SCRAP&id=${scrapId}`);
+      // v3 API에서 type 구분: webclip은 SCRAP, 파일 기반은 UPLOAD
+      // pdf, image, video, audio, upload -> UPLOAD viewer
+      const viewerType = scrapType === 'webclip' ? 'SCRAP' : 'UPLOAD';
+      const url = browser.runtime.getURL(`/webviewer.html#type=${viewerType}&id=${scrapId}`);
       // console.log('📝 ScrapPage: Generated viewer URL:', url);
 
       const message = {
         action: 'openViewer',
         url: url,
-        type: 'SCRAP',
+        type: viewerType,
         id: scrapId
       };
       // console.log('📤 ScrapPage: Sending message to background:', message);
@@ -643,54 +587,83 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         throw new Error(response.error || 'Failed to open viewer');
       }
 
-      // console.log('✅ ScrapPage: Successfully opened scrap viewer');
+      // console.log('✅ ScrapPage: Successfully opened viewer');
     } catch (e) {
-      console.error('❌ ScrapPage: Failed to open scrap viewer:', e);
+      console.error('❌ ScrapPage: Failed to open viewer:', e);
       showError(t('common_error'), t('scrapPage_openViewerError'));
     }
-  }, [showError]);
+  }, [showError, t]);
+
+  // Helper function to get icon based on scrap type
+  const getScrapIcon = (scrap: Scrap) => {
+    // For webclips, show favicon or link icon
+    if (scrap.type === 'webclip') {
+      return scrap.faviconUrl ? (
+        <img
+          src={scrap.faviconUrl}
+          alt="Site favicon"
+          style={{
+            width: 16,
+            height: 16,
+            marginRight: 6,
+            verticalAlign: 'text-bottom',
+            flexShrink: 0
+          }}
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const fallbackIcon = target.nextElementSibling as HTMLElement;
+            if (fallbackIcon) {
+              fallbackIcon.style.display = 'inline';
+            }
+          }}
+        />
+      ) : (
+        <LuLink
+          size={16}
+          style={{
+            marginRight: 6,
+            verticalAlign: 'text-bottom',
+            flexShrink: 0
+          }}
+        />
+      );
+    }
+
+    // For uploads, show appropriate file type icon
+    // Note: scrap.type from server can be 'pdf', 'image', 'video', 'audio', 'upload'
+    const IconComponent = (() => {
+      const typeStr = String(scrap.type || '').toLowerCase();
+      if (typeStr === 'pdf') return LuFileText;
+      if (typeStr === 'image') return LuImage;
+      if (typeStr === 'video') return LuVideo;
+      if (typeStr === 'audio') return LuMusic;
+      return LuFile; // Default for 'upload' or unknown
+    })();
+
+    return (
+      <IconComponent
+        size={16}
+        style={{
+          marginRight: 6,
+          verticalAlign: 'text-bottom',
+          flexShrink: 0
+        }}
+      />
+    );
+  };
 
   const ScrapItem = React.memo<{ scrap: Scrap; onDelete: () => void }>(({ scrap, onDelete }) => {
     return (
-      <div 
-        className={styles.contentItem} 
+      <div
+        className={styles.contentItem}
         data-url={scrap.url}
-        onClick={() => openScrapInNewTab(scrap.id)}
+        onClick={() => openScrapInNewTab(scrap.id, scrap.type)}
         style={{ cursor: 'pointer' }}
       >
         <div className={styles.contentHeader}>
           <div className={styles.contentTitleWrapper}>
-            {scrap.faviconUrl ? (
-              <img
-                src={scrap.faviconUrl}
-                alt="Site favicon"
-                style={{
-                  width: 16,
-                  height: 16,
-                  marginRight: 6,
-                  verticalAlign: 'text-bottom',
-                  flexShrink: 0
-                }}
-                onError={(e) => {
-                  // Fallback to LuLink icon on error
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const fallbackIcon = target.nextElementSibling as HTMLElement;
-                  if (fallbackIcon) {
-                    fallbackIcon.style.display = 'inline';
-                  }
-                }}
-              />
-            ) : null}
-            <LuLink
-              size={16}
-              style={{
-                marginRight: 6,
-                verticalAlign: 'text-bottom',
-                display: scrap.faviconUrl ? 'none' : 'inline',
-                flexShrink: 0
-              }}
-            />
+            {getScrapIcon(scrap)}
             <span className={styles.titleText}>
               <a href={scrap.url} target="_blank" rel="noopener noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
                 {scrap.title}
@@ -708,7 +681,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
         </div>
         <div className={styles.contentFooter}>
           <div className={styles.tags}>
-            <button 
+            <button
               className={styles.addTagButton}
               onClick={(e) => {
                 e.stopPropagation();
@@ -718,14 +691,14 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
             >
               <IoAdd size={14} />
             </button>
-            <TagList 
-              tags={scrap.tags} 
+            <TagList
+              tags={scrap.tags}
               onTagRemove={(tagName) => handleRemoveTag(scrap.id, tagName)}
               showRemoveButton={true}
             />
             {activeInputId === scrap.id && (
-              <div 
-                className={styles.tagInputTooltip} 
+              <div
+                className={styles.tagInputTooltip}
                 data-tooltip-id={scrap.id}
               >
                 <input
@@ -736,7 +709,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
                   className={styles.tagInput}
                   autoFocus
                 />
-                <button 
+                <button
                   className={styles.tagSubmitButton}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -760,40 +733,6 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       </div>
     );
   });
-
-  const openUploadInNewTab = useCallback(async (uploadedId: number) => {
-    // console.log('🚀 ScrapPage: Opening upload viewer for ID:', uploadedId);
-    try {
-      const url = browser.runtime.getURL(`/webviewer.html#type=UPLOAD&id=${uploadedId}`);
-      // console.log('📝 ScrapPage: Generated upload viewer URL:', url);
-
-      const message = {
-        action: 'openViewer',
-        url: url,
-        type: 'UPLOAD',
-        id: uploadedId
-      };
-      // console.log('📤 ScrapPage: Sending upload message to background:', message);
-
-      const response = await browser.runtime.sendMessage(message);
-      // console.log('📥 ScrapPage: Received upload response from background:', response);
-
-      if (!response) {
-        console.error('❌ ScrapPage: No response received from background for upload');
-        throw new Error('No response from background script');
-      }
-
-      if (!response.success) {
-        console.error('❌ ScrapPage: Background returned upload error:', response.error);
-        throw new Error(response.error || 'Failed to open viewer');
-      }
-
-      // console.log('✅ ScrapPage: Successfully opened upload viewer');
-    } catch (e) {
-      console.error('❌ ScrapPage: Failed to open upload viewer:', e);
-      showError(t('common_error'), t('scrapPage_openUploadViewerError'));
-    }
-  }, [showError]);
 
   return (
     <div className={layoutStyles.pageLayout}>
@@ -850,7 +789,7 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
                   try {
                     await trackPDFUploadModalOpenedBridge({
                       from: 'scrap_page',
-                      existing_uploads_count: uploads.length
+                      existing_uploads_count: 0 // v3 API에서 upload는 scraps에 통합됨
                     })
                   } catch {}
                 }}
@@ -878,8 +817,8 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       <div className={layoutStyles.scrollableContent}>
         <div className={styles.scrapList}>
           {(() => {
-            const isInitialLoading = (scrapsLoading || uploadsLoading) && combinedItems.length === 0;
-            const hasError = !!scrapsError || !!uploadsError;
+            const isInitialLoading = scrapsLoading && filteredItems.length === 0;
+            const hasError = !!scrapsError;
             if (isInitialLoading) {
               return (
                 <div className={styles.loadingContainer}>
@@ -887,158 +826,39 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
                 </div>
               );
             }
-            if (hasError && combinedItems.length === 0) {
+            if (hasError && filteredItems.length === 0) {
               return (
                 <div className={styles.errorContainer}>
-                  <div className={styles.errorMessage}>
-                    {scrapsError || uploadsError}
-                  </div>
+                  <div className={styles.errorMessage}>{scrapsError}</div>
                   <button className={styles.retryButton} onClick={handleRefresh}>{t('scrapPage_retryButton')}</button>
                 </div>
               );
             }
-            if (combinedItems.length === 0) {
+            if (filteredItems.length === 0) {
               return (
                 <div className={styles.emptyContainer}>
                   <div className={styles.emptyMessage}>{t('scrapPage_emptyMessage')}</div>
                 </div>
               );
             }
-            return combinedItems.map((item) => {
-              if (item.type === 'SCRAP' && item.scrap) {
-                const scrap = item.scrap;
-                return (
+            return filteredItems.map((item, index) => {
+              const scrap = item.scrap;
+              const isLastScrap = index === filteredItems.length - 1;
+              return (
+                <div key={item.key} ref={isLastScrap ? lastScrapRef : null}>
                   <ScrapItem
-                    key={item.key}
                     scrap={scrap}
                     onDelete={() => handleDeleteScrap(scrap.id)}
                   />
-                );
-              }
-              if (item.type === 'UPLOAD' && item.upload) {
-                const u = item.upload;
-                return (
-                  <div
-                    key={item.key}
-                    className={styles.contentItem}
-                    onClick={() => openUploadInNewTab(u.id)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className={styles.contentHeader}>
-                      {u.url ? (
-                        <div className={styles.contentTitleWrapper}>
-                          <IoDocument size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                          <span className={styles.titleText}>
-                            <a href={u.url} target="_blank" rel="noreferrer" className={styles.contentTitleLink} onClick={(e) => e.stopPropagation()}>
-                              {u.title}
-                            </a>
-                          </span>
-                        </div>
-                      ) : (
-                        <div className={styles.contentTitleWrapper}>
-                          <IoDocument size={16} style={{ marginRight: 6, verticalAlign: 'text-bottom' }} />
-                          <span className={styles.titleText}>{u.title}</span>
-                        </div>
-                      )}
-                      <Tooltip content={t('common_delete')} side='bottom'>
-                        <button
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            // 낙관적 업데이트: 즉시 UI에서 항목 제거
-                            const prevUploads = uploads;
-                            setUploads((curr) => curr.filter((it) => it.id !== u.id));
-                            try {
-                              await globalApiClient.delete(`/v1/uploaded-files/${u.id}`);
-                              showSuccess(t('common_delete'), t('scrapPage_deleteUploadSuccess'));
-                              // 백그라운드에서 최신 목록 동기화
-                              // void loadUploads();
-                            } catch (e: any) {
-                              // 실패 시 롤백
-                              setUploads(prevUploads);
-                              showError(t('common_delete'), e?.message || t('scrapPage_deleteUploadFailed'));
-                            }
-                          }}
-                          className={styles.deleteButton}
-                        >
-                          <IoTrash />
-                        </button>
-                      </Tooltip>
-                    </div>
-                    <div className={styles.contentDescription}>{u.previewText || u.description || ''}</div>
-                    <div className={styles.contentFooter}>
-                      <div className={styles.tags}>
-                        <button 
-                          className={styles.addTagButton}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const key = `upload-${u.id}`;
-                            setActiveInputId(activeInputId === key ? null : key);
-                            setShowAllTags(null);
-                          }}
-                        >
-                          <IoAdd size={14} />
-                        </button>
-                        <TagList 
-                          tags={u.tags || []}
-                          maxVisibleTags={2}
-                          onTagRemove={(tagName) => handleRemoveUploadTag(u.id, tagName)}
-                          showRemoveButton={true}
-                        />
-                        {activeInputId === `upload-${u.id}` && (
-                          <div 
-                            className={styles.tagInputTooltip} 
-                            data-tooltip-id={`upload-${u.id}`}
-                          >
-                            <input
-                              ref={inputRef}
-                              type="text"
-                              onKeyDown={(e) => handleUploadKeyDown(e, u.id)}
-                              placeholder={t('scrapPage_tagPlaceholder')}
-                              className={styles.tagInput}
-                              autoFocus
-                            />
-                            <button 
-                              className={styles.tagSubmitButton}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const inputElement = inputRef.current;
-                                if (inputElement) {
-                                  const tagValue = inputElement.value.trim();
-                                  if (tagValue) {
-                                    handleAddUploadTag(u.id, tagValue);
-                                    inputElement.value = '';
-                                  }
-                                }
-                              }}
-                            >
-                              {t('scrapPage_add')}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      {u.createdAt && (
-                        <div className={styles.contentDate}>
-                          {new Date(u.createdAt).toLocaleString('ko-KR', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              }
-              return null;
+                </div>
+              );
             });
           })()}
         </div>
-        {loading && (
+        {scrapsLoading && hasMore && scraps.length > 0 && (
           <div className={styles.loadingContainer}>
             <div className={styles.loadingIndicator}>
-              Loading...
+              Loading more...
             </div>
           </div>
         )}
