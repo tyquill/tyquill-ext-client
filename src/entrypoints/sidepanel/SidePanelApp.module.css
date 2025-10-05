@@ -5,6 +5,7 @@
   height: 100vh;
   background: white;
   overflow: hidden;
+  position: relative;
 }
 
 .sidepanelHeader {
@@ -72,10 +73,10 @@
 
 .sidepanelContent {
   flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .app {
