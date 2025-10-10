@@ -1,7 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
+import ScrapToast from '../components/content/ScrapToast/ScrapToast';
 import { WebClipper } from '../utils/webClipper';
 import { initLinkedInInjector } from '../utils/linkedinInjector';
 import { clipAndScrapCurrentPage } from '../utils/scrapHelper';
@@ -10,8 +11,15 @@ import { initYouTubeInjector } from '../utils/youtubeInjector';
 import { initXInjector } from '../utils/xInjector';
 import { initRedditInjector } from '../utils/redditInjector';
 
+interface ScrapData {
+  title: string;
+  url?: string;
+}
+
 const App: React.FC = () => {
   const { initializeLanguage } = useLanguageStore();
+  const [showScrapToast, setShowScrapToast] = useState(false);
+  const [scrapData, setScrapData] = useState<ScrapData | null>(null);
   const isThreads = (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
     window.location.hostname.includes('threads.com') ||
@@ -115,6 +123,26 @@ const App: React.FC = () => {
       if (request.type === 'PING') {
         if (sendResponse) {
           sendResponse({ success: true });
+        }
+        return true;
+      }
+
+      // 스크랩 완료 알림 처리
+      if (request.action === 'scrapCreated') {
+        try {
+          const { data } = request;
+          if (data) {
+            setScrapData({
+              title: data.title || data.url || '페이지',
+              url: data.url,
+            });
+            setShowScrapToast(true);
+          }
+          if (sendResponse) {
+            sendResponse({ success: true });
+          }
+        } catch (error) {
+          console.error('❌ 스크랩 알림 표시 실패:', error);
         }
         return true;
       }
@@ -244,6 +272,18 @@ const App: React.FC = () => {
   return (
     <div id="tyquill-main-app" className="tyquill-main-root">
       <FloatingButton />
+
+      {/* 스크랩 완료 토스트 알림 */}
+      {showScrapToast && scrapData && (
+        <ScrapToast
+          title={scrapData.title}
+          url={scrapData.url}
+          onClose={() => {
+            setShowScrapToast(false);
+            setScrapData(null);
+          }}
+        />
+      )}
 
       {/* 향후 확장을 위한 추가 컴포넌트들을 위한 컨테이너 */}
       <div id="tyquill-main-components" style={{ display: 'none' }}>
