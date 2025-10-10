@@ -9,39 +9,45 @@ interface SelectedScrap extends ScrapResponse {
 }
 
 interface ArticleGenerateState {
+  // View state
+  viewState: 'style-selection' | 'draft-form';
+
   // 기본 입력 필드
   topic: string;
   keyInsight: string;
   handle: string;
   selectedTemplate: string;
-  
+
   // 스크랩 관련
   selectedScraps: SelectedScrap[];
-  
+
   // 태그 관련
   selectedTags: string[];
-  
+
   // 모달 상태
   isScrapModalOpen: boolean;
   isTagDropdownOpen: boolean;
   isAnalysisConfirmModalOpen: boolean;
-  
+
   // 생성 상태
   isGenerating: boolean;
   generationError: string | null;
   generationStatus: 'idle' | 'processing' | 'completed' | 'failed';
-  
+
   // 템플릿 구조 관련
   templateStructure: TemplateSection[] | null;
   sectionIdCounter: number;
   isAnalyzing: boolean;
-  
+
   // 문체 선택
   selectedWritingStyleId: number | null;
   isAnalyzingStyle: boolean;
 }
 
 interface ArticleGenerateActions {
+  // View state actions
+  setViewState: (state: 'style-selection' | 'draft-form') => void;
+
   // 기본 입력 액션
   setTopic: (topic: string) => void;
   setKeyInsight: (keyInsight: string) => void;
@@ -90,6 +96,7 @@ type ArticleGenerateStore = ArticleGenerateState & ArticleGenerateActions;
 const STORAGE_KEY = 'tyquill-article-generate-draft';
 
 const initialState: ArticleGenerateState = {
+  viewState: 'style-selection',
   topic: '',
   keyInsight: '',
   handle: '',
@@ -157,6 +164,11 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
     persist(
       immer((set, get) => ({
         ...initialState,
+
+        // View state actions
+        setViewState: (viewState: 'style-selection' | 'draft-form') => set((state) => {
+          state.viewState = viewState;
+        }),
 
         // 기본 입력 액션
         setTopic: (topic: string) => set((state) => {
@@ -313,6 +325,7 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
         resetForm: () => set((state) => {
           Object.assign(state, {
             ...initialState,
+            viewState: 'style-selection', // Reset to style selection
             // 모달 상태는 유지
             isScrapModalOpen: false,
             isTagDropdownOpen: false,
@@ -328,6 +341,7 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
       {
         name: STORAGE_KEY,
         partialize: (state) => ({
+          viewState: state.viewState,
           topic: state.topic,
           keyInsight: state.keyInsight,
           handle: state.handle,

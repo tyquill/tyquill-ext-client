@@ -1,0 +1,543 @@
+.container {
+  padding: 24px 20px;
+  background: #ffffff;
+}
+
+.header {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 6px 0;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120px;
+}
+
+.loadingSpinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #e5e7eb;
+  border-top: 2px solid #DE7356;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Avatar Grid - Optimized layout with max 4 items per row */
+.avatarGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 20px 16px;
+  justify-items: center;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 4px;
+}
+
+.avatarItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 96px;
+}
+
+/* Avatar Wrapper - Circular container with refined interactions */
+.avatarWrapper {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2.5px solid transparent;
+  background: #ffffff;
+  padding: 0;
+  /* overflow removed to allow selectedIndicator badge to appear outside */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  flex-shrink: 0;
+}
+
+.avatarWrapper:hover {
+  border-color: #E89278;
+  box-shadow: 0 4px 16px rgba(222, 115, 86, 0.2),
+              0 2px 8px rgba(222, 115, 86, 0.1);
+  transform: translateY(-2px);
+}
+
+.avatarWrapper:active {
+  transform: translateY(0px);
+  transition-duration: 0.1s;
+}
+
+.avatarWrapper.selected {
+  border-color: #DE7356;
+  box-shadow: 0 0 0 3px rgba(222, 115, 86, 0.12),
+              0 4px 12px rgba(222, 115, 86, 0.15);
+}
+
+.avatarWrapper.selected:hover {
+  border-color: #C85A3E;
+  box-shadow: 0 0 0 3px rgba(222, 115, 86, 0.18),
+              0 6px 18px rgba(222, 115, 86, 0.22);
+}
+
+/* Custom Avatar (NotionAvatar wrapper) - Contains and clips the avatar image */
+.customAvatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden; /* Ensures avatar content stays circular */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+  position: relative;
+  z-index: 1; /* Below the selectedIndicator */
+}
+
+.customAvatar svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Add new style button - Separate from avatar grid */
+.addNewStyleButton {
+  margin-top: 72px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: #ffffff;
+  border: 2px dashed #d1d5db;
+  border-radius: 12px;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addNewStyleButton:hover {
+  border-color: #9ca3af;
+  border-style: solid;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.addNewStyleButton:active {
+  transform: translateY(1px);
+}
+
+/* Selected indicator - Badge appears outside the circular avatar */
+.selectedIndicator {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(135deg, #DE7356 0%, #C85A3E 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  border: 3px solid white;
+  box-shadow: 0 2px 8px rgba(222, 115, 86, 0.4);
+  animation: selectedPulse 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  z-index: 10; /* Above avatar content */
+}
+
+@keyframes selectedPulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(222, 115, 86, 0.4),
+                0 0 0 0 rgba(222, 115, 86, 0.4);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(222, 115, 86, 0.4),
+                0 0 0 6px rgba(222, 115, 86, 0);
+  }
+}
+
+/* Avatar label - Better readability */
+.avatarLabel {
+  font-size: 12px;
+  font-weight: 500;
+  color: #4b5563;
+  text-align: center;
+  width: 100%;
+  max-width: 96px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+  transition: color 0.2s ease;
+  padding: 0 4px;
+}
+
+.avatarItem:hover .avatarLabel {
+  color: #111827;
+}
+
+.avatarWrapper.selected + .avatarLabel {
+  color: #DE7356;
+  font-weight: 600;
+}
+
+/* Delete button - appears on hover */
+.avatarDeleteButton {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 2px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+  z-index: 20;
+  color: white;
+}
+
+.avatarItem:hover .avatarDeleteButton {
+  opacity: 1;
+}
+
+.avatarDeleteButton:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.avatarDeleteButton:active {
+  transform: scale(0.95);
+}
+
+.avatarDeleteButton.deleting {
+  opacity: 1;
+  background: #9ca3af;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Spinner for deleting state */
+.deleteSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* Responsive design - Optimized for narrow side panels */
+@media (max-width: 400px) {
+  .container {
+    padding: 20px 16px;
+  }
+
+  .header {
+    margin-bottom: 24px;
+  }
+
+  .avatarGrid {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 18px 12px;
+    max-width: 100%;
+  }
+
+  .avatarItem {
+    max-width: 88px;
+  }
+
+  .avatarWrapper {
+    width: 64px;
+    height: 64px;
+    border-width: 2px;
+    /* overflow still removed for badge visibility */
+  }
+
+  .selectedIndicator {
+    width: 20px;
+    height: 20px;
+    top: -3px;
+    right: -3px;
+    border-width: 2.5px;
+  }
+
+  .selectedIndicator svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .avatarLabel {
+    font-size: 11px;
+    max-width: 88px;
+  }
+
+  .addNewStyleButton {
+    margin-top: 56px;
+    padding: 10px 16px;
+    font-size: 13px;
+  }
+
+  .avatarDeleteButton {
+    width: 20px;
+    height: 20px;
+    top: -4px;
+    left: -4px;
+    border-width: 1.5px;
+  }
+
+  .deleteSpinner {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Extra small screens (Chrome extension side panel minimum width) */
+@media (max-width: 340px) {
+  .avatarGrid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px 10px;
+  }
+
+  .avatarItem {
+    max-width: 80px;
+  }
+
+  .avatarWrapper {
+    width: 56px;
+    height: 56px;
+    /* overflow still removed for badge visibility */
+  }
+
+  .avatarLabel {
+    font-size: 10.5px;
+  }
+
+  .addNewStyleButton {
+    margin-top: 48px;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-width: 1.5px;
+  }
+
+  .avatarDeleteButton {
+    width: 18px;
+    height: 18px;
+    top: -3px;
+    left: -3px;
+  }
+
+  .deleteSpinner {
+    width: 8px;
+    height: 8px;
+  }
+}
+
+/* Modal Overlay and Content */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  backdrop-filter: blur(2px);
+}
+
+.modalContent {
+  background: white;
+  width: calc(100% - 24px); /* 12px margin on each side */
+  margin: 0 12px;
+  height: 90vh;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.15);
+}
+
+/* Drag Handle */
+.dragHandleContainer {
+  padding: 12px 16px 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: white;
+  cursor: grab;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.dragHandleContainer:active {
+  cursor: grabbing;
+}
+
+.dragHandle {
+  width: 40px;
+  height: 4px;
+  background: #d1d5db;
+  border-radius: 999px;
+}
+
+.modalCloseButton {
+  position: absolute;
+  right: 16px;
+  top: 62%;
+  transform: translateY(-50%);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  color: #6b7280;
+}
+
+.modalCloseButton:hover {
+  color: #111827;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.modalCloseButton:active {
+  color: #374151;
+  transform: translateY(-50%) scale(0.95);
+}
+
+/* Delete Confirmation Modal */
+.deleteConfirmOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.deleteConfirmModal {
+  background: white;
+  border-radius: 12px;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+}
+
+.deleteConfirmHeader {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.deleteConfirmTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.deleteConfirmContent {
+  padding: 20px 24px;
+}
+
+.deleteConfirmMessage {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.deleteConfirmStyleName {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: #111827;
+  padding: 8px 12px;
+  background: #f3f4f6;
+  border-radius: 6px;
+}
+
+.deleteConfirmActions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.deleteConfirmCancelButton,
+.deleteConfirmDeleteButton {
+  flex: 1;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+}
+
+.deleteConfirmCancelButton {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.deleteConfirmCancelButton:hover {
+  background: #e5e7eb;
+}
+
+.deleteConfirmCancelButton:active {
+  transform: scale(0.98);
+}
+
+.deleteConfirmDeleteButton {
+  background: #ef4444;
+  color: white;
+}
+
+.deleteConfirmDeleteButton:hover {
+  background: #dc2626;
+}
+
+.deleteConfirmDeleteButton:active {
+  transform: scale(0.98);
+}

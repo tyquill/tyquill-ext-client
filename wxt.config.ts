@@ -4,6 +4,9 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/analytics/module'],
+  server: {
+    port: 3002,  // Changed from default 3001 to avoid conflict with backend API
+  },
   manifest: {
     name: 'Tyquill',
     version: '1.4.0',
