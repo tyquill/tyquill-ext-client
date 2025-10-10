@@ -15,6 +15,48 @@
   margin-bottom: 28px;
 }
 
+/* Back button */
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-right: 12px;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #374151;
+}
+
+.backButton:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+/* Selected style info */
+.selectedStyleInfo {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background-color: #eff6ff;
+  border-radius: 8px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selectedStyleLabel {
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.selectedStyleName {
+  color: #1e40af;
+  font-weight: 600;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

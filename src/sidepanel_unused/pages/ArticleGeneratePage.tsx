@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp, IoArrowBack } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
 import styles from './PageStyles.module.css';
@@ -20,6 +20,7 @@ import { browser } from 'wxt/browser';
 import { useArticleGenerateStore } from '../../stores/articleGenerateStore';
 import { libraryItemService, LibraryItemDto } from '../../services/libraryItemService';
 import { useI18n } from '../../hooks/useI18n';
+import WritingStyleSelection from '../../components/sidepanel/WritingStyleSelection/WritingStyleSelection';
 import {
   trackArticleTopicSetBridge,
   trackArticleKeyMessageSetBridge,
@@ -57,6 +58,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   // Zustand 스토어 사용
   const {
     // 상태 값들
+    viewState,
     topic,
     keyInsight,
     handle,
@@ -73,8 +75,9 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     isAnalyzing,
     selectedWritingStyleId,
     isAnalyzingStyle,
-    
+
     // 액션들
+    setViewState,
     setTopic,
     setKeyInsight,
     setHandle,
@@ -503,6 +506,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               setSelectedUploads([]);
               // selectedTags는 유지 (다음 생성에 유용할 수 있음)
               clearTemplate();
+              // Reset view state to style selection for next generation
+              setViewState('style-selection');
             } else if (completedArticle.status === 'failed') {
               setGenerationStatus('failed');
               setGenerating(false);
@@ -669,16 +674,61 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   // 예상 시간 UI 제거됨: 계산 로직 삭제
 
+  // Handle style selection
+  const handleStyleSelection = (styleId: number | null) => {
+    setWritingStyleId(styleId);
+    setViewState('draft-form');
+  };
+
+  // Handle back to style selection
+  const handleBackToStyleSelection = () => {
+    setViewState('style-selection');
+  };
+
+  // Render style selection view
+  if (viewState === 'style-selection') {
+    return (
+      <div className={styles.pageContainer}>
+        <div className={`${styles.page} ${articleStyles.articleGeneratePageLayout}`}>
+          <WritingStyleSelection
+            onStyleSelected={handleStyleSelection}
+            onNavigate={onNavigate}
+            selectedStyleId={selectedWritingStyleId}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  // Render draft form view
   return (
     <div className={styles.pageContainer}>
       <div className={`${styles.page} ${articleStyles.articleGeneratePageLayout}`}>
         <div className={articleStyles.scrollableContent}>
           <div className={articleStyles.articlePageHeader} ref={headerRef}>
             <div className={styles.headerControls}>
+              <button
+                className={articleStyles.backButton}
+                onClick={handleBackToStyleSelection}
+                title={t('common_back')}
+              >
+                <IoArrowBack size={20} />
+              </button>
               <h1 className={styles.pageTitle}>{t('articleGenerate_newsletterDraftGeneration')}</h1>
             </div>
+            {/* Display selected style */}
+            {selectedWritingStyleId !== null && (
+              <div className={articleStyles.selectedStyleInfo}>
+                <span className={articleStyles.selectedStyleLabel}>
+                  {t('articleGenerate_writeStyleSelection')}:
+                </span>
+                <span className={articleStyles.selectedStyleName}>
+                  {writingStyles.find(s => s.id === selectedWritingStyleId)?.name || t('articleGenerate_defaultNewsletterStyle')}
+                </span>
+              </div>
+            )}
           </div>
-          
+
           <div className={styles.draftForm}>
           <div className={styles.formGroup}>
             <label htmlFor="subject" className={styles.formLabel}>
@@ -855,84 +905,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             )}
           </div>
 
-          {/* 문체 선택 섹션 */}
-          <div className={articleStyles.referenceSection}>
-            <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_writeStyleSelection')}</h3>
-            <div className={styles.formGroup}>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div className={tagSelectorStyles.tagFilterContainer} style={{ marginRight: 0, flexGrow: 1 }}>
-                  <button
-                    ref={styleDropdownButtonRef}
-                    className={tagSelectorStyles.tagFilterButton}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsStyleDropdownOpen((prev) => !prev);
-                    }}
-                  >
-                    {selectedWritingStyleId
-                      ? (writingStyles.find((ws) => ws.id === selectedWritingStyleId)?.name || t('articleGenerate_writeStyleSelection'))
-                      : t('articleGenerate_defaultNewsletterStyle')}
-                    {isStyleDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
-                  </button>
-                  <div className={`${tagSelectorStyles.tagFilterDropdown} ${isStyleDropdownOpen ? tagSelectorStyles.visible : ''}`}>
-                    <div
-                      className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId ? '' : tagSelectorStyles.selected}`}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        setWritingStyleId(null);
-                        setIsStyleDropdownOpen(false);
-                        try {
-                          await trackArticleStyleSelectedBridge({
-                            style_id: null,
-                            style_name: 'default'
-                          })
-                        } catch {}
-                      }}
-                    >
-                      {t('articleGenerate_defaultNewsletterStyle')}
-                    </div>
-                    {writingStyles.map((ws) => (
-                      <div
-                        key={ws.id}
-                        className={`${tagSelectorStyles.tagOption} ${selectedWritingStyleId === ws.id ? tagSelectorStyles.selected : ''}`}
-                        onClick={async (e) => {
-                          e.stopPropagation();
-                          setWritingStyleId(ws.id);
-                          setIsStyleDropdownOpen(false);
-                          try {
-                            await trackArticleStyleSelectedBridge({
-                              style_id: ws.id,
-                              style_name: ws.name
-                            })
-                          } catch {}
-                        }}
-                      >
-                        {ws.name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <Tooltip content={t('articleGenerate_goToStyleManagement')}>
-                  <button
-                    onClick={async () => {
-                      onNavigate('style-management');
-                      try {
-                        await trackArticleStyleCreateClickedBridge({
-                          from: 'article_generation_page'
-                        })
-                      } catch {}
-                    }}
-                    className={articleStyles.sectionButton}
-                    style={{ flexShrink: 0 }}
-                  >
-                    <IoAdd size={16} />
-                    {t('articleGenerate_newStyle')}
-                  </button>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-
           {/* 참고 자료 */}
           <div className={articleStyles.referenceSection}>
           <h3 className={articleStyles.referenceSectionTitle}>{t('articleGenerate_referenceMaterials')}</h3>
@@ -985,7 +957,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         overflow: 'hidden',
                         minHeight: '36px',
                         fieldSizing: 'content'
-                      }}
+                      } as React.CSSProperties}
                       placeholder={t('articleGenerate_howToUseThisMaterial')}
                     />
                     <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((scrap.opinion?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>
@@ -1034,7 +1006,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                             overflow: 'hidden',
                             minHeight: '36px',
                             fieldSizing: 'content'
-                          }}
+                          } as React.CSSProperties}
                           placeholder={t('articleGenerate_howToUseThisMaterial')}
                         />
                         <div style={{ textAlign: 'right', marginTop: 4, fontSize: 12, color: ((u.usagePrompt?.length || 0) >= 75) ? '#ef4444' : '#6b7280' }}>

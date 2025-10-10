@@ -35,6 +35,7 @@ const koTranslations = {
   common_export: "내보내기",
   common_close: "닫기",
   common_confirm: "확인",
+  common_back: "뒤로",
 
   language_selector_label: "언어",
   language_korean: "한국어",
@@ -297,6 +298,16 @@ const koTranslations = {
   articleGenerate_sectionsCreated: "{count}개의 섹션으로 구성을 만들었습니다.",
   articleGenerate_enterTopicAndKeyInsight: "주제와 키메시지를 입력해주세요.",
 
+  // Writing Style Selection
+  writingStyleSelection_title: "문체를 선택하세요",
+  writingStyleSelection_subtitle: "AI가 생성할 초안의 문체를 선택해주세요. 나중에 변경할 수 있습니다.",
+  writingStyleSelection_defaultDescription: "일반적인 뉴스레터 형식으로 작성됩니다",
+  writingStyleSelection_selected: "선택됨",
+  writingStyleSelection_examplesCount: "{count}개의 예시",
+  writingStyleSelection_noExamples: "예시가 없습니다",
+  writingStyleSelection_addNew: "새 문체 추가",
+  writingStyleSelection_addNewDescription: "나만의 문체를 추가하세요",
+
   // PDF Upload Modal
   pdfUpload_title: "PDF 업로드",
   pdfUpload_fileTypeError: "파일 형식 오류",
@@ -431,6 +442,7 @@ const enTranslations = {
   common_export: "Export",
   common_close: "Close",
   common_confirm: "Confirm",
+  common_back: "Back",
 
   language_selector_label: "Language",
   language_korean: "한국어",
@@ -692,6 +704,16 @@ const enTranslations = {
   articleGenerate_aiAnalysisComplete: "AI Analysis Complete",
   articleGenerate_sectionsCreated: "Created structure with {count} sections.",
   articleGenerate_enterTopicAndKeyInsight: "Please enter topic and key insight.",
+
+  // Writing Style Selection
+  writingStyleSelection_title: "Choose Your Writing Persona",
+  writingStyleSelection_subtitle: "Select the writing persona for AI-generated drafts. You can change it later.",
+  writingStyleSelection_defaultDescription: "Written in standard newsletter format",
+  writingStyleSelection_selected: "Selected",
+  writingStyleSelection_examplesCount: "{count} examples",
+  writingStyleSelection_noExamples: "No examples",
+  writingStyleSelection_addNew: "Add New Persona",
+  writingStyleSelection_addNewDescription: "Create your own writing persona",
 
   // PDF Upload Modal
   pdfUpload_title: "Upload PDF",
