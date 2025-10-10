@@ -107,6 +107,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   } = useArticleGenerateStore();
 
   const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
+  const [isLoadingStyles, setIsLoadingStyles] = useState<boolean>(true);
   const headerRef = useRef<HTMLDivElement | null>(null);
   const [scrapModalTop, setScrapModalTop] = useState<number>(DEFAULT_MODAL_TOP_OFFSET);
   const SIDE_RAIL_WIDTH = 60; // Header에 추가된 사이드바 최소 폭과 동일하게 유지
@@ -125,15 +126,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   // 탭별 태그 필터(탭 이동 시 초기화)
   const [scrapTagFilters, setScrapTagFilters] = useState<string[]>([]);
   const [uploadTagFilters, setUploadTagFilters] = useState<string[]>([]);
-  
+
   useEffect(() => {
     const fetchStyles = async () => {
       try {
+        setIsLoadingStyles(true);
         const styles = await writingStyleService.getWritingStyles();
         setWritingStyles(styles);
       } catch (error) {
         console.error('Failed to fetch writing styles:', error);
         showError(t('articleGenerate_failedToLoadStyles'));
+      } finally {
+        setIsLoadingStyles(false);
       }
     };
     fetchStyles();
@@ -141,6 +145,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
   const [showAllTags, setShowAllTags] = useState<string | null>(null);
   const styleDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  // Memoized selected style name for efficient lookup
+  const selectedStyleName = useMemo(() => {
+    if (selectedWritingStyleId === null) {
+      return t('articleGenerate_defaultNewsletterStyle');
+    }
+
+    const style = writingStyles.find(s => s.id === selectedWritingStyleId);
+    return style?.name || t('articleGenerate_defaultNewsletterStyle');
+  }, [selectedWritingStyleId, writingStyles, t]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -717,16 +731,18 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               <h1 className={styles.pageTitle}>{t('articleGenerate_newsletterDraftGeneration')}</h1>
             </div>
             {/* Display selected style */}
-            {selectedWritingStyleId !== null && (
-              <div className={articleStyles.selectedStyleInfo}>
-                <span className={articleStyles.selectedStyleLabel}>
-                  {t('articleGenerate_writeStyleSelection')}:
-                </span>
-                <span className={articleStyles.selectedStyleName}>
-                  {writingStyles.find(s => s.id === selectedWritingStyleId)?.name || t('articleGenerate_defaultNewsletterStyle')}
-                </span>
-              </div>
-            )}
+            <div className={articleStyles.selectedStyleInfo}>
+              <span className={articleStyles.selectedStyleLabel}>
+                {t('articleGenerate_writeStyleSelection')}:
+              </span>
+              <span className={articleStyles.selectedStyleName}>
+                {isLoadingStyles ? (
+                  <span style={{ opacity: 0.6 }}>{t('common_loading') || 'Loading...'}</span>
+                ) : (
+                  selectedStyleName
+                )}
+              </span>
+            </div>
           </div>
 
           <div className={styles.draftForm}>
