@@ -807,3 +807,31 @@
 .page::-webkit-scrollbar-thumb:hover {
   background: #cccccc;
 }
+
+/* Close button for modal view - Smaller and minimal */
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 6px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 50%;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  background: #e5e7eb;
+  color: #374151;
+  transform: scale(1.05);
+}
+
+.closeButton:active {
+  background: #d1d5db;
+  transform: scale(0.95);
+}

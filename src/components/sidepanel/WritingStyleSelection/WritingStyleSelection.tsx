@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { IoAdd, IoSparkles } from 'react-icons/io5';
+import { IoAdd, IoSparkles, IoClose, IoTrash } from 'react-icons/io5';
 import NotionAvatar, { AvatarConfig } from 'react-notion-avatar';
+import { motion, AnimatePresence } from 'framer-motion';
 import styles from './WritingStyleSelection.module.css';
 import { writingStyleService, WritingStyle } from '../../../services/writingStyleService';
 import { useI18n } from '../../../hooks/useI18n';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { trackArticleStyleSelectedBridge } from '../../../analytics/bridge';
 import { PageType } from '../../../types/pages';
+import StyleManagementPage from '../../../sidepanel_unused/pages/StyleManagementPage';
 
 interface WritingStyleSelectionProps {
   onStyleSelected: (styleId: number | null) => void;
@@ -47,9 +49,20 @@ const WritingStyleSelection: React.FC<WritingStyleSelectionProps> = ({
   selectedStyleId
 }) => {
   const { t } = useI18n();
-  const { showError } = useToastHelpers();
+  const { showError, showSuccess } = useToastHelpers();
   const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showStyleManagement, setShowStyleManagement] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<number>>(new Set());
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{
+    show: boolean;
+    styleId: number | null;
+    styleName: string;
+  }>({
+    show: false,
+    styleId: null,
+    styleName: ''
+  });
 
   useEffect(() => {
     const fetchStyles = async () => {
@@ -79,7 +92,62 @@ const WritingStyleSelection: React.FC<WritingStyleSelectionProps> = ({
   };
 
   const handleAddNewStyle = () => {
-    onNavigate('style-management');
+    setShowStyleManagement(true);
+  };
+
+  const handleCloseModal = async () => {
+    setShowStyleManagement(false);
+    // Refresh the styles list after closing the modal
+    try {
+      const styles = await writingStyleService.getWritingStyles();
+      setWritingStyles(styles);
+    } catch (error) {
+      console.error('Failed to refresh writing styles:', error);
+    }
+  };
+
+  const handleDeleteStyle = async (styleId: number, styleName: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent avatar click/selection
+
+    // Show confirmation modal instead of window.confirm
+    setDeleteConfirmModal({
+      show: true,
+      styleId,
+      styleName
+    });
+  };
+
+  const confirmDeleteStyle = async () => {
+    const { styleId, styleName } = deleteConfirmModal;
+    if (!styleId) return;
+
+    try {
+      setDeletingIds(prev => new Set(prev).add(styleId));
+      await writingStyleService.deleteWritingStyle(styleId);
+
+      // Update local state
+      setWritingStyles(prev => prev.filter(s => s.id !== styleId));
+
+      // Note: Don't call onStyleSelected here to avoid page navigation
+      // The parent component will handle the invalid selectedStyleId gracefully
+
+      showSuccess(t('stylePage_styleDeleteSuccess'));
+    } catch (error) {
+      console.error('Failed to delete style:', error);
+      showError(t('stylePage_styleDeleteError'));
+    } finally {
+      setDeletingIds(prev => {
+        const next = new Set(prev);
+        next.delete(styleId);
+        return next;
+      });
+      // Close modal
+      setDeleteConfirmModal({ show: false, styleId: null, styleName: '' });
+    }
+  };
+
+  const cancelDeleteStyle = () => {
+    setDeleteConfirmModal({ show: false, styleId: null, styleName: '' });
   };
 
   return (
@@ -134,6 +202,8 @@ const WritingStyleSelection: React.FC<WritingStyleSelectionProps> = ({
           {/* 사용자 정의 문체 아바타들 */}
           {writingStyles.map((style, index) => {
             const avatarConfig = getAvatarConfig(style.name, index);
+            const isDeleting = deletingIds.has(style.id);
+
             return (
               <div key={style.id} className={styles.avatarItem}>
                 <div
@@ -149,6 +219,21 @@ const WritingStyleSelection: React.FC<WritingStyleSelectionProps> = ({
                       <IoSparkles size={14} />
                     </div>
                   )}
+
+                  {/* Delete Button */}
+                  <button
+                    className={`${styles.avatarDeleteButton} ${isDeleting ? styles.deleting : ''}`}
+                    onClick={(e) => handleDeleteStyle(style.id, style.name, e)}
+                    disabled={isDeleting}
+                    aria-label={`Delete ${style.name}`}
+                    type="button"
+                  >
+                    {isDeleting ? (
+                      <div className={styles.deleteSpinner} />
+                    ) : (
+                      <IoTrash size={12} />
+                    )}
+                  </button>
                 </div>
                 <span className={styles.avatarLabel}>{style.name}</span>
               </div>
@@ -167,6 +252,112 @@ const WritingStyleSelection: React.FC<WritingStyleSelectionProps> = ({
         </button>
         </>
       )}
+
+      {/* Style Management Modal */}
+      <AnimatePresence>
+        {showStyleManagement && (
+          <motion.div
+            className={styles.modalOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={handleCloseModal}
+          >
+            <motion.div
+              className={styles.modalContent}
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{
+                y: 0,
+                opacity: 1,
+                transition: {
+                  type: 'spring',
+                  damping: 25,
+                  stiffness: 300
+                }
+              }}
+              exit={{
+                y: '100%',
+                opacity: 0,
+                transition: {
+                  duration: 0.2
+                }
+              }}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 300 }}
+              dragElastic={0.2}
+              onDragEnd={(_, info) => {
+                if (info.offset.y > 150) {
+                  handleCloseModal();
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.dragHandleContainer}>
+                <div className={styles.dragHandle} />
+                <button
+                  className={styles.modalCloseButton}
+                  onClick={handleCloseModal}
+                  aria-label="Close"
+                >
+                  <IoClose size={16} />
+                </button>
+              </div>
+              <StyleManagementPage onClose={handleCloseModal} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmModal.show && (
+          <motion.div
+            className={styles.deleteConfirmOverlay}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={cancelDeleteStyle}
+          >
+            <motion.div
+              className={styles.deleteConfirmModal}
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className={styles.deleteConfirmHeader}>
+                <h3 className={styles.deleteConfirmTitle}>
+                  {t('common_delete')}
+                </h3>
+              </div>
+
+              <div className={styles.deleteConfirmContent}>
+                <p className={styles.deleteConfirmMessage}>
+                  {t('stylePage_confirmDelete')}
+                </p>
+                <p className={styles.deleteConfirmStyleName}>
+                  "{deleteConfirmModal.styleName}"
+                </p>
+              </div>
+
+              <div className={styles.deleteConfirmActions}>
+                <button
+                  className={styles.deleteConfirmCancelButton}
+                  onClick={cancelDeleteStyle}
+                >
+                  {t('common_cancel')}
+                </button>
+                <button
+                  className={styles.deleteConfirmDeleteButton}
+                  onClick={confirmDeleteStyle}
+                >
+                  {t('common_delete')}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -20,14 +20,17 @@
   background: none;
   border: none;
   cursor: pointer;
-  padding: 8px;
-  margin-right: 12px;
+  padding: 4px;
+  margin: -8px 0 0 -8px;
   border-radius: 6px;
   transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #374151;
+  width: fit-content;
+  position: relative;
+  z-index: 10;
 }
 
 .backButton:hover {
