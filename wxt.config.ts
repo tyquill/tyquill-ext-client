@@ -9,7 +9,7 @@ export default defineConfig({
     version: '1.4.0',
     description: '__MSG_extDescription__',
     default_locale: 'en',
-    permissions: ['storage', 'tabs', 'activeTab', 'scripting', 'contextMenus'],
+    permissions: ['storage', 'tabs', 'activeTab', 'scripting', 'contextMenus', 'sidePanel'],
     host_permissions: ['https://maily.so/*', '<all_urls>'],
     icons: {
       16: '/icon16.png',
@@ -35,6 +35,9 @@ export default defineConfig({
         48: '/icon48.png',
         128: '/icon128.png',
       },
+    },
+    side_panel: {
+      default_path: 'sidepanel.html',
     },
   },
   webExt: {

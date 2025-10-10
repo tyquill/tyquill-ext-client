@@ -48,7 +48,6 @@ const FloatingButton: React.FC = () => {
   const [hasMoved, setHasMoved] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
-  const [isSidePanelOpen, setIsSidePanelOpen] = useState(false); // 사이드패널 상태 추가
   
   const [buttonPosition, setButtonPosition] = useState({
     top: '50%',
@@ -84,42 +83,7 @@ const FloatingButton: React.FC = () => {
   const dragStartRef = useRef({ x: 0, y: 0, left: 0, top: 0 });
   const hiddenButtonWidth = 40;
 
-  // 사이드바 상태 가져오기 (content-script 기반)
-  const getSidebarState = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await browser.runtime.sendMessage({ action: 'getSidebarState' });
-      return response?.isOpen || false;
-    } catch (error) {
-      // Extension context invalidated는 정상적인 상황이므로 조용히 처리
-      if (error instanceof Error && error.message.includes('Extension context invalidated')) {
-        // console.log('Extension context invalidated - this is normal during extension reload');
-        return false;
-      }
-      console.warn('⚠️ Content: Failed to get sidebar state:', error);
-      return false;
-    }
-  }, []);
-
-  // 사이드바 상태 추적 (이벤트 기반)
-  useEffect(() => {
-    const handleSidebarStateChange = (event: CustomEvent) => {
-      setIsSidePanelOpen(event.detail.isOpen);
-    };
-
-    // Custom event로 실시간 상태 추적
-    window.addEventListener('tyquill-sidebar-state-changed', handleSidebarStateChange as EventListener);
-
-    // 초기 상태 확인
-    const checkInitialState = async () => {
-      const isOpen = await getSidebarState();
-      setIsSidePanelOpen(isOpen);
-    };
-    checkInitialState();
-
-    return () => {
-      window.removeEventListener('tyquill-sidebar-state-changed', handleSidebarStateChange as EventListener);
-    };
-  }, [getSidebarState]);
+  // Side Panel API에서는 상태를 직접 추적할 수 없으므로 제거됨
 
 
   // 설정 로드 및 변경 감지
@@ -395,45 +359,21 @@ const FloatingButton: React.FC = () => {
     }
   }, [isDragging, hasMoved, positionToolbar]);
 
-  // 사이드바 열기/닫기 (content-script 기반)
-  const openSidebar = useCallback(async () => {
-    // Custom event로 사이드바 열기
-    window.dispatchEvent(new CustomEvent('tyquill-open-sidebar'));
-    setIsSidePanelOpen(true);
-
-    // 상태 변경 이벤트 발송
-    window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-      detail: { isOpen: true }
-    }));
-
+  // 사이드 패널 열기 (Side Panel API 사용)
+  const openSidePanel = useCallback(async () => {
     try {
+      // Background script에 메시지를 보내 side panel 열기
+      await browser.runtime.sendMessage({ action: 'openSidePanel' });
+
       if (typeof document !== 'undefined') {
         await trackSidepanelOpenedBridge({
           source: 'floating_button',
           page_url: window.location.href
         })
       }
-    } catch {}
-  }, []);
-
-  const closeSidebar = useCallback(async () => {
-    // Custom event로 사이드바 닫기
-    window.dispatchEvent(new CustomEvent('tyquill-close-sidebar'));
-    setIsSidePanelOpen(false);
-
-    // 상태 변경 이벤트 발송
-    window.dispatchEvent(new CustomEvent('tyquill-sidebar-state-changed', {
-      detail: { isOpen: false }
-    }));
-
-    try {
-      if (typeof document !== 'undefined') {
-        await trackSidepanelClosedBridge({
-          source: 'floating_button',
-          page_url: window.location.href
-        })
-      }
-    } catch {}
+    } catch (error) {
+      console.error('Failed to open side panel:', error);
+    }
   }, []);
 
   // 스크랩 처리
@@ -469,11 +409,11 @@ const FloatingButton: React.FC = () => {
     }]
   }];
 
-  // 메인 버튼 클릭
+  // 메인 버튼 클릭 - Side Panel 열기
   const handleButtonClick = useCallback(async () => {
     if (hasMoved || isDragging) return;
-    isSidePanelOpen ? await closeSidebar() : await openSidebar();
-  }, [hasMoved, isDragging, isSidePanelOpen, openSidebar, closeSidebar]);
+    await openSidePanel();
+  }, [hasMoved, isDragging, openSidePanel]);
 
   // 닫기 버튼 클릭
   const handleCloseButtonClick = useCallback(async (e: React.MouseEvent) => {

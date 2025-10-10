@@ -73,6 +73,7 @@
     "@tiptap/pm": "^3.0.7",
     "@tiptap/react": "^3.0.7",
     "@tiptap/starter-kit": "^3.0.7",
+    "@tiptap/suggestion": "^3.6.5",
     "@types/marked": "^6.0.0",
     "@types/three": "^0.178.1",
     "@uploadthing/react": "^7.3.3",
@@ -92,6 +93,7 @@
     "react-quill": "^2.0.0",
     "react-router-dom": "^6.15.0",
     "three": "^0.178.0",
+    "tippy.js": "^6.3.7",
     "turndown": "^7.2.0",
     "uploadthing": "^7.7.4",
     "zustand": "^5.0.7"

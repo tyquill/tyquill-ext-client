@@ -1980,6 +1980,116 @@ div.contentDisplay ol li {
   margin-bottom: 0;
 }
 
+/* TipTap Heading Styles - for contentDisplay class only */
+.contentDisplay h1 {
+  font-size: 2em !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin: 16px 0 8px 0 !important;
+}
+
+.contentDisplay h2 {
+  font-size: 1.5em !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 14px 0 6px 0 !important;
+}
+
+.contentDisplay h3 {
+  font-size: 1.25em !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 12px 0 4px 0 !important;
+}
+
+.contentDisplay h4 {
+  font-size: 1.1em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 10px 0 4px 0 !important;
+}
+
+.contentDisplay h5 {
+  font-size: 1em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+}
+
+.contentDisplay h6 {
+  font-size: 0.9em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+  color: #666 !important;
+}
+
+/* TipTap Blockquote Styles - Notion-like minimal style */
+.contentDisplay blockquote {
+  margin: 4px 0 !important;
+  padding: 3px 0 !important;
+  border-left: 3px solid currentcolor !important;
+  padding-left: 14px !important;
+  background-color: transparent !important;
+  color: inherit !important;
+  font-style: normal !important;
+  font-size: 1em !important;
+  line-height: 1.6 !important;
+}
+
+.contentDisplay blockquote p {
+  margin: 0 !important;
+  padding: 2px !important;
+  color: inherit !important;
+  white-space: break-spaces !important;
+  word-break: break-word !important;
+}
+
+/* TipTap Code Styles - for contentDisplay class only */
+.contentDisplay code {
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: Monaco, Consolas, "Courier New", monospace;
+  font-size: 0.9em;
+  color: #e74c3c;
+}
+
+/* Code inside headings - inherit heading size */
+.contentDisplay h1 code,
+.contentDisplay h2 code,
+.contentDisplay h3 code,
+.contentDisplay h4 code,
+.contentDisplay h5 code,
+.contentDisplay h6 code {
+  font-size: inherit;
+  font-weight: inherit;
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #e74c3c;
+}
+
+/* Code Block Styles */
+.contentDisplay pre {
+  margin: 8px 0 !important;
+  padding: 12px !important;
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-radius: 6px !important;
+  overflow: auto !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-family: Monaco, Consolas, "Courier New", monospace !important;
+}
+
+.contentDisplay pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+}
+
 .actionButtons {
   display: flex;
   flex-direction: column;

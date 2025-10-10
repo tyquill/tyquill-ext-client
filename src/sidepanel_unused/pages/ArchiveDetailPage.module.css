@@ -278,23 +278,176 @@
   animation: pulse 2s infinite;
 }
 
+/* ============================================
+   TipTap JSON Preview Styles
+   ============================================ */
+
+/* Heading Styles */
+:global(.ProseMirror) h1 {
+  font-size: 2em !important;
+  font-weight: 700 !important;
+  line-height: 1.3 !important;
+  margin: 16px 0 8px 0 !important;
+}
+
+:global(.ProseMirror) h2 {
+  font-size: 1.5em !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 14px 0 6px 0 !important;
+}
+
+:global(.ProseMirror) h3 {
+  font-size: 1.25em !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  margin: 12px 0 4px 0 !important;
+}
+
+:global(.ProseMirror) h4 {
+  font-size: 1.1em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 10px 0 4px 0 !important;
+}
+
+:global(.ProseMirror) h5 {
+  font-size: 1em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+}
+
+:global(.ProseMirror) h6 {
+  font-size: 0.9em !important;
+  font-weight: 600 !important;
+  line-height: 1.5 !important;
+  margin: 8px 0 4px 0 !important;
+  color: #666 !important;
+}
+
+/* Blockquote Styles - Notion-like minimal style */
+:global(.ProseMirror) blockquote {
+  margin: 4px 0 !important;
+  padding: 3px 0 !important;
+  border-left: 3px solid currentcolor !important;
+  padding-left: 14px !important;
+  background-color: transparent !important;
+  color: inherit !important;
+  font-style: normal !important;
+  font-size: 1em !important;
+  line-height: 1.6 !important;
+}
+
+:global(.ProseMirror) blockquote p {
+  margin: 0 !important;
+  padding: 2px !important;
+  color: inherit !important;
+  white-space: break-spaces !important;
+  word-break: break-word !important;
+}
+
+/* Inline Code Styles */
+:global(.ProseMirror) code {
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: Monaco, Consolas, "Courier New", monospace;
+  font-size: 0.9em;
+  color: #e74c3c;
+}
+
+/* Code inside headings - inherit heading size */
+:global(.ProseMirror) h1 code,
+:global(.ProseMirror) h2 code,
+:global(.ProseMirror) h3 code,
+:global(.ProseMirror) h4 code,
+:global(.ProseMirror) h5 code,
+:global(.ProseMirror) h6 code {
+  font-size: inherit;
+  font-weight: inherit;
+  background-color: #f0f0f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: #e74c3c;
+}
+
+/* Code Block Styles */
+:global(.ProseMirror) pre {
+  margin: 8px 0 !important;
+  padding: 12px !important;
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-radius: 6px !important;
+  overflow: auto !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-family: Monaco, Consolas, "Courier New", monospace !important;
+}
+
+:global(.ProseMirror) pre code {
+  background-color: transparent !important;
+  padding: 0 !important;
+  color: #e2e8f0 !important;
+  font-size: 13px !important;
+}
+
+/* List Styles */
+:global(.ProseMirror) ul {
+  padding-left: 20px !important;
+  list-style-type: disc !important;
+  margin: 8px 0 !important;
+}
+
+:global(.ProseMirror) ol {
+  padding-left: 30px !important;
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  margin: 12px 0 !important;
+}
+
+:global(.ProseMirror) ul li,
+:global(.ProseMirror) ol li {
+  display: list-item !important;
+  margin-bottom: 4px !important;
+}
+
+:global(.ProseMirror) ol li {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 0 !important;
+}
+
+/* Horizontal Rule */
+:global(.ProseMirror) hr {
+  margin: 16px 0 !important;
+  border: none !important;
+  border-top: 1px solid #e0e0e0 !important;
+}
+
+/* Paragraph Spacing */
+:global(.ProseMirror) p {
+  margin: 8px 0 !important;
+  line-height: 1.6 !important;
+}
+
 /* Responsive adjustments */
 @media (max-width: 400px) {
   .secondaryActionRow {
     flex-direction: column;
     gap: 6px;
   }
-  
+
   .actionButtonsContainer {
     gap: 10px;
   }
-  
+
   .editModeActions {
     flex-direction: column;
     align-items: stretch;
     gap: 10px;
   }
-  
+
   .editModeButtons {
     justify-content: flex-end;
   }

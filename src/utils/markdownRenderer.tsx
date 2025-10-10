@@ -130,24 +130,41 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
         const quoteContent = trimmedLine.substring(2);
         const processedQuote = processTextFormatting(quoteContent);
         elements.push(
-          <blockquote key={key++} style={{ 
-            margin: '8px 0', 
-            padding: '8px 16px', 
-            borderLeft: '4px solid #e0e0e0',
-            backgroundColor: '#f8f9fa',
-            fontStyle: 'italic'
+          <blockquote key={key++} style={{
+            margin: '4px 0',
+            padding: '3px 0 3px 14px',
+            borderLeft: '3px solid currentcolor',
+            backgroundColor: 'transparent',
+            color: 'inherit',
+            fontStyle: 'normal',
+            fontSize: '1em',
+            lineHeight: '1.6'
           }} dangerouslySetInnerHTML={{ __html: processedQuote }} />
         );
       } else if (trimmedLine.startsWith('```')) {
+        // 코드 블록 시작: 다음 ```까지 모든 라인 수집
+        const language = trimmedLine.substring(3).trim();
+        const codeLines: string[] = [];
+        i++;
+
+        while (i < lines.length && !lines[i].trim().startsWith('```')) {
+          codeLines.push(lines[i]);
+          i++;
+        }
+
         elements.push(
-          <pre key={key++} style={{ 
-            margin: '8px 0', 
-            padding: '12px', 
-            backgroundColor: '#f4f4f4',
-            borderRadius: '4px',
-            overflow: 'auto'
+          <pre key={key++} style={{
+            margin: '8px 0',
+            padding: '12px',
+            backgroundColor: '#1e293b',
+            color: '#e2e8f0',
+            borderRadius: '6px',
+            overflow: 'auto',
+            fontSize: '13px',
+            lineHeight: '1.5',
+            fontFamily: 'Monaco, Consolas, "Courier New", monospace'
           }}>
-            <code>{trimmedLine.substring(3)}</code>
+            <code>{codeLines.join('\n')}</code>
           </pre>
         );
       } else if (trimmedLine === '---') {

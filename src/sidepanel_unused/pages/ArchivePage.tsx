@@ -130,9 +130,16 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
 
   const getPreviewContent = (content: string | undefined) => {
     if (!content) return t('archivePage_noContent');
-    
+
+    // TipTap JSON 형식이면 플레이스홀더 표시 (content가 {로 시작하면 JSON으로 간주)
+    if (content.trim().startsWith('{')) {
+      return '내용을 확인하려면 클릭하세요...';
+    }
+
+    let text = content;
+
     // 마크다운을 일반 텍스트로 변환
-    let text = content
+    text = text
       .replace(/^#{1,6}\s+/gm, '') // 헤딩 제거
       .replace(/\*\*(.*?)\*\*/g, '$1') // 볼드 제거
       .replace(/\*(.*?)\*/g, '$1') // 이탤릭 제거
@@ -149,7 +156,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
       .replace(/\n+/g, ' ') // 줄바꿈을 공백으로
       .replace(/\s+/g, ' ') // 연속된 공백을 하나로
       .trim();
-    
+
     return text.length > 200 ? text.substring(0, 200) + '...' : text;
   };
 

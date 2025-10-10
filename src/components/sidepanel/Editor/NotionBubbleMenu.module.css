@@ -1,0 +1,48 @@
+.bubbleMenu {
+  display: flex;
+  gap: 4px;
+  background: white;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  padding: 4px;
+  align-items: center;
+}
+
+.menuGroup {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.menuGroup button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  color: rgba(55, 53, 47, 0.65);
+  transition: all 0.15s ease;
+  padding: 0;
+}
+
+.menuGroup button:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgba(55, 53, 47, 1);
+}
+
+.menuGroup button.isActive {
+  background: rgba(35, 131, 226, 0.14);
+  color: rgb(35, 131, 226);
+}
+
+.divider {
+  width: 1px;
+  height: 20px;
+  background: rgba(55, 53, 47, 0.16);
+  margin: 0 4px;
+}
