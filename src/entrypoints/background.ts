@@ -462,7 +462,17 @@ export default defineBackground(() => {
           void browser.runtime.lastError;
         }
       }
-      
+
+      // Send toast notification to content script
+      try {
+        await browser.tabs.sendMessage(tabId, {
+          action: 'scrapCreated',
+          data: result
+        });
+      } catch (error) {
+        // Content script may not be loaded
+      }
+
       return result;
       
     } catch (error) {
@@ -578,6 +588,19 @@ export default defineBackground(() => {
       if (browser.runtime.lastError) {
         void browser.runtime.lastError;
       }
+    }
+
+    // Send toast notification to content script (current active tab)
+    try {
+      const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tabs[0]?.id) {
+        await browser.tabs.sendMessage(tabs[0].id, {
+          action: 'scrapCreated',
+          data: result
+        });
+      }
+    } catch (error) {
+      // Content script may not be loaded
     }
 
     return result;
