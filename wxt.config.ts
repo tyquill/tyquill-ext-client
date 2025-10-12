@@ -9,7 +9,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'Tyquill',
-    version: '1.4.0',
+    version: '1.4.1',
     description: '__MSG_extDescription__',
     default_locale: 'en',
     permissions: ['storage', 'tabs', 'activeTab', 'scripting', 'contextMenus', 'sidePanel'],
