@@ -283,9 +283,10 @@ async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSend
       '', // userComment
       tags // tags
     );
-    
-    // 성공 시 sidepanel에 새로고침 알림
+
+    // 성공 시 sidepanel과 content script에 알림
     try {
+      // Sidepanel에 메시지 전송
       browser.runtime.sendMessage({
         action: 'scrapCreated',
         data: result
@@ -293,7 +294,17 @@ async function handleClipAndScrapCurrentPage(sender: Browser.runtime.MessageSend
     } catch (error) {
       // sidepanel이 열려있지 않을 수 있으므로 에러 무시
     }
-    
+
+    // Content script에 토스트 표시 메시지 전송
+    try {
+      await browser.tabs.sendMessage(tabId, {
+        action: 'scrapCreated',
+        data: result
+      });
+    } catch (error) {
+      // Content script가 로드되지 않았을 수 있으므로 에러 무시
+    }
+
     return result;
     
   } catch (error) {
@@ -371,7 +382,7 @@ async function handleClipCurrentPageForStyle(sender: Browser.runtime.MessageSend
 }
 
 /**
- * LinkedIn 버튼이 보낸 컨테이너 텍스트를 API로 저장
+ * 플랫폼 인젝터(LinkedIn, X, Reddit 등)가 보낸 컨테이너 텍스트를 API로 저장
  */
 async function handleScrapExtracted(data: { content: string; title?: string; url?: string }) {
   if (!data?.content || !data.content.trim()) {
@@ -394,9 +405,23 @@ async function handleScrapExtracted(data: { content: string; title?: string; url
   const tags: string[] = [];
   const result = await scrapService.quickScrap(scrapResult, '', tags);
 
+  // Sidepanel에 메시지 전송
   try {
     browser.runtime.sendMessage({ action: 'scrapCreated', data: result });
   } catch {}
+
+  // Content script에 토스트 표시 메시지 전송 (현재 활성 탭)
+  try {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    if (tabs[0]?.id) {
+      await browser.tabs.sendMessage(tabs[0].id, {
+        action: 'scrapCreated',
+        data: result
+      });
+    }
+  } catch (error) {
+    // Content script가 로드되지 않았을 수 있으므로 에러 무시
+  }
 
   return result;
 }
