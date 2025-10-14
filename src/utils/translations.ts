@@ -268,6 +268,7 @@ const koTranslations = {
   articleGenerate_estimatedTime: "입력한 내용에 따라 최소 1분 ~ 최대 4분이 소요됩니다.",
   articleGenerate_elapsedTimeLabel: "경과 시간",
   articleGenerate_goToArchive: "보관함으로 이동",
+  articleGenerate_contentPreview: "생성중인 콘텐츠 미리보기",
   articleGenerate_confirmSelection: "선택",
   articleGenerate_scraps: "스크랩",
   articleGenerate_pdf: "PDF",
@@ -297,6 +298,9 @@ const koTranslations = {
   articleGenerate_aiAnalysisComplete: "AI 분석 완료",
   articleGenerate_sectionsCreated: "{count}개의 섹션으로 구성을 만들었습니다.",
   articleGenerate_enterTopicAndKeyInsight: "주제와 키메시지를 입력해주세요.",
+  articleGenerate_generatingNewsletter: "뉴스레터 생성 중",
+  articleGenerate_applyingWritingStyle: "문체 적용 중",
+  articleGenerate_adaptingLocale: "언어 및 로케일 적용 중",
 
   // Writing Style Selection
   writingStyleSelection_title: "문체를 선택하세요",
@@ -675,6 +679,7 @@ const enTranslations = {
   articleGenerate_estimatedTime: "Takes minimum 1 minute ~ maximum 4 minutes depending on your input.",
   articleGenerate_elapsedTimeLabel: "Elapsed Time",
   articleGenerate_goToArchive: "Go to Archive",
+  articleGenerate_contentPreview: "Content Preview",
   articleGenerate_confirmSelection: "Confirm",
   articleGenerate_scraps: "Scraps",
   articleGenerate_pdf: "PDF",
@@ -704,6 +709,9 @@ const enTranslations = {
   articleGenerate_aiAnalysisComplete: "AI Analysis Complete",
   articleGenerate_sectionsCreated: "Created structure with {count} sections.",
   articleGenerate_enterTopicAndKeyInsight: "Please enter topic and key insight.",
+  articleGenerate_generatingNewsletter: "Generating Newsletter",
+  articleGenerate_applyingWritingStyle: "Applying Writing Style",
+  articleGenerate_adaptingLocale: "Adapting Locale",
 
   // Writing Style Selection
   writingStyleSelection_title: "Choose Your Writing Persona",

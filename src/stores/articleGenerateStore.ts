@@ -50,6 +50,8 @@ interface ArticleGenerateState {
   streamingMessage: string | null; // Korean message
   partialContent: string | null; // partial content preview
   completedSteps: string[]; // list of completed node names
+  stepMessages: Record<string, string>; // map of node name to message
+  nodeContents: Record<string, string>; // map of node name to its generated content
 }
 
 interface ArticleGenerateActions {
@@ -98,10 +100,12 @@ interface ArticleGenerateActions {
   // 스트리밍 관련 액션
   setStreaming: (isStreaming: boolean) => void;
   setStreamingProgress: (progress: number) => void;
-  setStreamingStep: (step: string | null) => void;
+  setStreamingStep: (step: string | null, message?: string | null) => void;
   setStreamingMessage: (message: string | null) => void;
   setPartialContent: (content: string | null) => void;
   addCompletedStep: (step: string) => void;
+  setNodeContent: (node: string, content: string) => void;
+  clearNodeContents: () => void;
   clearStreamingState: () => void;
 
   // 전체 상태 초기화
@@ -137,6 +141,8 @@ const initialState: ArticleGenerateState = {
   streamingMessage: null,
   partialContent: null,
   completedSteps: [],
+  stepMessages: {},
+  nodeContents: {},
 };
 
 // ID 할당 헬퍼 함수
@@ -353,8 +359,11 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
           state.streamingProgress = progress;
         }),
 
-        setStreamingStep: (step: string | null) => set((state) => {
+        setStreamingStep: (step: string | null, message?: string | null) => set((state) => {
           state.streamingStep = step;
+          if (step && message) {
+            state.stepMessages[step] = message;
+          }
         }),
 
         setStreamingMessage: (message: string | null) => set((state) => {
@@ -371,6 +380,14 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
           }
         }),
 
+        setNodeContent: (node: string, content: string) => set((state) => {
+          state.nodeContents[node] = content;
+        }),
+
+        clearNodeContents: () => set((state) => {
+          state.nodeContents = {};
+        }),
+
         clearStreamingState: () => set((state) => {
           state.isStreaming = false;
           state.streamingProgress = 0;
@@ -378,6 +395,8 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
           state.streamingMessage = null;
           state.partialContent = null;
           state.completedSteps = [];
+          state.stepMessages = {};
+          state.nodeContents = {};
         }),
 
         // 전체 상태 초기화

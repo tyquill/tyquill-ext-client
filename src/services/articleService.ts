@@ -79,12 +79,16 @@ export interface StreamEvent {
     type: 'progress' | 'token' | 'node_start' | 'node_complete' | 'complete' | 'error' | 'heartbeat';
     timestamp: number;
     node?: string;
-    message?: string;
+    message?: string;  // Deprecated, use message_ko or message_en
+    message_ko?: string;  // Korean message
+    message_en?: string;  // English message
     progress?: number;  // 0-100
     metadata?: any;
+    // Token event (real-time content streaming)
+    content?: string;  // Partial or full content
+    is_final?: boolean;  // Whether this is the final token for a node
     // Complete event
     title?: string;
-    content?: string;
     analysis_reason?: string;
     warnings?: string[];
     total_duration?: number;
