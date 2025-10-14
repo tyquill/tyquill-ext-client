@@ -673,6 +673,17 @@
   }
 }
 
+/* 단계별 작은 스피너 */
+.stepSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
 /* 스크랩 모달 */
 .modalOverlay {
   position: fixed;

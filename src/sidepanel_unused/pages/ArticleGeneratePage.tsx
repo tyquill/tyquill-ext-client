@@ -8,7 +8,7 @@ import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector'
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { useToastHelpers } from '../../hooks/useToast';
 import { ScrapResponse, scrapService } from '../../services/scrapService';
-import { articleService, GenerateArticleV3Dto, TemplateSection } from '../../services/articleService';
+import { articleService, GenerateArticleV3Dto, TemplateSection, StreamEvent } from '../../services/articleService';
 import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import Confetti from '../../components/sidepanel/Confetti/Confetti';
 import { FaWandMagicSparkles } from "react-icons/fa6";
@@ -44,7 +44,17 @@ interface ArticleGeneratePageProps {
 
 const DEFAULT_MODAL_TOP_OFFSET = 160;
 
-
+// Node name to Korean message mapping
+const NODE_MESSAGES: Record<string, string> = {
+  'prepare_scrap_content': '웹 스크랩 데이터 준비 중...',
+  'process_pdf_content': 'PDF 문서 분석 중...',
+  'aggregator': '콘텐츠 집계 중...',
+  'generate_newsletter': '뉴스레터 초안 생성 중...',
+  'article_reflector': '콘텐츠 품질 평가 중...',
+  'rewrite_writing_style': '작성 스타일 적용 중...',
+  'generate_newsletter_title': '제목 생성 중...',
+  'adapt_locale': '언어 최적화 중...',
+};
 
 const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   onNavigateToDetail,
@@ -75,6 +85,12 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     isAnalyzing,
     selectedWritingStyleId,
     isAnalyzingStyle,
+    isStreaming,
+    streamingProgress,
+    streamingStep,
+    streamingMessage,
+    partialContent,
+    completedSteps,
 
     // 액션들
     setViewState,
@@ -103,6 +119,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     setAnalyzing,
     setWritingStyleId,
     setAnalyzingStyle,
+    setStreaming,
+    setStreamingProgress,
+    setStreamingStep,
+    setStreamingMessage,
+    setPartialContent,
+    addCompletedStep,
+    clearStreamingState,
     resetForm,
   } = useArticleGenerateStore();
 
@@ -425,6 +448,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         is_custom_style: !!selectedWritingStyleId
       })
     } catch {}
+
     // templateStructure에서 섹션별 아이디어 수집
     const collectIdeas = (sections: TemplateSection[]): Record<string, string> => {
       const ideas: Record<string, string> = {};
@@ -455,7 +479,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
       }
     }
 
-    if (isGenerating) return;
+    if (isGenerating || isStreaming) return;
 
     // Helper function to recursively remove 'id' from template sections
     const removeIdsFromTemplate = (sections: TemplateSection[]): any => {
@@ -471,11 +495,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     try {
       setGenerating(true);
       setGenerationError(null);
-      setGenerationStatus('idle');
+      setGenerationStatus('processing');
+      clearStreamingState();
+      setStreaming(true);  // clearStreamingState 이후에 호출해야 함!
 
       const templateWithoutIds = templateStructure ? removeIdsFromTemplate(templateStructure) : [];
 
-      // V3 API를 사용한 비동기 생성 (PDF 지원)
+      // V3 API를 사용한 스트리밍 생성 (PDF 지원)
       const generateData: GenerateArticleV3Dto = {
         topic: isTemplateMode ? (templateStructure?.[0]?.title || t('articleGenerate_sectionBasedArticle')) : topic,
         keyInsight: isTemplateMode ? JSON.stringify(structuredIdeas) : keyInsight,
@@ -493,61 +519,91 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         })),
       };
 
-      // V3 API로 비동기 생성 시작
-      setGenerationStatus('processing');
-      
-      articleService.generateArticleV3(generateData)
-        .then(async (response) => {
-          // 즉시 요청 성공 메시지 표시
-          showInfo(t('articleGenerate_draftGenerationStarted'), `${t('articleGenerate_articleGenerationStarted')}${selectedUploads.length > 0 ? t('articleGenerate_pdfAnalysisIncluded').replace('{count}', selectedUploads.length.toString()) : ''}`);
-          
-          try {
-            // 백그라운드에서 완성 대기 (최대 50회, 5초 간격 = 2.5분)
-            const completedArticle = await articleService.waitForArticleCompletionV3(response.articleId, 50, 5000);
-            
-            if (completedArticle.status === 'completed') {
-              setGenerationStatus('completed');
-              // showSuccess(t('articleGenerate_draftGenerationComplete'), t('archivePage_loadError'));
-              if (currentPage === 'archive' && onRefreshArchiveList) {
-                onRefreshArchiveList();
-              }
-              
-              // 완료 상태에서는 폼 필드만 개별적으로 초기화 (생성 상태는 유지)
-              setTopic('');
-              setKeyInsight('');
-              setHandle('');
-              clearScraps();
-              setSelectedUploads([]);
-              // selectedTags는 유지 (다음 생성에 유용할 수 있음)
-              clearTemplate();
-              // Reset view state to style selection for next generation
-              setViewState('style-selection');
-            } else if (completedArticle.status === 'failed') {
-              setGenerationStatus('failed');
-              setGenerating(false);
-              const serverMsg = (completedArticle as any)?.errorMessage as string | undefined;
-              const hint = t('articleGenerate_generationHint');
-              setGenerationError(serverMsg || hint);
-              showError(t('articleGenerate_draftGenerationFailed'), serverMsg || hint);
-            }
-          } catch (pollingError) {
-            // 폴링 타임아웃 또는 오류 시에도 사용자에게 알림
-            console.error('Polling error:', pollingError);
-            setGenerationStatus('failed');
-            setGenerating(false);
-            showError(t('articleGenerate_statusCheckFailed'), t('articleGenerate_checkArchiveManually'));
+      // Handle streaming events
+      const handleStreamEvent = (event: StreamEvent) => {
+        console.log('Stream event:', event);
+
+        if (event.type === 'progress') {
+          console.log('📊 Progress event:', event.progress, event.message);
+          if (event.progress !== undefined) {
+            setStreamingProgress(event.progress);
           }
-        })
-        .catch(error => {
+          if (event.message) {
+            setStreamingMessage(event.message);
+          }
+        } else if (event.type === 'node_start') {
+          console.log('🚀 Node start:', event.node);
+          if (event.node) {
+            setStreamingStep(event.node);
+            const koreanMessage = NODE_MESSAGES[event.node] || event.message || event.node;
+            setStreamingMessage(koreanMessage);
+          }
+        } else if (event.type === 'node_complete') {
+          console.log('✅ Node complete:', event.node);
+          if (event.node) {
+            addCompletedStep(event.node);
+          }
+        } else if (event.type === 'token') {
+          console.log('📝 Token event, content length:', event.content?.length);
+          // Accumulate partial content
+          if (event.content) {
+            setPartialContent(event.content);
+          }
+        } else if (event.type === 'complete') {
+          console.log('🎉 Complete event:', event.title);
+          setGenerationStatus('completed');
+          setStreaming(false);
+
+          // Show success message
+          showSuccess(
+            t('articleGenerate_draftGenerationComplete'),
+            event.title ? `제목: ${event.title}` : ''
+          );
+
+          if (currentPage === 'archive' && onRefreshArchiveList) {
+            onRefreshArchiveList();
+          }
+
+          // Clear form fields
+          setTopic('');
+          setKeyInsight('');
+          setHandle('');
+          clearScraps();
+          setSelectedUploads([]);
+          clearTemplate();
+          // Don't reset viewState - keep user in draft-form view
+        } else if (event.type === 'error') {
           setGenerationStatus('failed');
           setGenerating(false);
-          showError(t('articleGenerate_draftGenerationFailed'), error.message || t('articleGenerate_requestFailed'));
+          setStreaming(false);
+          const errorMsg = event.message || t('articleGenerate_generationHint');
+          setGenerationError(errorMsg);
+          showError(t('articleGenerate_draftGenerationFailed'), errorMsg);
+        }
+      };
+
+      // Start streaming generation
+      articleService
+        .generateArticleV3Stream(generateData, handleStreamEvent)
+        .then(() => {
+          // Stream completed successfully
+          console.log('✅ Streaming completed');
+        })
+        .catch((error) => {
+          console.error('❌ Streaming error:', error);
+          setGenerationStatus('failed');
+          setGenerating(false);
+          setStreaming(false);
+          const errorMsg = error.message || t('articleGenerate_requestFailed');
+          setGenerationError(errorMsg);
+          showError(t('articleGenerate_draftGenerationFailed'), errorMsg);
         });
 
     } catch (error: any) {
       setGenerationError(error.message || t('articleGenerate_draftGenerationFailedGeneral'));
       setGenerationStatus('failed');
       setGenerating(false);
+      setStreaming(false);
       showError(t('articleGenerate_requestSendFailed'), error.message || t('articleGenerate_requestError'));
     }
   };
@@ -1167,7 +1223,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         padding: '10px 20px',
                         border: 'none',
                         borderRadius: '6px',
-                        background: '#3b82f6',
+                        background: '#111827',
                         color: 'white',
                         cursor: 'pointer',
                         fontSize: '14px',
@@ -1192,13 +1248,13 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
               </div>
               <div className={articleStyles.analysisModalContent}>
                 <div style={{ textAlign: 'center', padding: '20px 0', position: 'relative' }}>
-                  {generationStatus === 'completed' ? (
+                  {generationStatus === 'completed' && (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                       <div style={{
                         width: 56,
                         height: 56,
                         borderRadius: '50%',
-                        background: '#10b981',
+                        background: '#111827',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -1218,17 +1274,93 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         }}
                       />
                     </div>
-                  ) : (
-                    <div className={articleStyles.loadingSpinner} />
                   )}
                   <h3 style={{ margin: '12px 0 8px 0', fontSize: '18px', fontWeight: 600 }}>
                     {generationStatus === 'completed' ? t('articleGenerate_draftGenerationComplete') : t('articleGenerate_processingRequest')}
                   </h3>
-                  {generationStatus !== 'completed' && (
+
+                  {/* Streaming Progress */}
+                  {generationStatus !== 'completed' && isStreaming && (
+                    <>
+                      {/* Current Step Message */}
+                      {streamingMessage && (
+                        <p style={{ margin: '0 0 12px 0', color: '#111827', lineHeight: '1.5', fontSize: '14px', fontWeight: 500 }}>
+                          {streamingMessage}
+                        </p>
+                      )}
+
+                      {/* Step Indicators */}
+                      {(completedSteps.length > 0 || streamingStep) && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start', width: '100%', marginTop: '12px' }}>
+                          {[...completedSteps, streamingStep].filter((step): step is string => !!step && Object.keys(NODE_MESSAGES).includes(step))
+                            .filter((step, index, self) => self.indexOf(step) === index) // Remove duplicates
+                            .map((nodeKey) => {
+                              const isCompleted = completedSteps.includes(nodeKey);
+                              const isCurrent = streamingStep === nodeKey;
+                              const message = NODE_MESSAGES[nodeKey];
+
+                              return (
+                                <div key={nodeKey} style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  fontSize: '13px',
+                                  color: isCompleted ? '#111827' : isCurrent ? '#374151' : '#9ca3af'
+                                }}>
+                                  {isCompleted ? (
+                                    <IoCheckmark size={16} style={{ flexShrink: 0 }} />
+                                  ) : isCurrent ? (
+                                    <div className={articleStyles.stepSpinner} />
+                                  ) : (
+                                    <div style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+                                  )}
+                                  <span>{message}</span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {/* Partial Content Preview */}
+                      {partialContent && (
+                        <div style={{
+                          marginTop: '16px',
+                          padding: '12px',
+                          backgroundColor: '#f9fafb',
+                          borderRadius: '8px',
+                          border: '1px solid #e5e7eb',
+                          maxHeight: '200px',
+                          overflow: 'auto',
+                          textAlign: 'left'
+                        }}>
+                          <div style={{
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            color: '#6b7280',
+                            marginBottom: '8px'
+                          }}>
+                            📝 생성 중인 콘텐츠 미리보기
+                          </div>
+                          <div style={{
+                            fontSize: '13px',
+                            lineHeight: '1.6',
+                            color: '#374151',
+                            whiteSpace: 'pre-wrap',
+                            wordBreak: 'break-word'
+                          }}>
+                            {partialContent}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {generationStatus !== 'completed' && !isStreaming && (
                     <p style={{ margin: '0 0 8px 0', color: '#666', lineHeight: '1.5', fontSize: '14px' }}>
                       {t('articleGenerate_estimatedTime')}
                     </p>
                   )}
+
                   <div style={{ marginTop: 8, color: '#6b7280', fontSize: '13px' }}>
                     {t('articleGenerate_elapsedTimeLabel')}: {formatElapsed(elapsedSeconds)}
                   </div>
@@ -1246,7 +1378,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         padding: '10px 20px',
                         border: 'none',
                         borderRadius: '6px',
-                        background: '#3b82f6',
+                        background: '#111827',
                         color: 'white',
                         cursor: 'pointer',
                         fontSize: '14px',

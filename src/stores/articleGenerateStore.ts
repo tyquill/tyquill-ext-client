@@ -42,6 +42,14 @@ interface ArticleGenerateState {
   // 문체 선택
   selectedWritingStyleId: number | null;
   isAnalyzingStyle: boolean;
+
+  // 스트리밍 상태
+  isStreaming: boolean;
+  streamingProgress: number; // 0-100
+  streamingStep: string | null; // current node name
+  streamingMessage: string | null; // Korean message
+  partialContent: string | null; // partial content preview
+  completedSteps: string[]; // list of completed node names
 }
 
 interface ArticleGenerateActions {
@@ -86,7 +94,16 @@ interface ArticleGenerateActions {
   // 문체 관련 액션
   setWritingStyleId: (styleId: number | null) => void;
   setAnalyzingStyle: (isAnalyzing: boolean) => void;
-  
+
+  // 스트리밍 관련 액션
+  setStreaming: (isStreaming: boolean) => void;
+  setStreamingProgress: (progress: number) => void;
+  setStreamingStep: (step: string | null) => void;
+  setStreamingMessage: (message: string | null) => void;
+  setPartialContent: (content: string | null) => void;
+  addCompletedStep: (step: string) => void;
+  clearStreamingState: () => void;
+
   // 전체 상태 초기화
   resetForm: () => void;
 }
@@ -114,6 +131,12 @@ const initialState: ArticleGenerateState = {
   isAnalyzing: false,
   selectedWritingStyleId: null,
   isAnalyzingStyle: false,
+  isStreaming: false,
+  streamingProgress: 0,
+  streamingStep: null,
+  streamingMessage: null,
+  partialContent: null,
+  completedSteps: [],
 };
 
 // ID 할당 헬퍼 함수
@@ -319,6 +342,42 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
 
         setAnalyzingStyle: (isAnalyzing: boolean) => set((state) => {
           state.isAnalyzingStyle = isAnalyzing;
+        }),
+
+        // 스트리밍 관련 액션
+        setStreaming: (isStreaming: boolean) => set((state) => {
+          state.isStreaming = isStreaming;
+        }),
+
+        setStreamingProgress: (progress: number) => set((state) => {
+          state.streamingProgress = progress;
+        }),
+
+        setStreamingStep: (step: string | null) => set((state) => {
+          state.streamingStep = step;
+        }),
+
+        setStreamingMessage: (message: string | null) => set((state) => {
+          state.streamingMessage = message;
+        }),
+
+        setPartialContent: (content: string | null) => set((state) => {
+          state.partialContent = content;
+        }),
+
+        addCompletedStep: (step: string) => set((state) => {
+          if (!state.completedSteps.includes(step)) {
+            state.completedSteps.push(step);
+          }
+        }),
+
+        clearStreamingState: () => set((state) => {
+          state.isStreaming = false;
+          state.streamingProgress = 0;
+          state.streamingStep = null;
+          state.streamingMessage = null;
+          state.partialContent = null;
+          state.completedSteps = [];
         }),
 
         // 전체 상태 초기화
