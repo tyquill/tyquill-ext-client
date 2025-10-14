@@ -2,8 +2,6 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { IoAdd, IoClose, IoSparkles, IoCheckmark, IoTrash, IoChevronDown, IoChevronUp, IoArrowBack } from 'react-icons/io5';
 import { RiAiGenerate } from 'react-icons/ri';
 import { TbListDetails } from "react-icons/tb";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import styles from './PageStyles.module.css';
 import articleStyles from './ArticleGeneratePage.module.css';
 import { TagSelector } from '../../components/sidepanel/TagSelector/TagSelector';
@@ -631,49 +629,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
   // 막힘 애니메이션 상태 (75자 도달 시 순간 흔들기)
   const [blockedAnimIds, setBlockedAnimIds] = useState<Set<number>>(new Set());
 
-  // Track which steps are expanded (for collapsible content)
-  const [expandedSteps, setExpandedSteps] = useState<Set<string>>(new Set());
-
-  // Toggle step expansion
-  const toggleStepExpansion = (stepName: string) => {
-    setExpandedSteps(prev => {
-      const next = new Set(prev);
-      if (next.has(stepName)) {
-        next.delete(stepName);
-      } else {
-        next.add(stepName);
-      }
-      return next;
-    });
-  };
-
-  // Auto-expand current streaming step
-  useEffect(() => {
-    if (streamingStep && nodeContents[streamingStep]) {
-      setExpandedSteps(prev => {
-        const next = new Set(prev);
-        next.add(streamingStep);
-        return next;
-      });
-    }
-  }, [streamingStep, nodeContents]);
-
-  // Auto-collapse completed steps
-  useEffect(() => {
-    if (completedSteps.length > 0) {
-      setExpandedSteps(prev => {
-        const next = new Set(prev);
-        // Remove completed steps from expanded set
-        completedSteps.forEach(step => {
-          // Only collapse if it's not the currently streaming step
-          if (step !== streamingStep) {
-            next.delete(step);
-          }
-        });
-        return next;
-      });
-    }
-  }, [completedSteps, streamingStep]);
 
   const triggerBlockedAnim = (id: number) => {
     setBlockedAnimIds(prev => new Set(prev).add(id));
@@ -1343,7 +1298,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         </p>
                       )}
 
-                      {/* Step Progress List with Inline Collapsible Content */}
+                      {/* Step Progress List */}
                       <div style={{
                         display: 'flex',
                         flexDirection: 'column',
@@ -1351,150 +1306,55 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         marginTop: '12px',
                         marginBottom: '12px'
                       }}>
-                        {/* User-facing nodes that should display content */}
-                        {(() => {
-                          const userFacingNodes = ['generate_newsletter', 'rewrite_writing_style', 'adapt_locale'];
-
-                          // Show completed steps
-                          return completedSteps.map((step, index) => {
-                            const hasContent = userFacingNodes.includes(step) && nodeContents[step];
-                            const isExpanded = expandedSteps.has(step);
-
-                            return (
-                              <div key={`completed-${step}-${index}`} style={{ marginBottom: '4px' }}>
-                                {/* Step Header */}
-                                <div
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '8px',
-                                    fontSize: '13px',
-                                    color: '#6b7280',
-                                    padding: '6px 8px',
-                                    borderRadius: '6px',
-                                    cursor: hasContent ? 'pointer' : 'default',
-                                    backgroundColor: hasContent && isExpanded ? '#f9fafb' : 'transparent',
-                                    transition: 'background-color 0.2s',
-                                    textAlign: 'left'
-                                  }}
-                                  onClick={() => hasContent && toggleStepExpansion(step)}
-                                >
-                                  <div style={{
-                                    width: '16px',
-                                    height: '16px',
-                                    borderRadius: '50%',
-                                    background: '#111827',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'white',
-                                    flexShrink: 0
-                                  }}>
-                                    <IoCheckmark size={12} />
-                                  </div>
-                                  <span style={{ flex: 1, textAlign: 'left' }}>{stepMessages[step] || step}</span>
-                                  {hasContent && (
-                                    <div style={{
-                                      transition: 'transform 0.2s',
-                                      transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                      display: 'flex',
-                                      alignItems: 'center'
-                                    }}>
-                                      <IoChevronDown size={14} />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Collapsible Content */}
-                                {hasContent && isExpanded && (
-                                  <div style={{
-                                    marginTop: '8px',
-                                    padding: '12px',
-                                    paddingLeft: '24px',
-                                    backgroundColor: '#f9fafb',
-                                    borderLeft: '3px solid #111827',
-                                    borderRadius: '0 6px 6px 0',
-                                    fontSize: '13px',
-                                    lineHeight: '1.6',
-                                    color: '#374151',
-                                    maxHeight: '400px',
-                                    overflowY: 'auto',
-                                    textAlign: 'left'
-                                  }}>
-                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                      {nodeContents[step]}
-                                    </ReactMarkdown>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          });
-                        })()}
+                        {/* Show completed steps */}
+                        {completedSteps.map((step, index) => (
+                          <div
+                            key={`completed-${step}-${index}`}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '13px',
+                              color: '#6b7280',
+                              padding: '6px 8px',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div style={{
+                              width: '16px',
+                              height: '16px',
+                              borderRadius: '50%',
+                              background: '#111827',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              flexShrink: 0
+                            }}>
+                              <IoCheckmark size={12} />
+                            </div>
+                            <span style={{ flex: 1, textAlign: 'left' }}>{stepMessages[step] || step}</span>
+                          </div>
+                        ))}
 
                         {/* Show current step */}
-                        {streamingStep && !completedSteps.includes(streamingStep) && (() => {
-                          const userFacingNodes = ['generate_newsletter', 'rewrite_writing_style', 'adapt_locale'];
-                          const hasContent = userFacingNodes.includes(streamingStep) && nodeContents[streamingStep];
-                          const isExpanded = expandedSteps.has(streamingStep);
-
-                          return (
-                            <div style={{ marginBottom: '4px' }}>
-                              {/* Step Header */}
-                              <div
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  fontSize: '13px',
-                                  color: '#111827',
-                                  fontWeight: 500,
-                                  padding: '6px 8px',
-                                  borderRadius: '6px',
-                                  cursor: hasContent ? 'pointer' : 'default',
-                                  backgroundColor: hasContent && isExpanded ? '#f9fafb' : 'transparent',
-                                  transition: 'background-color 0.2s',
-                                  textAlign: 'left'
-                                }}
-                                onClick={() => hasContent && toggleStepExpansion(streamingStep)}
-                              >
-                                <div className={articleStyles.stepSpinner} />
-                                <span style={{ flex: 1, textAlign: 'left' }}>{streamingMessage || streamingStep}</span>
-                                {hasContent && (
-                                  <div style={{
-                                    transition: 'transform 0.2s',
-                                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                                    display: 'flex',
-                                    alignItems: 'center'
-                                  }}>
-                                    <IoChevronDown size={14} />
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Collapsible Content (streaming) */}
-                              {hasContent && isExpanded && (
-                                <div style={{
-                                  marginTop: '8px',
-                                  padding: '12px',
-                                  paddingLeft: '24px',
-                                  backgroundColor: '#f9fafb',
-                                  borderLeft: '3px solid #111827',
-                                  borderRadius: '0 6px 6px 0',
-                                  fontSize: '13px',
-                                  lineHeight: '1.6',
-                                  color: '#374151',
-                                  maxHeight: '400px',
-                                  overflowY: 'auto',
-                                  textAlign: 'left'
-                                }}>
-                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                    {nodeContents[streamingStep]}
-                                  </ReactMarkdown>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        {streamingStep && !completedSteps.includes(streamingStep) && (
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px',
+                              fontSize: '13px',
+                              color: '#111827',
+                              fontWeight: 500,
+                              padding: '6px 8px',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <div className={articleStyles.stepSpinner} />
+                            <span style={{ flex: 1, textAlign: 'left' }}>{streamingMessage || streamingStep}</span>
+                          </div>
+                        )}
                       </div>
                     </>
                   )}
