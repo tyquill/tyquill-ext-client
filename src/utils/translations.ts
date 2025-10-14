@@ -36,6 +36,7 @@ const koTranslations = {
   common_close: "닫기",
   common_confirm: "확인",
   common_back: "뒤로",
+  common_closeToast: "닫기",
 
   language_selector_label: "언어",
   language_korean: "한국어",
@@ -269,6 +270,7 @@ const koTranslations = {
   articleGenerate_elapsedTimeLabel: "경과 시간",
   articleGenerate_goToArchive: "보관함으로 이동",
   articleGenerate_contentPreview: "생성중인 콘텐츠 미리보기",
+  articleGenerate_titlePrefix: "제목:",
   articleGenerate_confirmSelection: "선택",
   articleGenerate_scraps: "스크랩",
   articleGenerate_pdf: "PDF",
@@ -447,6 +449,7 @@ const enTranslations = {
   common_close: "Close",
   common_confirm: "Confirm",
   common_back: "Back",
+  common_closeToast: "Close",
 
   language_selector_label: "Language",
   language_korean: "한국어",
@@ -680,6 +683,7 @@ const enTranslations = {
   articleGenerate_elapsedTimeLabel: "Elapsed Time",
   articleGenerate_goToArchive: "Go to Archive",
   articleGenerate_contentPreview: "Content Preview",
+  articleGenerate_titlePrefix: "Title:",
   articleGenerate_confirmSelection: "Confirm",
   articleGenerate_scraps: "Scraps",
   articleGenerate_pdf: "PDF",

@@ -558,7 +558,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
           // Show success message
           showSuccess(
             t('articleGenerate_draftGenerationComplete'),
-            event.title ? `제목: ${event.title}` : ''
+            event.title ? `${t('articleGenerate_titlePrefix')} ${event.title}` : ''
           );
 
           if (currentPage === 'archive' && onRefreshArchiveList) {
