@@ -513,8 +513,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
 
       // Handle streaming events
       const handleStreamEvent = (event: StreamEvent) => {
-        console.log('Stream event:', event);
-
         // Helper to get localized message
         const getLocalizedMessage = (event: StreamEvent): string => {
           if (currentLanguage === 'en' && event.message_en) {
@@ -527,7 +525,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         };
 
         if (event.type === 'progress') {
-          console.log('📊 Progress event:', event.progress, event.message);
           if (event.progress !== undefined) {
             setStreamingProgress(event.progress);
           }
@@ -536,19 +533,16 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             setStreamingMessage(localizedMessage);
           }
         } else if (event.type === 'node_start') {
-          console.log('🚀 Node start:', event.node);
           if (event.node) {
             const localizedMessage = getLocalizedMessage(event);
             setStreamingStep(event.node, localizedMessage);
             setStreamingMessage(localizedMessage);
           }
         } else if (event.type === 'node_complete') {
-          console.log('✅ Node complete:', event.node);
           if (event.node) {
             addCompletedStep(event.node);
           }
         } else if (event.type === 'token') {
-          console.log('📝 Token event, content length:', event.content?.length);
           // Accumulate partial content
           if (event.content) {
             setPartialContent(event.content);
@@ -558,7 +552,6 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             }
           }
         } else if (event.type === 'complete') {
-          console.log('🎉 Complete event:', event.title);
           setGenerationStatus('completed');
           setStreaming(false);
 
@@ -595,10 +588,8 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
         .generateArticleV3Stream(generateData, handleStreamEvent)
         .then(() => {
           // Stream completed successfully
-          console.log('✅ Streaming completed');
         })
         .catch((error) => {
-          console.error('❌ Streaming error:', error);
           setGenerationStatus('failed');
           setGenerating(false);
           setStreaming(false);
