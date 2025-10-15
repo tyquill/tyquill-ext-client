@@ -673,6 +673,197 @@
   }
 }
 
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* 단계별 작은 스피너 */
+.stepSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid #111827;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Content Preview Styles */
+.contentPreviewContainer {
+  margin-top: 20px;
+  padding: 0;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.contentPreviewHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.contentPreviewIcon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: #111827;
+  flex-shrink: 0;
+}
+
+.contentPreviewTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  letter-spacing: -0.01em;
+}
+
+.contentPreviewContent {
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #374151;
+  word-break: break-word;
+  max-height: 200px;
+  overflow: auto;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-align: left;
+}
+
+/* Markdown styling within content preview */
+.contentPreviewContent h1,
+.contentPreviewContent h2,
+.contentPreviewContent h3,
+.contentPreviewContent h4,
+.contentPreviewContent h5,
+.contentPreviewContent h6 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #111827;
+}
+
+.contentPreviewContent h1 {
+  font-size: 24px;
+}
+
+.contentPreviewContent h2 {
+  font-size: 20px;
+}
+
+.contentPreviewContent h3 {
+  font-size: 18px;
+}
+
+.contentPreviewContent h4 {
+  font-size: 16px;
+}
+
+.contentPreviewContent p {
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.contentPreviewContent ul,
+.contentPreviewContent ol {
+  margin-top: 0;
+  margin-bottom: 12px;
+  padding-left: 24px;
+}
+
+.contentPreviewContent li {
+  margin-bottom: 4px;
+}
+
+.contentPreviewContent strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.contentPreviewContent em {
+  font-style: italic;
+}
+
+.contentPreviewContent code {
+  padding: 2px 6px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #dc2626;
+}
+
+.contentPreviewContent pre {
+  padding: 12px;
+  background-color: #f3f4f6;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.contentPreviewContent pre code {
+  padding: 0;
+  background-color: transparent;
+  color: #111827;
+  font-size: 13px;
+}
+
+.contentPreviewContent blockquote {
+  margin: 12px 0;
+  padding-left: 16px;
+  border-left: 4px solid #e5e7eb;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.contentPreviewContent a {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.contentPreviewContent a:hover {
+  color: #1d4ed8;
+}
+
+.contentPreviewContent hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e5e7eb;
+}
+
+.contentPreviewContent table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0;
+}
+
+.contentPreviewContent th,
+.contentPreviewContent td {
+  padding: 8px 12px;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.contentPreviewContent th {
+  background-color: #f9fafb;
+  font-weight: 600;
+}
+
 /* 스크랩 모달 */
 .modalOverlay {
   position: fixed;

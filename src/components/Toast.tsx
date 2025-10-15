@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { IoCheckmarkCircle, IoWarning, IoClose, IoAlert } from 'react-icons/io5';
 import styles from './Toast.module.css';
+import { useI18n } from '../hooks/useI18n';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -21,6 +22,7 @@ export const Toast: React.FC<ToastProps> = ({
   duration = 4000,
   onClose,
 }) => {
+  const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
 
@@ -72,10 +74,10 @@ export const Toast: React.FC<ToastProps> = ({
         <div className={styles.title}>{title}</div>
         {message && <div className={styles.message}>{message}</div>}
       </div>
-      <button 
+      <button
         className={styles.closeButton}
         onClick={handleClose}
-        aria-label="닫기"
+        aria-label={t('common_closeToast')}
       >
         <IoClose size={16} />
       </button>

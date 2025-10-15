@@ -1,10 +1,12 @@
 /**
  * Article Service
- * 
+ *
  * @description 아티클 관리 서비스 - 백엔드 articles controller와 연동
  */
 
 import { globalApiClient } from './globalApiClient';
+import { authService } from './auth.service';
+import { API_BASE_URL } from '../config/environment';
 import { trackAiDraftCompletedBridge } from '../analytics/bridge';
 
 /**
@@ -68,6 +70,28 @@ export interface GenerateArticleV3Dto {
 export interface UploadWithUsagePromptDto {
     uploadedFileId: number;
     usagePrompt: string;
+}
+
+/**
+ * 스트리밍 이벤트 타입
+ */
+export interface StreamEvent {
+    type: 'progress' | 'token' | 'node_start' | 'node_complete' | 'complete' | 'error' | 'heartbeat';
+    timestamp: number;
+    node?: string;
+    message?: string;  // Only for error/complete events
+    message_ko?: string;  // Korean message for progress/node_start
+    message_en?: string;  // English message for progress/node_start
+    progress?: number;  // 0-100
+    metadata?: any;
+    // Token event (real-time content streaming)
+    content?: string;  // Partial or full content
+    is_final?: boolean;  // Whether this is the final token for a node
+    // Complete event
+    title?: string;
+    analysis_reason?: string;
+    warnings?: string[];
+    total_duration?: number;
 }
 
 /**
@@ -410,14 +434,14 @@ export class ArticleService {
      * @returns 완성된 아티클 정보 또는 타임아웃/에러
      */
     async waitForArticleCompletionV3(
-        articleId: number, 
-        maxAttempts: number = 50, 
+        articleId: number,
+        maxAttempts: number = 50,
         interval: number = 5000
     ): Promise<ArticleStatusV3Response> {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 const status = await this.getArticleStatusV3(articleId);
-                
+
                 if (status.status === 'completed' || status.status === 'failed') {
                     return status;
                 }
@@ -428,7 +452,7 @@ export class ArticleService {
                 }
             } catch (error) {
                 console.error(`❌ V3 Status check attempt ${attempt} failed:`, error);
-                
+
                 // 마지막 시도가 아니면 계속 시도
                 if (attempt < maxAttempts) {
                     await new Promise(resolve => setTimeout(resolve, interval));
@@ -439,6 +463,105 @@ export class ArticleService {
         }
 
         throw new Error(`V3 Article generation timeout after ${maxAttempts} attempts`);
+    }
+
+    /**
+     * V3: 실시간 스트리밍으로 아티클 생성 (SSE)
+     * POST /api/v3/articles/generate-stream
+     * @param generateData 생성 데이터
+     * @param onEvent 이벤트 핸들러 콜백
+     * @returns Promise<void>
+     */
+    async generateArticleV3Stream(
+        generateData: GenerateArticleV3Dto,
+        onEvent: (event: StreamEvent) => void
+    ): Promise<void> {
+        try {
+            await trackAiDraftCompletedBridge({ flow: 'v3-stream', trigger: 'request' });
+        } catch {}
+
+        return new Promise(async (resolve, reject) => {
+            let eventSource: EventSource | null = null;
+
+            try {
+                // Get auth headers
+                const authHeaders = await authService.getAuthHeaders();
+
+                // Use fetch to POST and get a stream response
+                const response = await fetch(`${API_BASE_URL}/v3/articles/generate-stream`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream',
+                        ...authHeaders,
+                    },
+                    body: JSON.stringify(generateData),
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+
+                if (!response.body) {
+                    throw new Error('Response body is null');
+                }
+
+                // Read the stream
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) {
+                        break;
+                    }
+
+                    // Decode chunk and add to buffer
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE messages
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6).trim();
+
+                            if (!data || data === '[DONE]') {
+                                continue;
+                            }
+
+                            try {
+                                const event = JSON.parse(data) as StreamEvent;
+                                onEvent(event);
+
+                                // If complete or error, resolve/reject
+                                if (event.type === 'complete') {
+                                    resolve();
+                                    return;
+                                } else if (event.type === 'error') {
+                                    reject(new Error(event.message || 'Generation failed'));
+                                    return;
+                                }
+                            } catch (parseError) {
+                                console.warn('Failed to parse SSE event:', data, parseError);
+                            }
+                        }
+                    }
+                }
+
+                resolve();
+            } catch (error) {
+                console.error('Streaming error:', error);
+                if (eventSource) {
+                    eventSource.close();
+                }
+                reject(error);
+            }
+        });
     }
 }
 
