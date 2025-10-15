@@ -340,10 +340,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
       // 저장 완료 이벤트 추적
       try {
-        const contentLengthAfter = typeof editContent === 'string'
-          ? editContent.length
-          : JSON.stringify(editContent).length;
-
         await trackArchiveEditSavedBridge({
           article_id: article.articleId,
           previous_version: selectedVersionNumber,
@@ -351,7 +347,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           content_changed: contentToSave !== (currentArchive?.content || article.content),
           title_changed: editTitle !== (currentArchive?.title || article.title),
           character_count_before: characterCount.characters,
-          character_count_after: contentLengthAfter
+          character_count_after: contentToSave.length
         });
       } catch {}
 
@@ -411,6 +407,11 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         ? JSON.stringify(originalContent)
         : originalContent;
 
+      // originalContentFormat은 originalContent와 동일한 소스에서 파생
+      const originalContentFormat = currentArchive
+        ? ((currentArchive as any)?.contentFormat || 'markdown')
+        : ((article as any)?.contentFormat || 'markdown');
+
       const editorData = {
         articleId: article.articleId,
         title: editTitle,
@@ -418,7 +419,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         contentFormat: contentFormat,
         originalTitle: currentArchive?.title || article.title,
         originalContent: originalContentToPass,
-        originalContentFormat: contentFormat
+        originalContentFormat: originalContentFormat
       };
 
       // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
@@ -753,7 +754,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     const html = generateHTML(jsonObj, [
                       StarterKit.configure({
                         heading: {
-                          levels: [1, 2, 3],
+                          levels: [1, 2, 3, 4, 5, 6],
                         },
                         horizontalRule: {
                           HTMLAttributes: {
