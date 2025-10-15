@@ -735,9 +735,7 @@ export default defineBackground(() => {
 
     // Create Context Menu
     createContextMenus();
-    
+
     // console.log('Tyquill Extension installed with context menus');
   });
-
-  browser.runtime.setUninstallURL('https://tally.so/r/nGZK7z');
 });
