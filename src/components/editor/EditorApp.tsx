@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { browser } from 'wxt/browser';
 import { articleService, UpdateArticleDto } from '../../services/articleService';
 import EditorWrapper from '../sidepanel/Editor/Editor';
-import { markdownToHtml } from '../../utils/markdownConverter';
 import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import { useI18n } from '../../hooks/useI18n';
@@ -13,8 +12,10 @@ interface EditorData {
   articleId: number;
   title: string;
   content: string;
+  contentFormat?: 'markdown' | 'tiptap-json';
   originalTitle: string;
   originalContent: string;
+  originalContentFormat?: 'markdown' | 'tiptap-json';
 }
 
 const EditorApp: React.FC = () => {
@@ -22,7 +23,8 @@ const EditorApp: React.FC = () => {
   const { initializeLanguage } = useLanguageStore();
   const [editorData, setEditorData] = useState<EditorData | null>(null);
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState<string | object>('');
+  const [contentFormat, setContentFormat] = useState<'markdown' | 'tiptap-json'>('markdown');
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
@@ -51,7 +53,22 @@ const EditorApp: React.FC = () => {
           
           setEditorData(data);
           setTitle(data.title);
-          setContent(data.content);
+
+          // Parse content based on format
+          const format = data.contentFormat || 'markdown';
+          setContentFormat(format);
+
+          if (format === 'tiptap-json' && typeof data.content === 'string') {
+            try {
+              setContent(JSON.parse(data.content));
+            } catch (error) {
+              console.warn('Failed to parse TipTap JSON, falling back to markdown:', error);
+              setContent(data.content);
+              setContentFormat('markdown');
+            }
+          } else {
+            setContent(data.content);
+          }
 
           // Track fullscreen editor opened event
           trackArchiveFullscreenEditorOpenedBridge({
@@ -149,11 +166,18 @@ const EditorApp: React.FC = () => {
   // 변경사항 감지
   useEffect(() => {
     if (!editorData) return;
-    
-    const contentChanged = title !== editorData.originalTitle || content !== editorData.originalContent;
+
+    // Serialize content for comparison
+    const currentContent = typeof content === 'string'
+      ? content
+      : JSON.stringify(content);
+
+    const titleChanged = title !== editorData.originalTitle;
+    const contentChanged = currentContent !== editorData.originalContent;
+
     // 컨텐츠가 변경되었고 실행 취소가 가능한 경우에만 hasChanges를 true로 설정
     // 실행 취소가 불가능하면 초기 상태로 돌아간 것으로 간주
-    const hasChanged = contentChanged && canUndo;
+    const hasChanged = (titleChanged || contentChanged) && canUndo;
     setHasChanges(hasChanged);
   }, [title, content, editorData, canUndo]);
 
@@ -180,12 +204,20 @@ const EditorApp: React.FC = () => {
     try {
       setSaving(true);
 
-      // 저장 전에 콘텐츠 정리
-      const normalizedContent = content.replace(/\n{2,}/g, '\n').trim();
+      // Serialize content based on type
+      let serializedContent: string;
+      if (typeof content === 'string') {
+        // Markdown content - normalize whitespace
+        serializedContent = content.replace(/\n{2,}/g, '\n').trim();
+      } else {
+        // TipTap JSON object - stringify
+        serializedContent = JSON.stringify(content);
+      }
 
       const updateData: UpdateArticleDto = {
         title: title.trim(),
-        content: normalizedContent,
+        content: serializedContent,
+        contentFormat: contentFormat,
       };
 
       await articleService.updateArticle(editorData.articleId, updateData);
@@ -194,9 +226,9 @@ const EditorApp: React.FC = () => {
       trackArchiveEditSavedBridge({
         article_id: editorData.articleId,
         article_title: title.trim(),
-        content_length: normalizedContent.length,
+        content_length: serializedContent.length,
         title_changed: title.trim() !== editorData.originalTitle,
-        content_changed: normalizedContent !== editorData.originalContent,
+        content_changed: serializedContent !== editorData.originalContent,
         editor_type: 'fullscreen',
         session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
       }).catch(() => {});
@@ -204,7 +236,7 @@ const EditorApp: React.FC = () => {
       // 저장 성공 시 변경사항 플래그 및 실행 취소 상태 초기화
       setHasChanges(false);
       setCanUndo(false);
-      
+
       // storage에 저장 완료 신호 보내기
       browser.storage.local.set({
         [`tyquill-editor-saved-${editorData.articleId}`]: {
@@ -212,19 +244,19 @@ const EditorApp: React.FC = () => {
           timestamp: Date.now()
         }
       });
-      
+
       // 잠시 후 페이지 닫기
       setTimeout(() => {
         window.close();
       }, 500);
-      
+
     } catch (error: any) {
       console.error('Save failed:', error);
       alert(`Save failed: ${error.message || 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
-  }, [editorData, title, content]);
+  }, [editorData, title, content, contentFormat]);
 
   const handleCancel = useCallback(() => {
     if (hasChanges) {
@@ -234,11 +266,16 @@ const EditorApp: React.FC = () => {
 
     // Track cancel event
     if (editorData) {
+      // Serialize content for comparison
+      const currentContent = typeof content === 'string'
+        ? content
+        : JSON.stringify(content);
+
       trackArchiveEditCancelledBridge({
         article_id: editorData.articleId,
         had_changes: hasChanges,
         title_changed: title !== editorData.originalTitle,
-        content_changed: content !== editorData.originalContent,
+        content_changed: currentContent !== editorData.originalContent,
         editor_type: 'fullscreen',
         session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
       }).catch(() => {});
@@ -263,6 +300,12 @@ const EditorApp: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [handleKeyDown]);
+
+  // 에디터 변경 핸들러
+  const handleEditorChange = useCallback((newContent: string | object, format: 'markdown' | 'tiptap-json') => {
+    setContent(newContent);
+    setContentFormat(format);
+  }, []);
 
   // 히스토리 상태 변경 핸들러
   const handleHistoryStateChange = useCallback((canUndoState: boolean, canRedoState: boolean) => {
@@ -318,8 +361,9 @@ const EditorApp: React.FC = () => {
       <div className={styles.editorSection}>
         <div className={styles.editorWrapper}>
           <EditorWrapper
-            content={markdownToHtml(content)}
-            onChange={setContent}
+            content={content}
+            contentFormat={contentFormat}
+            onChange={handleEditorChange}
             placeholder="Enter content..."
             readOnly={saving}
             onHistoryStateChange={handleHistoryStateChange}

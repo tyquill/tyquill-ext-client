@@ -189,32 +189,48 @@ const getTextContent = (element: Element): string => {
 export const markdownToHtml = (markdown: string): string => {
   if (!markdown) return '';
 
-  // 간단한 마크다운 to HTML 변환
-  return markdown
-    // 수평선 처리 (---, ***, ___) - 줄바꿈 처리 전에 해야 함
-    .replace(/^---\s*$/gm, '<hr>')
-    .replace(/^\*\*\*\s*$/gm, '<hr>')
-    .replace(/^___\s*$/gm, '<hr>')
-    // 헤딩
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    // 볼드
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    // 이탤릭
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    // 취소선
-    .replace(/~~(.*?)~~/g, '<del>$1</del>')
-    // 밑줄
-    .replace(/__(.*?)__/g, '<u>$1</u>')
-    // 인라인 코드
-    .replace(/`(.*?)`/g, '<code>$1</code>')
-    // 이미지 처리 먼저: ![alt](url) → <img>
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
-    // 링크 처리: [text](url) - 이미지가 아닌 경우만 (! 로 시작하지 않는 경우)
-    .replace(/(?<!\!)\[([^\[\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>')
-    // 줄바꿈
-    .replace(/\n/g, '<br>');
+  // Split into lines and process each line separately to create distinct paragraph blocks
+  const lines = markdown.split('\n');
+
+  return lines
+    .map(line => {
+      const trimmed = line.trim();
+      if (!trimmed) return ''; // Skip empty lines
+
+      // Process markdown syntax for this line
+      let processed = trimmed
+        // Horizontal rules FIRST (before other processing)
+        .replace(/^---\s*$/, '<hr>')
+        .replace(/^\*\*\*\s*$/, '<hr>')
+        .replace(/^___\s*$/, '<hr>')
+        // Headings (must be at start of line)
+        .replace(/^### (.+)$/, '<h3>$1</h3>')
+        .replace(/^## (.+)$/, '<h2>$1</h2>')
+        .replace(/^# (.+)$/, '<h1>$1</h1>')
+        // Bullet list items
+        .replace(/^[-*+] (.+)$/, '<ul><li>$1</li></ul>')
+        // Numbered list items
+        .replace(/^(\d+)\. (.+)$/, '<ol><li>$2</li></ol>')
+        // Inline formatting (bold, italic, etc.)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/~~(.+?)~~/g, '<del>$1</del>')
+        .replace(/__(.*?)__/g, '<u>$1</u>')
+        .replace(/`(.+?)`/g, '<code>$1</code>')
+        // Images: ![alt](url) → <img>
+        .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" />')
+        // Links: [text](url) - negative lookbehind for !
+        .replace(/(?<!\!)\[([^\[\]]+?)\]\(([^)]+?)\)/g, '<a href="$2">$1</a>');
+
+      // Wrap in <p> ONLY if not already a block element
+      if (!processed.match(/^<(h[1-6]|hr|ul|ol|blockquote)/)) {
+        processed = `<p>${processed}</p>`;
+      }
+
+      return processed;
+    })
+    .filter(line => line) // Remove empty strings
+    .join('');
 };
 
 /**
