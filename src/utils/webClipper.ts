@@ -520,26 +520,6 @@ export class WebClipper {
   }
 
   /**
-   * HTML에서 순수 텍스트 추출
-   */
-  private extractPlainText(html: string): string {
-    // 임시 div 생성
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = html;
-
-    // script, style 태그 제거
-    tempDiv.querySelectorAll('script, style, noscript').forEach(el => el.remove());
-
-    // 텍스트 추출
-    let text = tempDiv.textContent || tempDiv.innerText || '';
-
-    // 모든 개행 문자와 여러 공백을 하나의 공백으로 압축
-    text = text.replace(/[\r\n]+/g, ' ').replace(/\s+/g, ' ').trim();
-
-    return text;
-  }
-
-  /**
    * 페이지 메타데이터 추출
    */
   private extractMetadata(): PageMetadata {
