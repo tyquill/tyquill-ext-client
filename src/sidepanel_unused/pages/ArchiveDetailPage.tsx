@@ -19,6 +19,7 @@ import Document from '@tiptap/extension-document';
 import Paragraph from '@tiptap/extension-paragraph';
 import Text from '@tiptap/extension-text';
 import StarterKit from '@tiptap/starter-kit';
+import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
@@ -339,14 +340,18 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
       // 저장 완료 이벤트 추적
       try {
+        const contentLengthAfter = typeof editContent === 'string'
+          ? editContent.length
+          : JSON.stringify(editContent).length;
+
         await trackArchiveEditSavedBridge({
           article_id: article.articleId,
           previous_version: selectedVersionNumber,
           new_version: newVersionNumber,
-          content_changed: normalizedContent !== (currentArchive?.content || article.content),
+          content_changed: contentToSave !== (currentArchive?.content || article.content),
           title_changed: editTitle !== (currentArchive?.title || article.title),
           character_count_before: characterCount.characters,
-          character_count_after: editContent.length
+          character_count_after: contentLengthAfter
         });
       } catch {}
 
@@ -393,12 +398,27 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
     try {
       // 편집기로 전달할 데이터 준비
+      const archive = currentArchive || article.archives?.[0];
+      const contentFormat = (archive as any)?.contentFormat || 'markdown';
+
+      // Content를 문자열로 변환 (JSON 형식이면 stringify)
+      const contentToPass = typeof editContent === 'object'
+        ? JSON.stringify(editContent)
+        : editContent;
+
+      const originalContent = currentArchive?.content || article.content;
+      const originalContentToPass = typeof originalContent === 'object'
+        ? JSON.stringify(originalContent)
+        : originalContent;
+
       const editorData = {
         articleId: article.articleId,
         title: editTitle,
-        content: editContent,
+        content: contentToPass,
+        contentFormat: contentFormat,
         originalTitle: currentArchive?.title || article.title,
-        originalContent: currentArchive?.content || article.content
+        originalContent: originalContentToPass,
+        originalContentFormat: contentFormat
       };
 
       // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
@@ -729,19 +749,20 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   try {
                     const jsonObj = JSON.parse(content);
 
-                    // generateHTML로 JSON을 HTML로 변환
+                    // generateHTML로 JSON을 HTML로 변환 (NotionEditor와 동일한 extensions 사용)
                     const html = generateHTML(jsonObj, [
-                      TextStyle,
                       StarterKit.configure({
                         heading: {
-                          levels: [1, 2, 3, 4, 5, 6],
+                          levels: [1, 2, 3],
                         },
                         horizontalRule: {
                           HTMLAttributes: {
-                            class: 'editor-hr',
+                            class: 'notion-hr',
                           },
                         },
                       }),
+                      TextStyle,
+                      Underline,
                       TextAlign.configure({
                         types: ['heading', 'paragraph'],
                       }),

@@ -7,6 +7,8 @@ import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge
 import { useI18n } from '../../hooks/useI18n';
 import { useLanguageStore } from '../../stores/languageStore';
 import styles from './EditorApp.module.css';
+// Import NotionEditor CSS to ensure it's loaded in dev mode
+import '../sidepanel/Editor/NotionEditor.module.css';
 
 interface EditorData {
   articleId: number;
@@ -60,7 +62,8 @@ const EditorApp: React.FC = () => {
 
           if (format === 'tiptap-json' && typeof data.content === 'string') {
             try {
-              setContent(JSON.parse(data.content));
+              const parsedContent = JSON.parse(data.content);
+              setContent(parsedContent);
             } catch (error) {
               console.warn('Failed to parse TipTap JSON, falling back to markdown:', error);
               setContent(data.content);

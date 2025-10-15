@@ -76,7 +76,7 @@ const NotionEditor: React.FC<NotionEditorProps> = ({
     editable: !readOnly,
     editorProps: {
       attributes: {
-        class: styles.notionEditor,
+        class: 'notionEditor',
       },
     },
     onUpdate: ({ editor }) => {
