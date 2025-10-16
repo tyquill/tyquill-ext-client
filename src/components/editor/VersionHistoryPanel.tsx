@@ -4,6 +4,7 @@ import { articleService, VersionHistoryItem } from '../../services/articleServic
 import { formatRelativeTime, getCharacterCount } from '../../utils/timeFormat';
 import { useI18n } from '../../hooks/useI18n';
 import styles from './EditorApp.module.css';
+import RestoreToast from './RestoreToast';
 
 interface VersionHistoryPanelProps {
     articleId: number;
@@ -28,6 +29,8 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
     const [restoring, setRestoring] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [versionToRestore, setVersionToRestore] = useState<VersionHistoryItem | null>(null);
+    const [showRestoreToast, setShowRestoreToast] = useState(false);
+    const [restoredVersionInfo, setRestoredVersionInfo] = useState<{ versionNumber: number; timestamp: string } | null>(null);
 
     // Load versions on mount
     useEffect(() => {
@@ -97,8 +100,17 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
         try {
             setRestoring(true);
             await onRestore(versionToRestore);
+
+            // Store version info for toast
+            setRestoredVersionInfo({
+                versionNumber: versionToRestore.versionNumber,
+                timestamp: formatRelativeTime(versionToRestore.createdAt),
+            });
+
+            // Close modal and show success toast
             setShowConfirmModal(false);
             setVersionToRestore(null);
+            setShowRestoreToast(true);
         } catch (err: any) {
             console.error('Failed to restore version:', err);
             alert(`Failed to restore version: ${err.message || 'Unknown error'}`);
@@ -114,6 +126,12 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
             setVersionToRestore(null);
         }
     }, [restoring]);
+
+    // Handle toast close
+    const handleToastClose = useCallback(() => {
+        setShowRestoreToast(false);
+        setRestoredVersionInfo(null);
+    }, []);
 
     return (
         <>
@@ -253,6 +271,15 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* Success Toast */}
+            {showRestoreToast && restoredVersionInfo && (
+                <RestoreToast
+                    versionNumber={restoredVersionInfo.versionNumber}
+                    timestamp={restoredVersionInfo.timestamp}
+                    onClose={handleToastClose}
+                />
             )}
         </>
     );

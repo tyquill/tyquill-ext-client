@@ -428,6 +428,8 @@ const koTranslations = {
   editor_saveTooltip: "저장 (Cmd+S)",
   editor_closeTooltip: "닫기 (Esc)",
   editor_characters: "자",
+  editor_restoreCompleted: "버전 복원 완료!",
+  editor_restoredToVersion: "버전 {versionNumber}로 복원되었습니다",
 };
 
 // 영어 번역 데이터
@@ -858,6 +860,8 @@ const enTranslations = {
   editor_saveTooltip: "Save (Cmd+S)",
   editor_closeTooltip: "Close (Esc)",
   editor_characters: " characters",
+  editor_restoreCompleted: "Version restored!",
+  editor_restoredToVersion: "Restored to version {versionNumber}",
 };
 
 export type TranslationKey = keyof typeof koTranslations;
