@@ -441,14 +441,14 @@ const EditorApp: React.FC = () => {
       {previewingVersion && (
         <div className={styles.versionPreviewBanner}>
           <div className={styles.versionPreviewText}>
-            Viewing version from {formatRelativeTime(previewingVersion.createdAt)}
+            {t('editor_viewingVersion')} {formatRelativeTime(previewingVersion.createdAt)}
           </div>
           <div className={styles.versionPreviewActions}>
             <button
               onClick={handleBackToCurrent}
               className={styles.backToCurrentButton}
             >
-              Back to current
+              {t('editor_backToCurrent')}
             </button>
           </div>
         </div>
@@ -458,11 +458,11 @@ const EditorApp: React.FC = () => {
       <div className={styles.actionBar}>
         <div className={styles.statusIndicator}>
           {saving ? (
-            <span className={styles.savingStatus}>Saving...</span>
+            <span className={styles.savingStatus}>{t('editor_saving')}</span>
           ) : hasChanges ? (
-            <span className={styles.unsavedStatus}>Unsaved</span>
+            <span className={styles.unsavedStatus}>{t('editor_unsaved')}</span>
           ) : (
-            <span className={styles.savedStatus}>Saved</span>
+            <span className={styles.savedStatus}>{t('editor_saved')}</span>
           )}
         </div>
 
@@ -470,7 +470,7 @@ const EditorApp: React.FC = () => {
           <button
             onClick={() => setShowVersionHistory(true)}
             className={styles.versionHistoryButton}
-            title="Version History (Cmd+H)"
+            title={t('editor_versionHistoryTooltip')}
           >
             <IoTimeOutline size={16} />
           </button>
@@ -479,7 +479,7 @@ const EditorApp: React.FC = () => {
             onClick={handleSave}
             disabled={saving || !hasChanges || !!previewingVersion}
             className={styles.saveButton}
-            title="Save (Cmd+S)"
+            title={t('editor_saveTooltip')}
           >
             <IoSave size={16} />
           </button>
@@ -488,7 +488,7 @@ const EditorApp: React.FC = () => {
             onClick={handleCancel}
             disabled={saving}
             className={styles.cancelButton}
-            title="Close (Esc)"
+            title={t('editor_closeTooltip')}
           >
             <IoClose size={16} />
           </button>

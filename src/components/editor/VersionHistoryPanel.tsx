@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { IoClose, IoCheckmarkCircle } from 'react-icons/io5';
 import { articleService, VersionHistoryItem } from '../../services/articleService';
 import { formatRelativeTime, getCharacterCount } from '../../utils/timeFormat';
+import { useI18n } from '../../hooks/useI18n';
 import styles from './EditorApp.module.css';
 
 interface VersionHistoryPanelProps {
@@ -19,6 +20,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
     onVersionSelect,
     onRestore,
 }) => {
+    const { t } = useI18n();
     const [versions, setVersions] = useState<VersionHistoryItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -109,11 +111,11 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
             <div className={styles.versionHistoryPanel}>
                 {/* Header */}
                 <div className={styles.versionHistoryHeader}>
-                    <h2 className={styles.versionHistoryTitle}>Version History</h2>
+                    <h2 className={styles.versionHistoryTitle}>{t('editor_versionHistoryTitle')}</h2>
                     <button
                         onClick={onClose}
                         className={styles.versionHistoryCloseButton}
-                        title="Close (Esc)"
+                        title={t('editor_closeEsc')}
                     >
                         <IoClose size={20} />
                     </button>
@@ -123,7 +125,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                 <div className={styles.versionHistoryContent}>
                     {loading && (
                         <div className={styles.versionHistoryLoading}>
-                            Loading versions...
+                            {t('editor_loadingVersions')}
                         </div>
                     )}
 
@@ -135,7 +137,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
 
                     {!loading && !error && versions.length === 0 && (
                         <div className={styles.versionHistoryEmpty}>
-                            No version history available
+                            {t('editor_noVersions')}
                         </div>
                     )}
 
@@ -171,7 +173,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                                                 {version.title || 'Untitled'}
                                             </div>
                                             <div className={styles.versionMeta}>
-                                                {version.characterCount?.toLocaleString()} characters
+                                                {version.characterCount?.toLocaleString()}{t('editor_characters')}
                                             </div>
                                         </div>
 
@@ -184,7 +186,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                                                 disabled={restoring}
                                                 className={styles.versionRestoreButton}
                                             >
-                                                {restoring ? 'Restoring...' : 'Restore this version'}
+                                                {restoring ? t('editor_restoring') : t('editor_restoreVersion')}
                                             </button>
                                         )}
                                     </div>
