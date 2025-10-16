@@ -182,6 +182,18 @@ export interface ArchiveResponse {
 }
 
 /**
+ * 버전 히스토리 아이템 인터페이스
+ */
+export interface VersionHistoryItem {
+    versionNumber: number;
+    title: string;
+    content: string;
+    contentFormat: 'markdown' | 'tiptap-json';
+    createdAt: string;
+    characterCount?: number;
+}
+
+/**
  * 아티클 응답 타입
  */
 export interface ArticleResponse {
@@ -291,6 +303,26 @@ export class ArticleService {
      */
     async archiveArticle(articleId: number): Promise<void> {
         return this.apiRequest(`/v1/articles/${articleId}/archive`, {
+            method: 'POST',
+        });
+    }
+
+    /**
+     * 아티클 버전 히스토리 조회
+     * GET /api/v1/articles/:id/versions
+     */
+    async getArticleVersions(articleId: number): Promise<VersionHistoryItem[]> {
+        return this.apiRequest(`/v1/articles/${articleId}/versions`, {
+            method: 'GET',
+        });
+    }
+
+    /**
+     * 특정 버전으로 복원
+     * POST /api/v1/articles/:id/restore/:versionNumber
+     */
+    async restoreVersion(articleId: number, versionNumber: number): Promise<ArticleResponse> {
+        return this.apiRequest(`/v1/articles/${articleId}/restore/${versionNumber}`, {
             method: 'POST',
         });
     }

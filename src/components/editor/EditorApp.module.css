@@ -1,190 +1,150 @@
+/* ============================================
+   Notion-inspired Editor Container
+   ============================================ */
 .editorContainer {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100vh;
   width: 100vw;
-  background: #fafafa;
+  background: #ffffff;
   overflow: hidden;
 }
 
-.header {
+/* ============================================
+   Action Bar (Top-right corner)
+   ============================================ */
+.actionBar {
+  position: fixed;
+  top: 0;
+  right: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e7eb;
-  background: #ffffff;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  gap: 16px;
+  padding: 24px 40px;
+  z-index: 100;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
 }
 
-.headerContent {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 1200px;
-  gap: 24px;
+.statusIndicator {
+  pointer-events: auto;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.titleSection {
-  flex: 1;
-  min-width: 0;
+.savedStatus {
+  color: rgba(55, 53, 47, 0.5);
+  opacity: 0;
+  animation: fadeInOut 2s ease-in-out;
 }
 
-.titleInput {
-  width: 100%;
-  font-size: 28px;
-  font-weight: 700;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: #111827;
-  padding: 12px 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s ease;
-  line-height: 1.2;
+.unsavedStatus {
+  color: rgba(55, 53, 47, 0.7);
 }
 
-.titleInput:focus {
-  border-bottom-color: #3b82f6;
+.savingStatus {
+  color: rgba(55, 53, 47, 0.7);
+  animation: pulse 1.5s ease-in-out infinite;
 }
 
-.titleInput::placeholder {
-  color: #9ca3af;
-  font-weight: 400;
+@keyframes fadeInOut {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .actionButtons {
   display: flex;
-  gap: 12px;
-  flex-shrink: 0;
-}
-
-.saveButton {
-  display: flex;
-  align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  background: #f8f9fa;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  pointer-events: auto;
 }
 
-.saveButton:hover:not(:disabled) {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.saveButton.hasChanges {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  border-color: #3b82f6;
-  color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-}
-
-.saveButton.hasChanges:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  border-color: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-.saveButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
+.saveButton,
 .cancelButton {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  color: #64748b;
-  font-size: 14px;
-  font-weight: 600;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(55, 53, 47, 0.7);
   cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.saveButton:hover:not(:disabled) {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgb(55, 53, 47);
+}
+
+.saveButton:active:not(:disabled) {
+  background: rgba(55, 53, 47, 0.12);
+  transform: scale(0.95);
+}
+
+.saveButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 
 .cancelButton:hover:not(:disabled) {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #475569;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: rgba(55, 53, 47, 0.08);
+  color: rgb(55, 53, 47);
+}
+
+.cancelButton:active:not(:disabled) {
+  background: rgba(55, 53, 47, 0.12);
+  transform: scale(0.95);
 }
 
 .cancelButton:disabled {
-  opacity: 0.5;
+  opacity: 0.3;
   cursor: not-allowed;
-  transform: none;
 }
 
-.editorSection {
-  flex: 1;
-  padding: 32px 24px;
-  overflow: auto;
-  min-height: 0;
-  display: flex;
-  justify-content: center;
-}
-
-.editorWrapper {
+/* ============================================
+   Centered Content Area
+   ============================================ */
+.contentArea {
   width: 100%;
-  max-width: 900px;
-  background: #ffffff;
-  overflow: auto;
-  min-height: 600px;
-  max-height: calc(100vh - 200px);
-  padding: 0 48px;
+  max-width: 750px;
+  margin: 0 auto;
+  padding: 96px 96px 200px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  animation: fadeIn 0.3s ease-out;
 }
 
-/* Remove all style overrides - let NotionEditor handle its own styling */
-
-.loadingContainer {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  font-size: 16px;
-  color: #6b7280;
-}
-
-.changesIndicator {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-  color: white;
-  padding: 12px 20px;
-  border-radius: 25px;
-  font-size: 13px;
-  font-weight: 600;
-  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.4);
-  z-index: 1000;
-  animation: slideIn 0.3s ease;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(10px);
-}
-
-@keyframes slideIn {
+@keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -192,75 +152,495 @@
   }
 }
 
-/* 반응형 스타일 */
+/* ============================================
+   Large Title Input (Notion-style)
+   ============================================ */
+.titleInput {
+  width: 100%;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: rgb(55, 53, 47);
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  margin: 0 0 4px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, "Apple Color Emoji", Arial, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol";
+  resize: none;
+  overflow: hidden;
+  transition: color 0.2s ease;
+}
+
+.titleInput:focus {
+  color: rgb(55, 53, 47);
+}
+
+.titleInput::placeholder {
+  color: rgba(55, 53, 47, 0.3);
+  font-weight: 700;
+}
+
+/* ============================================
+   Editor Wrapper (Seamless integration)
+   ============================================ */
+.editorWrapper {
+  width: 100%;
+  margin-top: 8px;
+  color: rgb(55, 53, 47);
+  font-size: 16px;
+  line-height: 1.5;
+  animation: fadeIn 0.4s ease-out 0.1s backwards;
+}
+
+/* Remove all borders and backgrounds from editor */
+.editorWrapper :global(.ProseMirror) {
+  outline: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  min-height: 500px;
+}
+
+.editorWrapper :global(.ProseMirror p.is-editor-empty:first-child::before) {
+  color: rgba(55, 53, 47, 0.3);
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* ============================================
+   Loading State
+   ============================================ */
+.loadingContainer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 14px;
+  color: rgba(55, 53, 47, 0.4);
+  font-weight: 500;
+}
+
+/* ============================================
+   Responsive Design
+   ============================================ */
+
+/* Tablet and smaller laptops */
 @media (max-width: 1024px) {
-  .editorWrapper {
-    max-width: 800px;
+  .contentArea {
+    max-width: 680px;
+    padding: 80px 64px 160px;
+  }
+
+  .actionBar {
+    padding: 20px 32px;
   }
 }
 
+/* Tablet portrait and mobile landscape */
 @media (max-width: 768px) {
-  .header {
-    padding: 16px 20px;
-  }
-  
-  .headerContent {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 16px;
-  }
-  
-  .titleInput {
-    font-size: 24px;
-    text-align: center;
-  }
-  
-  .actionButtons {
-    justify-content: center;
-    gap: 16px;
-  }
-  
-  .saveButton,
-  .cancelButton {
-    flex: 1;
-    justify-content: center;
-    max-width: 150px;
-  }
-  
-  .editorSection {
-    padding: 20px 16px;
-  }
-  
-  .editorWrapper {
+  .contentArea {
     max-width: 100%;
-    margin: 0;
-    border-radius: 8px;
+    padding: 64px 40px 120px;
   }
-  
-  .changesIndicator {
-    bottom: 20px;
-    right: 20px;
-    left: 20px;
-    text-align: center;
+
+  .titleInput {
+    font-size: 32px;
+  }
+
+  .actionBar {
+    padding: 16px 24px;
+  }
+
+  .editorWrapper {
+    font-size: 15px;
   }
 }
 
+/* Mobile portrait */
 @media (max-width: 480px) {
-  .header {
-    padding: 12px 16px;
+  .contentArea {
+    padding: 48px 24px 100px;
   }
-  
+
   .titleInput {
-    font-size: 20px;
+    font-size: 28px;
   }
-  
+
+  .actionBar {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .statusIndicator {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+
   .saveButton,
   .cancelButton {
-    padding: 10px 16px;
-    font-size: 13px;
+    width: 28px;
+    height: 28px;
   }
-  
-  .editorSection {
-    padding: 16px 12px;
+
+  .editorWrapper {
+    font-size: 14px;
+  }
+}
+
+/* ============================================
+   Smooth Scrollbar (Notion-like)
+   ============================================ */
+.contentArea::-webkit-scrollbar {
+  width: 8px;
+}
+
+.contentArea::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.contentArea::-webkit-scrollbar-thumb {
+  background: rgba(55, 53, 47, 0.12);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+.contentArea::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 53, 47, 0.24);
+}
+
+/* Firefox scrollbar */
+.contentArea {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 53, 47, 0.12) transparent;
+}
+
+/* ============================================
+   Version History Button
+   ============================================ */
+.versionHistoryButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: rgba(55, 53, 47, 0.7);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.versionHistoryButton:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgb(55, 53, 47);
+}
+
+.versionHistoryButton:active {
+  background: rgba(55, 53, 47, 0.12);
+  transform: scale(0.95);
+}
+
+/* ============================================
+   Version History Panel
+   ============================================ */
+.versionHistoryBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 200;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.versionHistoryPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  background: #ffffff;
+  border-left: 1px solid rgba(55, 53, 47, 0.09);
+  z-index: 201;
+  display: flex;
+  flex-direction: column;
+  animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.versionHistoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+  flex-shrink: 0;
+}
+
+.versionHistoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(55, 53, 47);
+  margin: 0;
+}
+
+.versionHistoryCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(55, 53, 47, 0.6);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.versionHistoryCloseButton:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgb(55, 53, 47);
+}
+
+/* Content */
+.versionHistoryContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.versionHistoryContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.versionHistoryContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.versionHistoryContent::-webkit-scrollbar-thumb {
+  background: rgba(55, 53, 47, 0.12);
+  border-radius: 3px;
+}
+
+.versionHistoryContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 53, 47, 0.24);
+}
+
+/* Loading/Error/Empty states */
+.versionHistoryLoading,
+.versionHistoryError,
+.versionHistoryEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  font-size: 13px;
+  color: rgba(55, 53, 47, 0.5);
+  text-align: center;
+}
+
+.versionHistoryError {
+  color: #eb5757;
+}
+
+/* Version List */
+.versionList {
+  padding: 8px 0;
+}
+
+/* Version Item */
+.versionItem {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.versionItem:hover {
+  background: rgba(55, 53, 47, 0.04);
+}
+
+.versionItemSelected {
+  background: rgba(55, 53, 47, 0.08);
+  border-left-color: rgba(55, 53, 47, 0.8);
+}
+
+.versionItemCurrent {
+  background: rgba(55, 53, 47, 0.06);
+}
+
+.versionItemCurrent.versionItemSelected {
+  background: rgba(55, 53, 47, 0.12);
+}
+
+/* Version Item Header */
+.versionItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.versionNumber {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.versionCurrentIcon {
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.versionTime {
+  font-size: 12px;
+  color: rgba(55, 53, 47, 0.6);
+}
+
+/* Version Item Body */
+.versionItemBody {
+  margin-bottom: 8px;
+}
+
+.versionTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(55, 53, 47);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionMeta {
+  font-size: 11px;
+  color: rgba(55, 53, 47, 0.5);
+}
+
+/* Restore Button */
+.versionRestoreButton {
+  width: 100%;
+  padding: 6px 12px;
+  margin-top: 8px;
+  background: rgba(55, 53, 47, 0.06);
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 4px;
+  color: rgb(55, 53, 47);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.versionRestoreButton:hover:not(:disabled) {
+  background: rgba(55, 53, 47, 0.08);
+  border-color: rgba(55, 53, 47, 0.24);
+}
+
+.versionRestoreButton:active:not(:disabled) {
+  background: rgba(55, 53, 47, 0.12);
+  transform: scale(0.98);
+}
+
+.versionRestoreButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Version Preview Banner
+   ============================================ */
+.versionPreviewBanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(55, 53, 47, 0.95);
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 150;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.versionPreviewText {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.versionPreviewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.backToCurrentButton {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.backToCurrentButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.backToCurrentButton:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   Responsive Design for Version History
+   ============================================ */
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .versionHistoryPanel {
+    width: 100%;
+    max-width: 100%;
   }
 }

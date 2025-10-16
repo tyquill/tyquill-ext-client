@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { browser } from 'wxt/browser';
-import { articleService, UpdateArticleDto } from '../../services/articleService';
+import { articleService, UpdateArticleDto, VersionHistoryItem } from '../../services/articleService';
 import EditorWrapper from '../sidepanel/Editor/Editor';
-import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
+import VersionHistoryPanel from './VersionHistoryPanel';
+import { IoSave, IoClose, IoArrowBack, IoTimeOutline } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import { useI18n } from '../../hooks/useI18n';
 import { useLanguageStore } from '../../stores/languageStore';
+import { formatRelativeTime } from '../../utils/timeFormat';
 import styles from './EditorApp.module.css';
 // Import NotionEditor CSS to ensure it's loaded in dev mode
 import '../sidepanel/Editor/NotionEditor.module.css';
@@ -31,6 +33,11 @@ const EditorApp: React.FC = () => {
   const [hasChanges, setHasChanges] = useState(false);
   const [canUndo, setCanUndo] = useState(false);
   const pageStartTimeRef = useRef<number>(Date.now());
+
+  // Version history state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewingVersion, setPreviewingVersion] = useState<VersionHistoryItem | null>(null);
+  const [currentVersionNumber, setCurrentVersionNumber] = useState<number | undefined>(undefined);
 
   // 언어 설정 초기화
   useEffect(() => {
@@ -248,11 +255,6 @@ const EditorApp: React.FC = () => {
         }
       });
 
-      // 잠시 후 페이지 닫기
-      setTimeout(() => {
-        window.close();
-      }, 500);
-
     } catch (error: any) {
       console.error('Save failed:', error);
       alert(`Save failed: ${error.message || 'Unknown error'}`);
@@ -287,15 +289,125 @@ const EditorApp: React.FC = () => {
     window.close();
   }, [hasChanges, editorData, title, content]);
 
+  // Version history handlers
+  const handleVersionSelect = useCallback((version: VersionHistoryItem) => {
+    // Preview the selected version
+    setPreviewingVersion(version);
+    setTitle(version.title);
+
+    // Parse content based on format
+    if (version.contentFormat === 'tiptap-json') {
+      try {
+        const parsedContent = JSON.parse(version.content);
+        setContent(parsedContent);
+        setContentFormat('tiptap-json');
+      } catch (error) {
+        console.warn('Failed to parse TipTap JSON, using as markdown:', error);
+        setContent(version.content);
+        setContentFormat('markdown');
+      }
+    } else {
+      setContent(version.content);
+      setContentFormat('markdown');
+    }
+  }, []);
+
+  const handleVersionRestore = useCallback(async (version: VersionHistoryItem) => {
+    if (!editorData) return;
+
+    try {
+      // Call restore API
+      const restored = await articleService.restoreVersion(editorData.articleId, version.versionNumber);
+
+      // Update editor state with restored content
+      setTitle(restored.title);
+
+      if (restored.contentFormat === 'tiptap-json') {
+        try {
+          const parsedContent = JSON.parse(restored.content);
+          setContent(parsedContent);
+          setContentFormat('tiptap-json');
+        } catch (error) {
+          setContent(restored.content);
+          setContentFormat('markdown');
+        }
+      } else {
+        setContent(restored.content);
+        setContentFormat('markdown');
+      }
+
+      // Clear preview state
+      setPreviewingVersion(null);
+      setHasChanges(false);
+      setCanUndo(false);
+
+      // Close version history panel
+      setShowVersionHistory(false);
+
+      alert('Version restored successfully!');
+    } catch (error: any) {
+      console.error('Failed to restore version:', error);
+      throw error;
+    }
+  }, [editorData]);
+
+  const handleBackToCurrent = useCallback(async () => {
+    if (!editorData) return;
+
+    try {
+      // Reload current article
+      const current = await articleService.getArticle(editorData.articleId);
+
+      setTitle(current.title);
+
+      if (current.contentFormat === 'tiptap-json') {
+        try {
+          const parsedContent = JSON.parse(current.content);
+          setContent(parsedContent);
+          setContentFormat('tiptap-json');
+        } catch (error) {
+          setContent(current.content);
+          setContentFormat('markdown');
+        }
+      } else {
+        setContent(current.content);
+        setContentFormat('markdown');
+      }
+
+      setPreviewingVersion(null);
+    } catch (error) {
+      console.error('Failed to load current version:', error);
+      alert('Failed to load current version');
+    }
+  }, [editorData]);
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
     }
     if (e.key === 'Escape') {
-      handleCancel();
+      if (showVersionHistory) {
+        setShowVersionHistory(false);
+        setPreviewingVersion(null);
+      } else if (previewingVersion) {
+        handleBackToCurrent();
+      } else {
+        handleCancel();
+      }
     }
-  }, [handleSave, handleCancel]);
+    // Cmd/Ctrl + H for version history
+    if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+      e.preventDefault();
+      setShowVersionHistory(prev => {
+        // 패널을 닫을 때는 프리뷰도 함께 리셋
+        if (prev) {
+          setPreviewingVersion(null);
+        }
+        return !prev;
+      });
+    }
+  }, [handleSave, handleCancel, showVersionHistory, previewingVersion, handleBackToCurrent]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -325,59 +437,100 @@ const EditorApp: React.FC = () => {
 
   return (
     <div className={styles.editorContainer}>
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.titleSection}>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={styles.titleInput}
-              placeholder="Enter title"
-            />
+      {/* Version preview banner */}
+      {previewingVersion && (
+        <div className={styles.versionPreviewBanner}>
+          <div className={styles.versionPreviewText}>
+            Viewing version from {formatRelativeTime(previewingVersion.createdAt)}
           </div>
-          
-          <div className={styles.actionButtons}>
+          <div className={styles.versionPreviewActions}>
             <button
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              className={`${styles.saveButton} ${hasChanges ? styles.hasChanges : ''}`}
-              title="Save (Ctrl+S)"
+              onClick={handleBackToCurrent}
+              className={styles.backToCurrentButton}
             >
-              <IoSave size={20} />
-              {saving ? 'Saving...' : t('common_save')}
-            </button>
-            
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              className={styles.cancelButton}
-              title="Cancel (Esc)"
-            >
-              <IoClose size={20} />
-              {t('common_cancel')}
+              Back to current
             </button>
           </div>
         </div>
+      )}
+
+      {/* Subtle action buttons in top-right corner */}
+      <div className={styles.actionBar}>
+        <div className={styles.statusIndicator}>
+          {saving ? (
+            <span className={styles.savingStatus}>Saving...</span>
+          ) : hasChanges ? (
+            <span className={styles.unsavedStatus}>Unsaved</span>
+          ) : (
+            <span className={styles.savedStatus}>Saved</span>
+          )}
+        </div>
+
+        <div className={styles.actionButtons}>
+          <button
+            onClick={() => setShowVersionHistory(true)}
+            className={styles.versionHistoryButton}
+            title="Version History (Cmd+H)"
+          >
+            <IoTimeOutline size={16} />
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={saving || !hasChanges || !!previewingVersion}
+            className={styles.saveButton}
+            title="Save (Cmd+S)"
+          >
+            <IoSave size={16} />
+          </button>
+
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            className={styles.cancelButton}
+            title="Close (Esc)"
+          >
+            <IoClose size={16} />
+          </button>
+        </div>
       </div>
 
-      <div className={styles.editorSection}>
+      {/* Centered content area */}
+      <div className={styles.contentArea}>
+        {/* Large title input */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={styles.titleInput}
+          placeholder="Untitled"
+        />
+
+        {/* Editor with seamless integration */}
         <div className={styles.editorWrapper}>
           <EditorWrapper
             content={content}
             contentFormat={contentFormat}
             onChange={handleEditorChange}
-            placeholder="Enter content..."
-            readOnly={saving}
+            placeholder="Type something..."
+            readOnly={saving || !!previewingVersion}
             onHistoryStateChange={handleHistoryStateChange}
           />
         </div>
       </div>
 
-      {hasChanges && (
-        <div className={styles.changesIndicator}>
-          You have unsaved changes
-        </div>
+      {/* Version History Panel */}
+      {showVersionHistory && editorData && (
+        <VersionHistoryPanel
+          articleId={editorData.articleId}
+          currentVersionNumber={currentVersionNumber}
+          onClose={() => {
+            setShowVersionHistory(false);
+            setPreviewingVersion(null);
+          }}
+          onVersionSelect={handleVersionSelect}
+          onRestore={handleVersionRestore}
+        />
       )}
     </div>
   );
