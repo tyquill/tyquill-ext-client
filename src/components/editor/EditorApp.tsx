@@ -300,28 +300,34 @@ const EditorApp: React.FC = () => {
     window.close();
   }, [hasChanges, editorData, title, content]);
 
+  // Helper function to apply article content with proper parsing
+  const applyArticleContent = useCallback((
+    content: string,
+    format: 'markdown' | 'tiptap-json'
+  ) => {
+    if (format === 'tiptap-json') {
+      try {
+        const parsedContent = JSON.parse(content);
+        setContent(parsedContent);
+        setContentFormat('tiptap-json');
+      } catch (error) {
+        console.warn('Failed to parse TipTap JSON, falling back to markdown:', error);
+        setContent(content);
+        setContentFormat('markdown');
+      }
+    } else {
+      setContent(content);
+      setContentFormat('markdown');
+    }
+  }, []);
+
   // Version history handlers
   const handleVersionSelect = useCallback((version: VersionHistoryItem) => {
     // Preview the selected version
     setPreviewingVersion(version);
     setTitle(version.title);
-
-    // Parse content based on format
-    if (version.contentFormat === 'tiptap-json') {
-      try {
-        const parsedContent = JSON.parse(version.content);
-        setContent(parsedContent);
-        setContentFormat('tiptap-json');
-      } catch (error) {
-        console.warn('Failed to parse TipTap JSON, using as markdown:', error);
-        setContent(version.content);
-        setContentFormat('markdown');
-      }
-    } else {
-      setContent(version.content);
-      setContentFormat('markdown');
-    }
-  }, []);
+    applyArticleContent(version.content, version.contentFormat);
+  }, [applyArticleContent]);
 
   const handleVersionRestore = useCallback(async (version: VersionHistoryItem) => {
     if (!editorData) return;
@@ -332,20 +338,7 @@ const EditorApp: React.FC = () => {
 
       // Update editor state with restored content
       setTitle(restored.title);
-
-      if (restored.contentFormat === 'tiptap-json') {
-        try {
-          const parsedContent = JSON.parse(restored.content);
-          setContent(parsedContent);
-          setContentFormat('tiptap-json');
-        } catch (error) {
-          setContent(restored.content);
-          setContentFormat('markdown');
-        }
-      } else {
-        setContent(restored.content);
-        setContentFormat('markdown');
-      }
+      applyArticleContent(restored.content, restored.contentFormat || 'markdown');
 
       // Update current version number after restore
       try {
@@ -370,7 +363,7 @@ const EditorApp: React.FC = () => {
       console.error('Failed to restore version:', error);
       throw error;
     }
-  }, [editorData]);
+  }, [editorData, applyArticleContent]);
 
   const handleBackToCurrent = useCallback(async () => {
     if (!editorData) return;
@@ -380,27 +373,13 @@ const EditorApp: React.FC = () => {
       const current = await articleService.getArticle(editorData.articleId);
 
       setTitle(current.title);
-
-      if (current.contentFormat === 'tiptap-json') {
-        try {
-          const parsedContent = JSON.parse(current.content);
-          setContent(parsedContent);
-          setContentFormat('tiptap-json');
-        } catch (error) {
-          setContent(current.content);
-          setContentFormat('markdown');
-        }
-      } else {
-        setContent(current.content);
-        setContentFormat('markdown');
-      }
-
+      applyArticleContent(current.content, current.contentFormat || 'markdown');
       setPreviewingVersion(null);
     } catch (error) {
       console.error('Failed to load current version:', error);
       alert('Failed to load current version');
     }
-  }, [editorData]);
+  }, [editorData, applyArticleContent]);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
