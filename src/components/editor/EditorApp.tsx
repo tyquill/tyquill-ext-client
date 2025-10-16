@@ -108,7 +108,18 @@ const EditorApp: React.FC = () => {
               timestamp: Date.now()
             }
           });
-          
+
+          // Load current version number
+          try {
+            const versions = await articleService.getArticleVersions(data.articleId);
+            if (versions.length > 0) {
+              setCurrentVersionNumber(versions[0].versionNumber);
+            }
+          } catch (error) {
+            console.warn('Failed to load current version number:', error);
+            // Continue without version number - non-critical
+          }
+
         } catch (error) {
           console.error('Failed to load editor data:', error);
           console.error('Session key:', sessionKey);
@@ -334,6 +345,16 @@ const EditorApp: React.FC = () => {
       } else {
         setContent(restored.content);
         setContentFormat('markdown');
+      }
+
+      // Update current version number after restore
+      try {
+        const versions = await articleService.getArticleVersions(editorData.articleId);
+        if (versions.length > 0) {
+          setCurrentVersionNumber(versions[0].versionNumber);
+        }
+      } catch (error) {
+        console.warn('Failed to update version number after restore:', error);
       }
 
       // Clear preview state
