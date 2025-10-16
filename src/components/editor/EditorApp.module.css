@@ -573,6 +573,56 @@
 }
 
 /* ============================================
+   Error Banner
+   ============================================ */
+.errorBanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #eb5757;
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 150;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.errorText {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.errorCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 4px;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.errorCloseButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.errorCloseButton:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
    Version Preview Banner
    ============================================ */
 .versionPreviewBanner {

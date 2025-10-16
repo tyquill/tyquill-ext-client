@@ -56,7 +56,7 @@
   /* Extra large border-radius for pill-like shape */
   border-radius: 28px;
 
-  /* Multi-layered shadows for depth with specular highlights - GREEN THEME */
+  /* Multi-layered shadows for depth with specular highlights */
   box-shadow:
     /* Soft outer glow */
     0 20px 60px rgba(0, 0, 0, 0.15),
@@ -65,9 +65,9 @@
     /* Specular highlights - top left (cool light) */
     inset 10px 10px 20px rgba(255, 255, 255, 0.2),
     inset 2px 2px 5px rgba(255, 255, 255, 0.3),
-    /* Specular highlights - bottom right (green light) */
-    inset -10px -10px 20px rgba(76, 175, 80, 0.05),
-    inset -2px -2px 30px rgba(76, 175, 80, 0.08),
+    /* Specular highlights - bottom right (subtle) */
+    inset -10px -10px 20px rgba(0, 0, 0, 0.02),
+    inset -2px -2px 30px rgba(0, 0, 0, 0.03),
     /* Refined edge definition */
     0 0 0 1px rgba(0, 0, 0, 0.06);
 
@@ -93,15 +93,15 @@
     0 10px 28px rgba(0, 0, 0, 0.14),
     inset 10px 10px 20px rgba(255, 255, 255, 0.25),
     inset 2px 2px 5px rgba(255, 255, 255, 0.35),
-    inset -10px -10px 20px rgba(76, 175, 80, 0.08),
-    inset -2px -2px 30px rgba(76, 175, 80, 0.1),
+    inset -10px -10px 20px rgba(0, 0, 0, 0.03),
+    inset -2px -2px 30px rgba(0, 0, 0, 0.04),
     0 0 0 1px rgba(0, 0, 0, 0.08);
   transform: translateY(-2px);
   border-color: rgba(255, 255, 255, 0.6);
 }
 
 /* ===================================
-   ICON - SUCCESS GRADIENT (GREEN)
+   ICON - MONOCHROME GRADIENT
    =================================== */
 
 .iconContainer {
@@ -113,15 +113,15 @@
   height: 40px;
   border-radius: 50%;
 
-  /* Success color gradient - Green tones */
-  background: linear-gradient(135deg, #4CAF50 0%, #66BB6A 50%, #81C784 100%);
+  /* Monochrome gradient - Black/White */
+  background: linear-gradient(135deg, #2a2a2a 0%, #4a4a4a 50%, #6a6a6a 100%);
 
   /* Multi-layered glow for depth */
   box-shadow:
-    /* Vibrant colored glow */
-    0 4px 20px rgba(76, 175, 80, 0.4),
+    /* Subtle shadow */
+    0 4px 20px rgba(0, 0, 0, 0.2),
     /* Soft outer glow */
-    0 2px 10px rgba(76, 175, 80, 0.3),
+    0 2px 10px rgba(0, 0, 0, 0.15),
     /* Inner highlight for 3D effect */
     inset 0 1px 0 rgba(255, 255, 255, 0.4);
 

@@ -65,7 +65,7 @@ const RestoreToast: React.FC<RestoreToastProps> = ({
           <Confetti
             particleCount={60}
             durationMs={2000}
-            colors={['#4CAF50', '#81C784', '#A5D6A7', '#C8E6C9', '#E8F5E9']}
+            colors={['#000000', '#333333', '#666666', '#999999', '#CCCCCC']}
           />
         </div>
       )}

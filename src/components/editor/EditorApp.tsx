@@ -3,6 +3,7 @@ import { browser } from 'wxt/browser';
 import { articleService, UpdateArticleDto, VersionHistoryItem } from '../../services/articleService';
 import EditorWrapper from '../sidepanel/Editor/Editor';
 import VersionHistoryPanel from './VersionHistoryPanel';
+import RestoreToast from './RestoreToast';
 import { IoSave, IoClose, IoArrowBack, IoTimeOutline } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import { useI18n } from '../../hooks/useI18n';
@@ -38,6 +39,11 @@ const EditorApp: React.FC = () => {
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [previewingVersion, setPreviewingVersion] = useState<VersionHistoryItem | null>(null);
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | undefined>(undefined);
+
+  // Toast state
+  const [showRestoreToast, setShowRestoreToast] = useState(false);
+  const [restoredVersionInfo, setRestoredVersionInfo] = useState<{ versionNumber: number; timestamp: string } | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
 
   // 언어 설정 초기화 및 실시간 변경 감지
   useEffect(() => {
@@ -385,9 +391,16 @@ const EditorApp: React.FC = () => {
       // Close version history panel
       setShowVersionHistory(false);
 
-      alert('Version restored successfully!');
+      // Show success toast
+      setRestoredVersionInfo({
+        versionNumber: version.versionNumber,
+        timestamp: formatRelativeTime(version.createdAt),
+      });
+      setShowRestoreToast(true);
     } catch (error: any) {
       console.error('Failed to restore version:', error);
+      // Show error message
+      setRestoreError(error.message || 'Unknown error');
       throw error;
     }
   }, [editorData, applyArticleContent]);
@@ -407,6 +420,15 @@ const EditorApp: React.FC = () => {
       alert('Failed to load current version');
     }
   }, [editorData, applyArticleContent]);
+
+  const handleToastClose = useCallback(() => {
+    setShowRestoreToast(false);
+    setRestoredVersionInfo(null);
+  }, []);
+
+  const handleErrorClose = useCallback(() => {
+    setRestoreError(null);
+  }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -464,6 +486,18 @@ const EditorApp: React.FC = () => {
 
   return (
     <div className={styles.editorContainer}>
+      {/* Error banner */}
+      {restoreError && (
+        <div className={styles.errorBanner}>
+          <div className={styles.errorText}>
+            Failed to restore version: {restoreError}
+          </div>
+          <button onClick={handleErrorClose} className={styles.errorCloseButton}>
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Version preview banner */}
       {previewingVersion && (
         <div className={styles.versionPreviewBanner}>
@@ -557,6 +591,15 @@ const EditorApp: React.FC = () => {
           }}
           onVersionSelect={handleVersionSelect}
           onRestore={handleVersionRestore}
+        />
+      )}
+
+      {/* Restore Success Toast */}
+      {showRestoreToast && restoredVersionInfo && (
+        <RestoreToast
+          versionNumber={restoredVersionInfo.versionNumber}
+          timestamp={restoredVersionInfo.timestamp}
+          onClose={handleToastClose}
         />
       )}
     </div>
