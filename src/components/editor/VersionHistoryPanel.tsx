@@ -26,6 +26,8 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
     const [error, setError] = useState<string | null>(null);
     const [selectedVersionNumber, setSelectedVersionNumber] = useState<number | null>(null);
     const [restoring, setRestoring] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [versionToRestore, setVersionToRestore] = useState<VersionHistoryItem | null>(null);
 
     // Load versions on mount
     useEffect(() => {
@@ -81,26 +83,37 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
         onVersionSelect(version);
     }, [onVersionSelect]);
 
-    // Handle restore
-    const handleRestore = useCallback(async (version: VersionHistoryItem) => {
+    // Handle restore button click - show modal
+    const handleRestoreClick = useCallback((version: VersionHistoryItem) => {
         if (restoring) return;
+        setVersionToRestore(version);
+        setShowConfirmModal(true);
+    }, [restoring]);
 
-        const confirmRestore = window.confirm(
-            `Are you sure you want to restore this version from ${formatRelativeTime(version.createdAt)}?\n\nThis will create a new version with this content.`
-        );
-
-        if (!confirmRestore) return;
+    // Handle confirmed restore
+    const handleConfirmRestore = useCallback(async () => {
+        if (!versionToRestore || restoring) return;
 
         try {
             setRestoring(true);
-            await onRestore(version);
+            await onRestore(versionToRestore);
+            setShowConfirmModal(false);
+            setVersionToRestore(null);
         } catch (err: any) {
             console.error('Failed to restore version:', err);
             alert(`Failed to restore version: ${err.message || 'Unknown error'}`);
         } finally {
             setRestoring(false);
         }
-    }, [onRestore, restoring]);
+    }, [versionToRestore, restoring, onRestore]);
+
+    // Handle modal close
+    const handleCloseModal = useCallback(() => {
+        if (!restoring) {
+            setShowConfirmModal(false);
+            setVersionToRestore(null);
+        }
+    }, [restoring]);
 
     return (
         <>
@@ -181,7 +194,7 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    handleRestore(version);
+                                                    handleRestoreClick(version);
                                                 }}
                                                 disabled={restoring}
                                                 className={styles.versionRestoreButton}
@@ -196,6 +209,51 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                     )}
                 </div>
             </div>
+
+            {/* Confirm Modal */}
+            {showConfirmModal && versionToRestore && (
+                <div className={styles.confirmModalOverlay} onClick={handleCloseModal}>
+                    <div className={styles.confirmModalContent} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.confirmModalHeader}>
+                            <h3 className={styles.confirmModalTitle}>
+                                {t('editor_restoreVersion')}
+                            </h3>
+                            <button
+                                onClick={handleCloseModal}
+                                disabled={restoring}
+                                className={styles.confirmModalCloseButton}
+                                aria-label={t('common_close')}
+                            >
+                                <IoClose size={20} />
+                            </button>
+                        </div>
+                        <div className={styles.confirmModalBody}>
+                            <p className={styles.confirmModalMessage}>
+                                {formatRelativeTime(versionToRestore.createdAt)} 버전을 복원하시겠습니까?
+                            </p>
+                            <p className={styles.confirmModalInfo}>
+                                새 버전이 생성되며, 현재 내용은 버전 히스토리에 저장됩니다.
+                            </p>
+                        </div>
+                        <div className={styles.confirmModalFooter}>
+                            <button
+                                onClick={handleCloseModal}
+                                disabled={restoring}
+                                className={styles.confirmModalCancelButton}
+                            >
+                                {t('common_cancel')}
+                            </button>
+                            <button
+                                onClick={handleConfirmRestore}
+                                disabled={restoring}
+                                className={styles.confirmModalConfirmButton}
+                            >
+                                {restoring ? t('editor_restoring') : t('editor_restoreVersion')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
