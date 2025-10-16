@@ -309,7 +309,7 @@ export class ArticleService {
 
     /**
      * 아티클 버전 히스토리 조회
-     * GET /api/v1/articles/:id/versions
+     * GET /v1/articles/:id/versions
      */
     async getArticleVersions(articleId: number): Promise<VersionHistoryItem[]> {
         return this.apiRequest(`/v1/articles/${articleId}/versions`, {
@@ -319,7 +319,7 @@ export class ArticleService {
 
     /**
      * 특정 버전으로 복원
-     * POST /api/v1/articles/:id/restore/:versionNumber
+     * POST /v1/articles/:id/restore/:versionNumber
      */
     async restoreVersion(articleId: number, versionNumber: number): Promise<ArticleResponse> {
         return this.apiRequest(`/v1/articles/${articleId}/restore/${versionNumber}`, {
