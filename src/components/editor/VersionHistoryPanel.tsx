@@ -37,10 +37,29 @@ const VersionHistoryPanel: React.FC<VersionHistoryPanelProps> = ({
                 const sortedVersions = data.sort((a, b) => b.versionNumber - a.versionNumber);
 
                 // Calculate character counts
-                const versionsWithCounts = sortedVersions.map(v => ({
-                    ...v,
-                    characterCount: getCharacterCount(v.content)
-                }));
+                const versionsWithCounts = sortedVersions.map(v => {
+                    let characterCount: number;
+
+                    if (v.contentFormat === 'tiptap-json') {
+                        try {
+                            // Parse TipTap JSON and extract text
+                            const parsedContent = JSON.parse(v.content);
+                            characterCount = getCharacterCount(parsedContent);
+                        } catch (error) {
+                            // If parsing fails, treat as plain text
+                            console.warn('Failed to parse TipTap JSON for character count:', error);
+                            characterCount = getCharacterCount(v.content);
+                        }
+                    } else {
+                        // Markdown or plain text
+                        characterCount = getCharacterCount(v.content);
+                    }
+
+                    return {
+                        ...v,
+                        characterCount
+                    };
+                });
 
                 setVersions(versionsWithCounts);
             } catch (err: any) {

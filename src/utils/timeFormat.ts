@@ -54,14 +54,39 @@ export function formatRelativeTime(dateString: string): string {
 }
 
 /**
+ * Recursively extract plain text from TipTap JSON structure
+ */
+function extractTextFromTipTapJSON(node: any): string {
+    if (!node) return '';
+
+    // If it's a text node, return its text
+    if (node.type === 'text' && node.text) {
+        return node.text;
+    }
+
+    // If it has content array, recursively process children
+    if (Array.isArray(node.content)) {
+        return node.content.map(extractTextFromTipTapJSON).join('');
+    }
+
+    // If the node itself is an array
+    if (Array.isArray(node)) {
+        return node.map(extractTextFromTipTapJSON).join('');
+    }
+
+    return '';
+}
+
+/**
  * Calculate character count from content
+ * @param content - string (markdown) or TipTap JSON object
  */
 export function getCharacterCount(content: string | object): number {
     if (typeof content === 'string') {
         // Remove markdown syntax and count actual characters
         return content.replace(/[#*_`~\[\]\(\)]/g, '').trim().length;
     } else {
-        // For JSON content, stringify and count
-        return JSON.stringify(content).length;
+        // For TipTap JSON content, extract actual text
+        return extractTextFromTipTapJSON(content).length;
     }
 }
