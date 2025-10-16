@@ -270,6 +270,17 @@ const EditorApp: React.FC = () => {
         session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
       }).catch(() => {});
 
+      // Update current version number after save
+      try {
+        const versions = await articleService.getArticleVersions(editorData.articleId);
+        if (versions.length > 0) {
+          setCurrentVersionNumber(versions[0].versionNumber);
+        }
+      } catch (error) {
+        console.warn('Failed to update version number after save:', error);
+        // Continue - non-critical
+      }
+
       // 저장 성공 시 변경사항 플래그 및 실행 취소 상태 초기화
       setHasChanges(false);
       setCanUndo(false);
