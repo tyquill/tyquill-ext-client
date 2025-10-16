@@ -411,6 +411,25 @@ const koTranslations = {
   editor_undo: "실행 취소 (Ctrl+Z)",
   editor_redo: "다시 실행 (Ctrl+Y)",
   editor_placeholder: "내용을 입력하세요...",
+
+  // Editor - Version History
+  editor_versionHistoryTitle: "버전 히스토리",
+  editor_closeEsc: "닫기 (Esc)",
+  editor_loadingVersions: "버전 불러오는 중...",
+  editor_noVersions: "버전 히스토리가 없습니다",
+  editor_restoring: "복원 중...",
+  editor_restoreVersion: "이 버전 복원",
+  editor_viewingVersion: "버전 보기",
+  editor_backToCurrent: "현재 버전으로",
+  editor_saved: "저장됨",
+  editor_unsaved: "저장 안 됨",
+  editor_saving: "저장 중...",
+  editor_versionHistoryTooltip: "버전 히스토리 (Cmd+H)",
+  editor_saveTooltip: "저장 (Cmd+S)",
+  editor_closeTooltip: "닫기 (Esc)",
+  editor_characters: "자",
+  editor_restoreCompleted: "버전 복원 완료!",
+  editor_restoredToVersion: "버전 {versionNumber}로 복원되었습니다",
 };
 
 // 영어 번역 데이터
@@ -824,6 +843,25 @@ const enTranslations = {
   editor_undo: "Undo (Ctrl+Z)",
   editor_redo: "Redo (Ctrl+Y)",
   editor_placeholder: "Enter content...",
+
+  // Editor - Version History
+  editor_versionHistoryTitle: "Version History",
+  editor_closeEsc: "Close (Esc)",
+  editor_loadingVersions: "Loading versions...",
+  editor_noVersions: "No version history available",
+  editor_restoring: "Restoring...",
+  editor_restoreVersion: "Restore this version",
+  editor_viewingVersion: "Viewing version from",
+  editor_backToCurrent: "Back to current",
+  editor_saved: "Saved",
+  editor_unsaved: "Unsaved",
+  editor_saving: "Saving...",
+  editor_versionHistoryTooltip: "Version History (Cmd+H)",
+  editor_saveTooltip: "Save (Cmd+S)",
+  editor_closeTooltip: "Close (Esc)",
+  editor_characters: " characters",
+  editor_restoreCompleted: "Version restored!",
+  editor_restoredToVersion: "Restored to version {versionNumber}",
 };
 
 export type TranslationKey = keyof typeof koTranslations;

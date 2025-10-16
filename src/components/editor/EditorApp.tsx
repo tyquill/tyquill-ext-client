@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { browser } from 'wxt/browser';
-import { articleService, UpdateArticleDto } from '../../services/articleService';
+import { articleService, UpdateArticleDto, VersionHistoryItem } from '../../services/articleService';
 import EditorWrapper from '../sidepanel/Editor/Editor';
-import { IoSave, IoClose, IoArrowBack } from 'react-icons/io5';
+import VersionHistoryPanel from './VersionHistoryPanel';
+import RestoreToast from './RestoreToast';
+import { IoSave, IoClose, IoArrowBack, IoTimeOutline } from 'react-icons/io5';
 import { trackPageViewBridge, trackPageExitBridge, trackArchiveEditStartedBridge, trackArchiveEditSavedBridge, trackArchiveEditCancelledBridge, trackArchiveFullscreenEditorOpenedBridge } from '../../analytics/bridge';
 import { useI18n } from '../../hooks/useI18n';
 import { useLanguageStore } from '../../stores/languageStore';
+import { formatRelativeTime } from '../../utils/timeFormat';
 import styles from './EditorApp.module.css';
 // Import NotionEditor CSS to ensure it's loaded in dev mode
 import '../sidepanel/Editor/NotionEditor.module.css';
@@ -32,9 +35,35 @@ const EditorApp: React.FC = () => {
   const [canUndo, setCanUndo] = useState(false);
   const pageStartTimeRef = useRef<number>(Date.now());
 
-  // 언어 설정 초기화
+  // Version history state
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewingVersion, setPreviewingVersion] = useState<VersionHistoryItem | null>(null);
+  const [currentVersionNumber, setCurrentVersionNumber] = useState<number | undefined>(undefined);
+
+  // Toast state
+  const [showRestoreToast, setShowRestoreToast] = useState(false);
+  const [restoredVersionInfo, setRestoredVersionInfo] = useState<{ versionNumber: number; timestamp: string } | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+
+  // 언어 설정 초기화 및 실시간 변경 감지
   useEffect(() => {
     initializeLanguage();
+
+    // Storage 변경 감지 - 사이드 패널에서 언어가 변경되면 즉시 반영
+    const handleStorageChange = (
+      changes: { [key: string]: browser.Storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName === 'sync' && changes['tyquill-language-preference']) {
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, [initializeLanguage]);
 
   // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
@@ -101,7 +130,18 @@ const EditorApp: React.FC = () => {
               timestamp: Date.now()
             }
           });
-          
+
+          // Load current version number
+          try {
+            const versions = await articleService.getArticleVersions(data.articleId);
+            if (versions.length > 0) {
+              setCurrentVersionNumber(versions[0].versionNumber);
+            }
+          } catch (error) {
+            console.warn('Failed to load current version number:', error);
+            // Continue without version number - non-critical
+          }
+
         } catch (error) {
           console.error('Failed to load editor data:', error);
           console.error('Session key:', sessionKey);
@@ -236,6 +276,17 @@ const EditorApp: React.FC = () => {
         session_duration: Math.round((Date.now() - pageStartTimeRef.current) / 1000)
       }).catch(() => {});
 
+      // Update current version number after save
+      try {
+        const versions = await articleService.getArticleVersions(editorData.articleId);
+        if (versions.length > 0) {
+          setCurrentVersionNumber(versions[0].versionNumber);
+        }
+      } catch (error) {
+        console.warn('Failed to update version number after save:', error);
+        // Continue - non-critical
+      }
+
       // 저장 성공 시 변경사항 플래그 및 실행 취소 상태 초기화
       setHasChanges(false);
       setCanUndo(false);
@@ -247,11 +298,6 @@ const EditorApp: React.FC = () => {
           timestamp: Date.now()
         }
       });
-
-      // 잠시 후 페이지 닫기
-      setTimeout(() => {
-        window.close();
-      }, 500);
 
     } catch (error: any) {
       console.error('Save failed:', error);
@@ -287,15 +333,130 @@ const EditorApp: React.FC = () => {
     window.close();
   }, [hasChanges, editorData, title, content]);
 
+  // Helper function to apply article content with proper parsing
+  const applyArticleContent = useCallback((
+    content: string,
+    format: 'markdown' | 'tiptap-json'
+  ) => {
+    if (format === 'tiptap-json') {
+      try {
+        const parsedContent = JSON.parse(content);
+        setContent(parsedContent);
+        setContentFormat('tiptap-json');
+      } catch (error) {
+        console.warn('Failed to parse TipTap JSON, falling back to markdown:', error);
+        setContent(content);
+        setContentFormat('markdown');
+      }
+    } else {
+      setContent(content);
+      setContentFormat('markdown');
+    }
+  }, []);
+
+  // Version history handlers
+  const handleVersionSelect = useCallback((version: VersionHistoryItem) => {
+    // Preview the selected version
+    setPreviewingVersion(version);
+    setTitle(version.title);
+    applyArticleContent(version.content, version.contentFormat);
+  }, [applyArticleContent]);
+
+  const handleVersionRestore = useCallback(async (version: VersionHistoryItem) => {
+    if (!editorData) return;
+
+    try {
+      // Call restore API
+      const restored = await articleService.restoreVersion(editorData.articleId, version.versionNumber);
+
+      // Update editor state with restored content
+      setTitle(restored.title);
+      applyArticleContent(restored.content, restored.contentFormat || 'markdown');
+
+      // Update current version number after restore
+      try {
+        const versions = await articleService.getArticleVersions(editorData.articleId);
+        if (versions.length > 0) {
+          setCurrentVersionNumber(versions[0].versionNumber);
+        }
+      } catch (error) {
+        console.warn('Failed to update version number after restore:', error);
+      }
+
+      // Clear preview state
+      setPreviewingVersion(null);
+      setHasChanges(false);
+      setCanUndo(false);
+
+      // Close version history panel
+      setShowVersionHistory(false);
+
+      // Show success toast
+      setRestoredVersionInfo({
+        versionNumber: version.versionNumber,
+        timestamp: formatRelativeTime(version.createdAt),
+      });
+      setShowRestoreToast(true);
+    } catch (error: any) {
+      console.error('Failed to restore version:', error);
+      // Show error message
+      setRestoreError(error.message || 'Unknown error');
+      throw error;
+    }
+  }, [editorData, applyArticleContent]);
+
+  const handleBackToCurrent = useCallback(async () => {
+    if (!editorData) return;
+
+    try {
+      // Reload current article
+      const current = await articleService.getArticle(editorData.articleId);
+
+      setTitle(current.title);
+      applyArticleContent(current.content, current.contentFormat || 'markdown');
+      setPreviewingVersion(null);
+    } catch (error) {
+      console.error('Failed to load current version:', error);
+      alert('Failed to load current version');
+    }
+  }, [editorData, applyArticleContent]);
+
+  const handleToastClose = useCallback(() => {
+    setShowRestoreToast(false);
+    setRestoredVersionInfo(null);
+  }, []);
+
+  const handleErrorClose = useCallback(() => {
+    setRestoreError(null);
+  }, []);
+
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
       e.preventDefault();
       handleSave();
     }
     if (e.key === 'Escape') {
-      handleCancel();
+      if (showVersionHistory) {
+        setShowVersionHistory(false);
+        setPreviewingVersion(null);
+      } else if (previewingVersion) {
+        handleBackToCurrent();
+      } else {
+        handleCancel();
+      }
     }
-  }, [handleSave, handleCancel]);
+    // Cmd/Ctrl + H for version history
+    if ((e.metaKey || e.ctrlKey) && e.key === 'h') {
+      e.preventDefault();
+      setShowVersionHistory(prev => {
+        // 패널을 닫을 때는 프리뷰도 함께 리셋
+        if (prev) {
+          setPreviewingVersion(null);
+        }
+        return !prev;
+      });
+    }
+  }, [handleSave, handleCancel, showVersionHistory, previewingVersion, handleBackToCurrent]);
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
@@ -325,59 +486,121 @@ const EditorApp: React.FC = () => {
 
   return (
     <div className={styles.editorContainer}>
-      <div className={styles.header}>
-        <div className={styles.headerContent}>
-          <div className={styles.titleSection}>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={styles.titleInput}
-              placeholder="Enter title"
-            />
+      {/* Error banner */}
+      {restoreError && (
+        <div className={styles.errorBanner}>
+          <div className={styles.errorText}>
+            Failed to restore version: {restoreError}
           </div>
-          
-          <div className={styles.actionButtons}>
+          <button onClick={handleErrorClose} className={styles.errorCloseButton}>
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Version preview banner */}
+      {previewingVersion && (
+        <div className={styles.versionPreviewBanner}>
+          <div className={styles.versionPreviewText}>
+            {t('editor_viewingVersion')} {formatRelativeTime(previewingVersion.createdAt)}
+          </div>
+          <div className={styles.versionPreviewActions}>
             <button
-              onClick={handleSave}
-              disabled={saving || !hasChanges}
-              className={`${styles.saveButton} ${hasChanges ? styles.hasChanges : ''}`}
-              title="Save (Ctrl+S)"
+              onClick={handleBackToCurrent}
+              className={styles.backToCurrentButton}
             >
-              <IoSave size={20} />
-              {saving ? 'Saving...' : t('common_save')}
-            </button>
-            
-            <button
-              onClick={handleCancel}
-              disabled={saving}
-              className={styles.cancelButton}
-              title="Cancel (Esc)"
-            >
-              <IoClose size={20} />
-              {t('common_cancel')}
+              {t('editor_backToCurrent')}
             </button>
           </div>
         </div>
+      )}
+
+      {/* Subtle action buttons in top-right corner */}
+      <div className={styles.actionBar}>
+        <div className={styles.statusIndicator}>
+          {saving ? (
+            <span className={styles.savingStatus}>{t('editor_saving')}</span>
+          ) : hasChanges ? (
+            <span className={styles.unsavedStatus}>{t('editor_unsaved')}</span>
+          ) : (
+            <span className={styles.savedStatus}>{t('editor_saved')}</span>
+          )}
+        </div>
+
+        <div className={styles.actionButtons}>
+          <button
+            onClick={() => setShowVersionHistory(true)}
+            className={styles.versionHistoryButton}
+            title={t('editor_versionHistoryTooltip')}
+          >
+            <IoTimeOutline size={16} />
+          </button>
+
+          <button
+            onClick={handleSave}
+            disabled={saving || !hasChanges || !!previewingVersion}
+            className={styles.saveButton}
+            title={t('editor_saveTooltip')}
+          >
+            <IoSave size={16} />
+          </button>
+
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            className={styles.cancelButton}
+            title={t('editor_closeTooltip')}
+          >
+            <IoClose size={16} />
+          </button>
+        </div>
       </div>
 
-      <div className={styles.editorSection}>
+      {/* Centered content area */}
+      <div className={styles.contentArea}>
+        {/* Large title input */}
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className={styles.titleInput}
+          placeholder="Untitled"
+        />
+
+        {/* Editor with seamless integration */}
         <div className={styles.editorWrapper}>
           <EditorWrapper
             content={content}
             contentFormat={contentFormat}
             onChange={handleEditorChange}
-            placeholder="Enter content..."
-            readOnly={saving}
+            placeholder="Type something..."
+            readOnly={saving || !!previewingVersion}
             onHistoryStateChange={handleHistoryStateChange}
           />
         </div>
       </div>
 
-      {hasChanges && (
-        <div className={styles.changesIndicator}>
-          You have unsaved changes
-        </div>
+      {/* Version History Panel */}
+      {showVersionHistory && editorData && (
+        <VersionHistoryPanel
+          articleId={editorData.articleId}
+          currentVersionNumber={currentVersionNumber}
+          onClose={() => {
+            setShowVersionHistory(false);
+            setPreviewingVersion(null);
+          }}
+          onVersionSelect={handleVersionSelect}
+          onRestore={handleVersionRestore}
+        />
+      )}
+
+      {/* Restore Success Toast */}
+      {showRestoreToast && restoredVersionInfo && (
+        <RestoreToast
+          versionNumber={restoredVersionInfo.versionNumber}
+          timestamp={restoredVersionInfo.timestamp}
+          onClose={handleToastClose}
+        />
       )}
     </div>
   );
