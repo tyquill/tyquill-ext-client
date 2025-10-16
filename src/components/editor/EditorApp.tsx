@@ -39,9 +39,25 @@ const EditorApp: React.FC = () => {
   const [previewingVersion, setPreviewingVersion] = useState<VersionHistoryItem | null>(null);
   const [currentVersionNumber, setCurrentVersionNumber] = useState<number | undefined>(undefined);
 
-  // 언어 설정 초기화
+  // 언어 설정 초기화 및 실시간 변경 감지
   useEffect(() => {
     initializeLanguage();
+
+    // Storage 변경 감지 - 사이드 패널에서 언어가 변경되면 즉시 반영
+    const handleStorageChange = (
+      changes: { [key: string]: browser.Storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName === 'sync' && changes['tyquill-language-preference']) {
+        initializeLanguage();
+      }
+    };
+
+    browser.storage.onChanged.addListener(handleStorageChange);
+
+    return () => {
+      browser.storage.onChanged.removeListener(handleStorageChange);
+    };
   }, [initializeLanguage]);
 
   // browser.storage.local에서 데이터 읽기 및 편집기 상태 설정
