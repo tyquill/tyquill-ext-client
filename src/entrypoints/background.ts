@@ -558,18 +558,26 @@ export default defineBackground(() => {
   /**
    * Save container text sent by LinkedIn button to API
    */
-  async function handleScrapExtracted(data: { content: string; title?: string; url?: string }) {
+  async function handleScrapExtracted(data: {
+    content: string;
+    title?: string;
+    url?: string;
+    faviconUrl?: string;
+    siteName?: string;
+  }) {
     if (!data?.content || !data.content.trim()) {
       throw new Error('Empty content');
     }
 
-    const pickTitle = () => (data.title && data.title.trim()) || 'LinkedIn Feed';
+    const pickTitle = () => (data.title && data.title.trim()) || data.siteName || 'LinkedIn Feed';
 
     const scrapResult = {
       content: data.content,
       metadata: {
         title: pickTitle(),
         url: data.url || '',
+        favicon: data.faviconUrl || '',
+        siteName: data.siteName || '',
       },
       selectionOnly: false,
       timestamp: new Date().toISOString(),

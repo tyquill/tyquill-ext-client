@@ -125,12 +125,26 @@ function ensureStylesInjected(): void {
   document.head.appendChild(style);
 }
 
+function extractFavicon(): string | null {
+  // Try to find favicon from link tags
+  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
+  if (iconLink?.href) {
+    return iconLink.href;
+  }
+
+  // Fallback to default favicon.ico
+  return `${window.location.origin}/favicon.ico`;
+}
+
 async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
   const container = button.closest('.fie-impression-container') as HTMLElement | null;
   const content = collectContainerMarkdown(container);
   const author = extractSenderName(container);
   const title = author ? `Linkedin 피드 | ${author}` : 'Linkedin 피드';
   const permalink = extractPermalink(container) || window.location.href;
+
+  // Extract favicon
+  const faviconUrl = extractFavicon();
 
   // Track scraping event
   try {
@@ -153,7 +167,13 @@ async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title, url: permalink }
+      data: {
+        content,
+        title,
+        url: permalink,
+        faviconUrl,
+        siteName: 'LinkedIn'
+      }
     });
   } catch (err) {}
 }

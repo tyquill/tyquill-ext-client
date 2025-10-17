@@ -89,6 +89,17 @@ function ensureStylesInjected(): void {
   document.head.appendChild(style);
 }
 
+function extractFavicon(): string | null {
+  // Try to find favicon from link tags
+  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
+  if (iconLink?.href) {
+    return iconLink.href;
+  }
+
+  // Fallback to default favicon.ico
+  return `${window.location.origin}/favicon.ico`;
+}
+
 function applyIconTheme(target?: ParentNode): void {
   const isDark = isYouTubeDarkTheme();
   const filterValue = isDark ? 'none' : 'invert(1)';
@@ -221,6 +232,9 @@ async function doScrapFromYouTubeButton(): Promise<boolean> {
     const main = extractDescription();
     const content = normalizeText(main);
 
+    // Extract favicon
+    const faviconUrl = extractFavicon();
+
     // Track scraping event
     try {
       await trackPlatformContentScrapedBridge({
@@ -240,7 +254,13 @@ async function doScrapFromYouTubeButton(): Promise<boolean> {
 
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title: `YouTube | ${title}`, url }
+      data: {
+        content,
+        title: `YouTube | ${title}`,
+        url,
+        faviconUrl,
+        siteName: 'YouTube'
+      }
     });
     return true;
   } catch {

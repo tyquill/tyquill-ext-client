@@ -23,6 +23,17 @@ function ensureStylesInjected(): void {
   document.head.appendChild(style);
 }
 
+function extractFavicon(): string | null {
+  // Try to find favicon from link tags
+  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
+  if (iconLink?.href) {
+    return iconLink.href;
+  }
+
+  // Fallback to default favicon.ico
+  return `${window.location.origin}/favicon.ico`;
+}
+
 function ensureGlobalTooltip(): HTMLDivElement {
   if (tyquillXTooltipEl && document.body.contains(tyquillXTooltipEl)) return tyquillXTooltipEl;
   const el = document.createElement('div');
@@ -459,6 +470,9 @@ async function doScrapFromXButton(buttonEl: Element): Promise<void> {
     content = content ? `${content}\n\n${images.join('\n')}` : images.join('\n');
   }
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -475,7 +489,13 @@ async function doScrapFromXButton(buttonEl: Element): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title, url }
+      data: {
+        content,
+        title,
+        url,
+        faviconUrl,
+        siteName: 'X'
+      }
     });
   } catch {}
 }

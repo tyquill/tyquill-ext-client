@@ -26,6 +26,17 @@ function ensureStylesInjected(): void {
   document.head.appendChild(style);
 }
 
+function extractFavicon(): string | null {
+  // Try to find favicon from link tags
+  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
+  if (iconLink?.href) {
+    return iconLink.href;
+  }
+
+  // Fallback to default favicon.ico
+  return `${window.location.origin}/favicon.ico`;
+}
+
 function createInlineTyquillSVG(): SVGElement {
   const svgNS = 'http://www.w3.org/2000/svg';
   const svg = document.createElementNS(svgNS, 'svg');
@@ -396,6 +407,9 @@ async function doScrapFromThreadsButton(buttonEl: Element): Promise<void> {
     content = content ? `${content}\n\n${images.join('\n')}` : images.join('\n');
   }
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -417,7 +431,13 @@ async function doScrapFromThreadsButton(buttonEl: Element): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title, url }
+      data: {
+        content,
+        title,
+        url,
+        faviconUrl,
+        siteName: 'Threads'
+      }
     });
   } catch {}
 }

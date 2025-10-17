@@ -148,6 +148,17 @@ function ensureStylesInjected(): void {
   document.head.appendChild(style);
 }
 
+function extractFavicon(): string | null {
+  // Try to find favicon from link tags
+  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
+  if (iconLink?.href) {
+    return iconLink.href;
+  }
+
+  // Fallback to default favicon.ico
+  return `${window.location.origin}/favicon.ico`;
+}
+
 function createTyquillButton(): HTMLDivElement {
   const wrapper = document.createElement('div');
   wrapper.className = 'tyquill-reddit-action-wrapper';
@@ -375,6 +386,9 @@ async function doScrapFromRedditButton(buttonEl: HTMLElement): Promise<void> {
 
   const scrapTitle = title || `Reddit Post from r/${subreddit}`;
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track the scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -401,7 +415,9 @@ async function doScrapFromRedditButton(buttonEl: HTMLElement): Promise<void> {
       data: {
         content: fullContent,
         title: scrapTitle,
-        url: url
+        url: url,
+        faviconUrl,
+        siteName: 'Reddit'
       }
     });
   } catch (error) {
