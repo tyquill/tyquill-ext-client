@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, X_SELECTORS } from './constants';
 import { X_STYLE_TEXT } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 type CleanupFn = () => void;
 
@@ -21,17 +22,6 @@ function ensureStylesInjected(): void {
   style.id = 'tyquill-x-action-styles';
   style.textContent = X_STYLE_TEXT;
   document.head.appendChild(style);
-}
-
-function extractFavicon(): string | null {
-  // Try to find favicon from link tags
-  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
-  if (iconLink?.href) {
-    return iconLink.href;
-  }
-
-  // Fallback to default favicon.ico
-  return `${window.location.origin}/favicon.ico`;
 }
 
 function ensureGlobalTooltip(): HTMLDivElement {

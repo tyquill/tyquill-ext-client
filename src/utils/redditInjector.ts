@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 type CleanupFn = () => void;
 
@@ -146,17 +147,6 @@ function ensureStylesInjected(): void {
   style.id = 'tyquill-reddit-action-styles';
   style.textContent = REDDIT_STYLE_TEXT;
   document.head.appendChild(style);
-}
-
-function extractFavicon(): string | null {
-  // Try to find favicon from link tags
-  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
-  if (iconLink?.href) {
-    return iconLink.href;
-  }
-
-  // Fallback to default favicon.ico
-  return `${window.location.origin}/favicon.ico`;
 }
 
 function createTyquillButton(): HTMLDivElement {

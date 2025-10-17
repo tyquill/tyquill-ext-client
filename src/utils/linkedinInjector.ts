@@ -2,6 +2,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 // 대상 부모 컨테이너: feed-shared-control-menu display-flex
 //   feed-shared-update-v2__control-menu absolute text-align-right
@@ -123,17 +124,6 @@ function ensureStylesInjected(): void {
   style.id = 'tyquill-li-action-styles';
   style.textContent = LINKEDIN_STYLE_TEXT;
   document.head.appendChild(style);
-}
-
-function extractFavicon(): string | null {
-  // Try to find favicon from link tags
-  const iconLink = document.querySelector('link[rel*="icon"]') as HTMLLinkElement | null;
-  if (iconLink?.href) {
-    return iconLink.href;
-  }
-
-  // Fallback to default favicon.ico
-  return `${window.location.origin}/favicon.ico`;
 }
 
 async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
