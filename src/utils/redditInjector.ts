@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 type CleanupFn = () => void;
 
@@ -375,6 +376,9 @@ async function doScrapFromRedditButton(buttonEl: HTMLElement): Promise<void> {
 
   const scrapTitle = title || `Reddit Post from r/${subreddit}`;
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track the scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -401,7 +405,9 @@ async function doScrapFromRedditButton(buttonEl: HTMLElement): Promise<void> {
       data: {
         content: fullContent,
         title: scrapTitle,
-        url: url
+        url: url,
+        faviconUrl,
+        siteName: 'Reddit'
       }
     });
   } catch (error) {

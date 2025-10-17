@@ -2,6 +2,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, LINKEDIN_SELECTORS, LINKEDIN_STYLE_TEXT } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 // 대상 부모 컨테이너: feed-shared-control-menu display-flex
 //   feed-shared-update-v2__control-menu absolute text-align-right
@@ -132,6 +133,9 @@ async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
   const title = author ? `Linkedin 피드 | ${author}` : 'Linkedin 피드';
   const permalink = extractPermalink(container) || window.location.href;
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -153,7 +157,13 @@ async function doScrapFromButton(button: HTMLButtonElement): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title, url: permalink }
+      data: {
+        content,
+        title,
+        url: permalink,
+        faviconUrl,
+        siteName: 'LinkedIn'
+      }
     });
   } catch (err) {}
 }

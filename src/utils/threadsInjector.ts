@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, THREADS_SELECTORS, THREADS_STYLE_TEXT } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 type CleanupFn = () => void;
 
@@ -396,6 +397,9 @@ async function doScrapFromThreadsButton(buttonEl: Element): Promise<void> {
     content = content ? `${content}\n\n${images.join('\n')}` : images.join('\n');
   }
 
+  // Extract favicon
+  const faviconUrl = extractFavicon();
+
   // Track scraping event
   try {
     await trackPlatformContentScrapedBridge({
@@ -417,7 +421,13 @@ async function doScrapFromThreadsButton(buttonEl: Element): Promise<void> {
   try {
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title, url }
+      data: {
+        content,
+        title,
+        url,
+        faviconUrl,
+        siteName: 'Threads'
+      }
     });
   } catch {}
 }

@@ -10,6 +10,7 @@ import type {
   SidebarState,
   SidebarStateResponse
 } from '../types/messages';
+import type { ScrapExtractedData } from '../types/scrap';
 
 // WXT Analytics는 자동 초기화됨
 
@@ -556,20 +557,23 @@ export default defineBackground(() => {
   }
 
   /**
-   * Save container text sent by LinkedIn button to API
+   * Save scraped content from any platform injector to API
+   * Handles content from LinkedIn, X, Reddit, Threads, YouTube
    */
-  async function handleScrapExtracted(data: { content: string; title?: string; url?: string }) {
+  async function handleScrapExtracted(data: ScrapExtractedData) {
     if (!data?.content || !data.content.trim()) {
       throw new Error('Empty content');
     }
 
-    const pickTitle = () => (data.title && data.title.trim()) || 'LinkedIn Feed';
+    const pickTitle = () => (data.title && data.title.trim()) || data.siteName || 'LinkedIn Feed';
 
     const scrapResult = {
       content: data.content,
       metadata: {
         title: pickTitle(),
         url: data.url || '',
+        favicon: data.faviconUrl || '',
+        siteName: data.siteName || '',
       },
       selectionOnly: false,
       timestamp: new Date().toISOString(),

@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { WHITE_LOGO_URL, YT_SELECTORS, YT_STYLE_TEXT } from './constants';
 import { trackPlatformContentScrapedBridge } from '../analytics/bridge';
+import { extractFavicon } from './faviconExtractor';
 
 type CleanupFn = () => void;
 
@@ -221,6 +222,9 @@ async function doScrapFromYouTubeButton(): Promise<boolean> {
     const main = extractDescription();
     const content = normalizeText(main);
 
+    // Extract favicon
+    const faviconUrl = extractFavicon();
+
     // Track scraping event
     try {
       await trackPlatformContentScrapedBridge({
@@ -240,7 +244,13 @@ async function doScrapFromYouTubeButton(): Promise<boolean> {
 
     await browser.runtime.sendMessage({
       action: 'scrapExtracted',
-      data: { content, title: `YouTube | ${title}`, url }
+      data: {
+        content,
+        title: `YouTube | ${title}`,
+        url,
+        faviconUrl,
+        siteName: 'YouTube'
+      }
     });
     return true;
   } catch {
