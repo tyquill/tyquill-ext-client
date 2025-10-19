@@ -305,78 +305,33 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
       <div className={styles.mainContent}>
         <div className={styles.toolbar}>
-          <div className={styles.searchBar}>
-            <IoSearch size={18} className={styles.searchIcon} />
-            <input
-              type="text"
-              className={styles.searchInput}
-              placeholder={t('search_placeholder')}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          {/* Row 1: Search */}
+          <div className={styles.searchRow}>
+            <div className={styles.searchBar}>
+              <IoSearch size={18} className={styles.searchIcon} />
+              <input
+                type="text"
+                className={styles.searchInput}
+                placeholder={t('search_placeholder')}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label={t('search_placeholder')}
+              />
+            </div>
           </div>
 
-          <div className={styles.actionButtons}>
-            <Tooltip content={t('scrapPage_pageScrap')}>
-              <button
-                className={`${styles.actionButton} ${
-                  clipStatus === 'success' ? styles.actionButtonSuccess :
-                  clipStatus === 'error' ? styles.actionButtonError : ''
-                }`}
-                onClick={handleClipCurrentPage}
-                disabled={isClipping}
-                aria-label={t('scrapPage_pageScrap')}
-              >
-                {clipStatus === 'loading' && (
-                  <div className={styles.spinner} />
-                )}
-                {clipStatus === 'success' && (
-                  <IoCheckmark size={18} />
-                )}
-                {clipStatus === 'error' && (
-                  <IoClose size={18} />
-                )}
-                {clipStatus === 'idle' && (
-                  <FaBookmark size={16} />
-                )}
-              </button>
-            </Tooltip>
-
-            <Tooltip content={t('scrapPage_pdf')}>
-              <button
-                className={styles.actionButton}
-                onClick={() => {
-                  setShowPDFUploadModal(true);
-                  trackPDFUploadModalOpenedBridge();
-                }}
-                aria-label={t('scrapPage_pdf')}
-              >
-                <IoCloudUpload size={18} />
-              </button>
-            </Tooltip>
-          </div>
-
-          <div className={styles.filters}>
-            <Tooltip content={t('filter_content_type')}>
-              <select
-                className={styles.filterSelect}
-                value={contentTypeFilter}
-                onChange={(e) => setContentTypeFilter(e.target.value as any)}
-              >
-                <option value="all">{t('filter_all')}</option>
-                <option value="scrap">{t('filter_scraps')}</option>
-                <option value="article">{t('filter_articles')}</option>
-              </select>
-            </Tooltip>
-
+          {/* Row 2: Sort dropdown | Action buttons */}
+          <div className={styles.actionsRow}>
+            {/* Left: Sort dropdown */}
             <Tooltip content={t('sort_by')}>
               <select
-                className={styles.filterSelect}
+                className={styles.sortSelect}
                 value={`${sortBy}_${sortOrder}`}
                 onChange={(e) => {
                   const [newSortBy, newSortOrder] = e.target.value.split('_');
                   setSorting(newSortBy as any, newSortOrder as any);
                 }}
+                aria-label={t('sort_by')}
               >
                 <option value="createdAt_DESC">{t('sort_newest')}</option>
                 <option value="createdAt_ASC">{t('sort_oldest')}</option>
@@ -384,6 +339,47 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
                 <option value="title_DESC">{t('sort_title_desc')}</option>
               </select>
             </Tooltip>
+
+            {/* Right: Action buttons */}
+            <div className={styles.actionButtons}>
+              <Tooltip content={t('scrapPage_pageScrap')}>
+                <button
+                  className={`${styles.actionButton} ${
+                    clipStatus === 'success' ? styles.actionButtonSuccess :
+                    clipStatus === 'error' ? styles.actionButtonError : ''
+                  }`}
+                  onClick={handleClipCurrentPage}
+                  disabled={isClipping}
+                  aria-label={t('scrapPage_pageScrap')}
+                >
+                  {clipStatus === 'loading' && (
+                    <div className={styles.spinner} />
+                  )}
+                  {clipStatus === 'success' && (
+                    <IoCheckmark size={18} />
+                  )}
+                  {clipStatus === 'error' && (
+                    <IoClose size={18} />
+                  )}
+                  {clipStatus === 'idle' && (
+                    <FaBookmark size={16} />
+                  )}
+                </button>
+              </Tooltip>
+
+              <Tooltip content={t('scrapPage_pdf')}>
+                <button
+                  className={styles.actionButton}
+                  onClick={() => {
+                    setShowPDFUploadModal(true);
+                    trackPDFUploadModalOpenedBridge();
+                  }}
+                  aria-label={t('scrapPage_pdf')}
+                >
+                  <IoCloudUpload size={18} />
+                </button>
+              </Tooltip>
+            </div>
           </div>
         </div>
 
