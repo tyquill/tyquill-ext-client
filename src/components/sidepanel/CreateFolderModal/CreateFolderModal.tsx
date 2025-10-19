@@ -16,6 +16,32 @@ const PRESET_COLORS = [
   '#888888', // gray
 ];
 
+// Validation constants
+const MAX_FOLDER_NAME_LENGTH = 100;
+const INVALID_CHARS_REGEX = /[<>:"/\\|?*\x00-\x1F]/g; // Filesystem unsafe characters
+
+/**
+ * Validates folder name
+ * @returns error message if invalid, null if valid
+ */
+function validateFolderName(name: string): string | null {
+  const trimmedName = name.trim();
+
+  if (!trimmedName) {
+    return 'folder_name_required';
+  }
+
+  if (trimmedName.length > MAX_FOLDER_NAME_LENGTH) {
+    return `Folder name must be ${MAX_FOLDER_NAME_LENGTH} characters or less`;
+  }
+
+  if (INVALID_CHARS_REGEX.test(trimmedName)) {
+    return 'Folder name contains invalid characters (< > : " / \\ | ? *)';
+  }
+
+  return null;
+}
+
 export const CreateFolderModal: React.FC = () => {
   const { t } = useI18n();
   const { showSuccess, showError } = useToastHelpers();
@@ -32,8 +58,10 @@ export const CreateFolderModal: React.FC = () => {
   };
 
   const handleCreate = async () => {
-    if (!name.trim()) {
-      showError(t('common_error'), t('folder_name_required'));
+    // Validate folder name
+    const validationError = validateFolderName(name);
+    if (validationError) {
+      showError(t('common_error'), t(validationError as any) || validationError);
       return;
     }
 
@@ -42,8 +70,9 @@ export const CreateFolderModal: React.FC = () => {
       await createFolder(name.trim(), color);
       showSuccess(t('folder_created'), t('folder_created_success'));
       handleClose();
-    } catch (error: any) {
-      showError(t('common_error'), error.message || t('folder_create_failed'));
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : t('folder_create_failed');
+      showError(t('common_error'), errorMessage);
     } finally {
       setIsCreating(false);
     }
@@ -79,6 +108,7 @@ export const CreateFolderModal: React.FC = () => {
               onChange={(e) => setName(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={t('folder_name_placeholder')}
+              maxLength={MAX_FOLDER_NAME_LENGTH}
               autoFocus
             />
           </div>

@@ -458,6 +458,8 @@ const koTranslations = {
   folder_move_failed: "이동 실패",
   folder_remove_success: "제거 완료",
   folder_remove_failed: "제거 실패",
+  folder_delete_confirm_title: "폴더 삭제 확인",
+  folder_delete_confirm_message: "폴더 '{folderName}'를 삭제하시겠습니까? 폴더 내 모든 항목은 전체 항목으로 이동됩니다.",
 
   // Unified Content View
   menu_content: "콘텐츠",
@@ -942,6 +944,8 @@ const enTranslations = {
   folder_move_failed: "Move Failed",
   folder_remove_success: "Remove Complete",
   folder_remove_failed: "Remove Failed",
+  folder_delete_confirm_title: "Confirm Folder Deletion",
+  folder_delete_confirm_message: "Delete folder '{folderName}'? All items will be moved to root.",
 
   // Unified Content View
   content_type_scrap: "Scrap",
