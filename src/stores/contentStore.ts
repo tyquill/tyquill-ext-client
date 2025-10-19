@@ -173,7 +173,8 @@ export const useContentStore = create<ContentState>((set, get) => ({
         type: state.contentTypeFilter,
         search: state.searchQuery || undefined,
         tags: state.selectedTags.length > 0 ? state.selectedTags : undefined,
-        folderId: state.selectedFolderId ? state.selectedFolderId.toString() : undefined,
+        // When selectedFolderId is null, pass 'null' string to show uncategorized items
+        folderId: state.selectedFolderId !== null ? state.selectedFolderId.toString() : 'null',
       };
 
       logger.debug('📤 contentStore: Fetching with query:', query);

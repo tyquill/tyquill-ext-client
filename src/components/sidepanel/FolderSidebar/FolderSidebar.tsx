@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { IoAdd, IoHome, IoChevronBack, IoChevronForward } from 'react-icons/io5';
+import { IoAdd, IoDocuments, IoChevronBack, IoChevronForward } from 'react-icons/io5';
 import { useContentStore } from '../../../stores/contentStore';
 import { FolderTreeItem } from '../FolderTreeItem/FolderTreeItem';
 import { folderService } from '../../../services/folderService';
@@ -53,7 +53,7 @@ export const FolderSidebar: React.FC = () => {
     loadFolders();
   }, [loadFolders]);
 
-  const handleSelectAllItems = () => {
+  const handleSelectUncategorized = () => {
     selectFolder(null);
   };
 
@@ -79,20 +79,20 @@ export const FolderSidebar: React.FC = () => {
     }
   };
 
-  const handleAllItemsDragOver = (e: React.DragEvent) => {
+  const handleUncategorizedDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
     setIsAllItemsDragOver(true);
   };
 
-  const handleAllItemsDragLeave = (e: React.DragEvent) => {
+  const handleUncategorizedDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsAllItemsDragOver(false);
   };
 
-  const handleAllItemsDrop = async (e: React.DragEvent) => {
+  const handleUncategorizedDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setIsAllItemsDragOver(false);
@@ -207,16 +207,16 @@ export const FolderSidebar: React.FC = () => {
           <div className={styles.error}>{foldersError}</div>
         ) : (
           <>
-            {/* All Items */}
+            {/* Uncategorized */}
             <div
-              className={`${styles.allItemsRow} ${selectedFolderId === null ? styles.selected : ''} ${isAllItemsDragOver ? styles.dragOver : ''}`}
-              onClick={handleSelectAllItems}
-              onDragOver={handleAllItemsDragOver}
-              onDragLeave={handleAllItemsDragLeave}
-              onDrop={handleAllItemsDrop}
+              className={`${styles.uncategorizedRow} ${selectedFolderId === null ? styles.selected : ''} ${isAllItemsDragOver ? styles.dragOver : ''}`}
+              onClick={handleSelectUncategorized}
+              onDragOver={handleUncategorizedDragOver}
+              onDragLeave={handleUncategorizedDragLeave}
+              onDrop={handleUncategorizedDrop}
             >
-              <IoHome size={18} />
-              <span className={styles.allItemsLabel}>{t('all_items')}</span>
+              <IoDocuments size={18} />
+              <span className={styles.uncategorizedLabel}>{t('uncategorized')}</span>
             </div>
 
             {/* Folder Tree */}
