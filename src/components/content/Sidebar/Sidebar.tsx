@@ -12,9 +12,8 @@ import Settings from '../Settings/Settings';
 // Import all the sidepanel components (now in sidepanel_unused)
 import LandingPage from '../../../sidepanel_unused/pages/LandingPage';
 import Header, { Sidebar as SidebarNav } from '../../../components/sidepanel/Header/Header';
-import ScrapPage, { ScrapPageRef } from '../../../sidepanel_unused/pages/ScrapPage';
+import UnifiedContentPage from '../../../sidepanel_unused/pages/UnifiedContentPage';
 import ArticleGeneratePage from '../../../sidepanel_unused/pages/ArticleGeneratePage';
-import ArchivePage, { ArchivePageRef } from '../../../sidepanel_unused/pages/ArchivePage';
 import ArchiveDetailPage from '../../../sidepanel_unused/pages/ArchiveDetailPage';
 import StyleManagementPage from '../../../sidepanel_unused/pages/StyleManagementPage';
 import { PageType } from '../../../types/pages';
@@ -57,8 +56,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const previousPageRef = useRef<PageState>({ type: 'landing' });
   const pageStartTimeRef = useRef<number>(Date.now());
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const scrapPageRef = useRef<ScrapPageRef>(null);
-  const archivePageRef = useRef<ArchivePageRef>(null);
   const [showSettings, setShowSettings] = useState(false);
 
   // Calculate default Y position (properly center the 98vh sidebar)
@@ -234,34 +231,26 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   }, [isOpen, position, dragState.isDragging, isAnimatingY, constrainToViewport]);
 
   const navigateToMain = () => {
-    setCurrentPage({ type: 'scrap' });
+    setCurrentPage({ type: 'content' });
   };
 
   const handleMenuClick = (menu: string) => {
     setCurrentPage({ type: menu as PageType });
   };
 
-  const handleArchiveDetail = (draftId: string) => {
-    setCurrentPage({ type: 'archive-detail', draftId });
+  const handleNavigateToDetail = (articleId: number) => {
+    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
 
   const handleArchiveBack = () => {
-    setCurrentPage({ type: 'archive' });
-  };
-
-  const handleNavigateToDetail = (articleId: number) => {
-    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
+    setCurrentPage({ type: 'content' });
   };
 
   // Handle refresh based on current page type
   const handleRefresh = useCallback(() => {
     switch (currentPage.type) {
-      case 'scrap':
-        scrapPageRef.current?.refreshList();
-        break;
-      case 'archive':
-      case 'archive-detail': // Archive detail should refresh the archive list when going back
-        archivePageRef.current?.refreshList();
+      case 'content':
+        // Unified content page has its own refresh mechanism
         break;
       default:
         // For other pages, do nothing or show a message
@@ -490,7 +479,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
     if (isAuthenticated) {
-      setCurrentPage({ type: 'scrap' });
+      setCurrentPage({ type: 'content' });
     } else {
       setCurrentPage({ type: 'landing' });
     }
@@ -703,18 +692,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Header />
               <div className={styles.appMain}>
                 <div className={styles.appContent}>
-                  {currentPage.type === 'scrap' && <ScrapPage ref={scrapPageRef} />}
+                  {currentPage.type === 'content' && <UnifiedContentPage />}
 
                   {currentPage.type === 'draft' && (
                     <ArticleGeneratePage
                       onNavigateToDetail={handleNavigateToDetail}
                       onNavigate={handleMenuClick}
-                    />
-                  )}
-                  {currentPage.type === 'archive' && (
-                    <ArchivePage
-                      ref={archivePageRef}
-                      onDraftClick={handleArchiveDetail}
                     />
                   )}
                   {currentPage.type === 'archive-detail' && currentPage.draftId && (
@@ -723,7 +706,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   {currentPage.type === 'style-management' && <StyleManagementPage />}
                 </div>
                 <SidebarNav
-                  activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type}
+                  activeMenu={currentPage.type === 'archive-detail' ? 'content' : currentPage.type}
                   onMenuClick={handleMenuClick}
                 />
               </div>
