@@ -1,10 +1,11 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import { useContentStore } from '../../stores/contentStore';
 import { FolderSidebar } from '../../components/sidepanel/FolderSidebar/FolderSidebar';
 import { CreateFolderModal } from '../../components/sidepanel/CreateFolderModal/CreateFolderModal';
 import { useI18n } from '../../hooks/useI18n';
 import { useToastHelpers } from '../../hooks/useToast';
-import { IoSearch, IoFilter, IoSwapVertical, IoDocumentText, IoGlobe, IoDocument, IoTrash } from 'react-icons/io5';
+import { IoSearch, IoDocumentText, IoGlobe, IoDocument, IoTrash, IoCheckmark, IoClose, IoCloudUpload } from 'react-icons/io5';
+import { FaBookmark } from 'react-icons/fa6';
 import { browser } from 'wxt/browser';
 import styles from './UnifiedContentPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
@@ -12,6 +13,9 @@ import Tooltip from '../../components/common/Tooltip';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
 import { articleService } from '../../services/articleService';
+import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
+import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUploadModal';
+import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
 interface UnifiedContentPageProps {
   onNavigateToDetail: (articleId: number) => void;
@@ -39,6 +43,13 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     setSelectedTags,
     setSorting,
   } = useContentStore();
+
+  // Clipping state
+  const [isClipping, setIsClipping] = useState(false);
+  const [clipStatus, setClipStatus] = useState<ScrapStatus>('idle');
+
+  // PDF Upload state
+  const [showPDFUploadModal, setShowPDFUploadModal] = useState(false);
 
   const lastItemRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver>();
@@ -97,6 +108,35 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
       showError(t('common_error'), error.message || t('archivePage_deleteFailed'));
     }
   };
+
+  const handleClipCurrentPage = useCallback(async () => {
+    if (isClipping) return;
+
+    try {
+      setIsClipping(true);
+      setClipStatus('loading');
+
+      await clipAndScrapCurrentPage();
+
+      setClipStatus('success');
+      showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
+
+      await refreshContent();
+
+      setTimeout(() => setClipStatus('idle'), 2000);
+    } catch (error: any) {
+      setClipStatus('error');
+      showError(t('common_error'), error.message || t('scrapPage_scrapFailed'));
+      setTimeout(() => setClipStatus('idle'), 2000);
+    } finally {
+      setIsClipping(false);
+    }
+  }, [isClipping, showSuccess, showError, refreshContent, t]);
+
+  const handlePDFUploadSuccess = useCallback(() => {
+    refreshContent();
+    showSuccess(t('common_success'), t('scrapPage_uploadSuccess'));
+  }, [refreshContent, showSuccess, t]);
 
   const openScrapInNewTab = useCallback(async (scrapId: number, scrapType?: string) => {
     try {
@@ -276,6 +316,46 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
             />
           </div>
 
+          <div className={styles.actionButtons}>
+            <Tooltip content={t('scrapPage_pageScrap')}>
+              <button
+                className={`${styles.actionButton} ${
+                  clipStatus === 'success' ? styles.actionButtonSuccess :
+                  clipStatus === 'error' ? styles.actionButtonError : ''
+                }`}
+                onClick={handleClipCurrentPage}
+                disabled={isClipping}
+                aria-label={t('scrapPage_pageScrap')}
+              >
+                {clipStatus === 'loading' && (
+                  <div className={styles.spinner} />
+                )}
+                {clipStatus === 'success' && (
+                  <IoCheckmark size={18} />
+                )}
+                {clipStatus === 'error' && (
+                  <IoClose size={18} />
+                )}
+                {clipStatus === 'idle' && (
+                  <FaBookmark size={16} />
+                )}
+              </button>
+            </Tooltip>
+
+            <Tooltip content={t('scrapPage_pdf')}>
+              <button
+                className={styles.actionButton}
+                onClick={() => {
+                  setShowPDFUploadModal(true);
+                  trackPDFUploadModalOpenedBridge();
+                }}
+                aria-label={t('scrapPage_pdf')}
+              >
+                <IoCloudUpload size={18} />
+              </button>
+            </Tooltip>
+          </div>
+
           <div className={styles.filters}>
             <Tooltip content={t('filter_content_type')}>
               <select
@@ -329,6 +409,11 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
       </div>
 
       <CreateFolderModal />
+      <PDFUploadModal
+        isOpen={showPDFUploadModal}
+        onClose={() => setShowPDFUploadModal(false)}
+        onSuccess={handlePDFUploadSuccess}
+      />
     </div>
   );
 };
