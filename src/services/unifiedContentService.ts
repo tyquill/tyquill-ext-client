@@ -124,6 +124,7 @@ export class UnifiedContentService {
                 content: item.contentPreview || '',
                 htmlContent: '', // Not provided in unified API response
                 url: item.url || '',
+                type: item.scrapType, // Map scrapType from API to type field
                 // Convert string tags to TagResponse format expected by frontend
                 tags: (item.tags || []).map((tagName, index) => ({
                   tagId: index, // Temporary ID (not used in unified view)
