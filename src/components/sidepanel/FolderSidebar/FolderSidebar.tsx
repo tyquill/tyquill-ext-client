@@ -5,8 +5,28 @@ import { FolderTreeItem } from '../FolderTreeItem/FolderTreeItem';
 import { folderService } from '../../../services/folderService';
 import { useI18n } from '../../../hooks/useI18n';
 import { useToastHelpers } from '../../../hooks/useToast';
+import { logger } from '../../../utils/logger';
 import styles from './FolderSidebar.module.css';
 import Tooltip from '../../common/Tooltip';
+
+/**
+ * Type guard to validate drag data structure
+ */
+interface DragData {
+  type: 'SCRAP' | 'ARTICLE';
+  id: number;
+}
+
+function isDragData(data: unknown): data is DragData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    'id' in data &&
+    (data.type === 'SCRAP' || data.type === 'ARTICLE') &&
+    typeof data.id === 'number'
+  );
+}
 
 export const FolderSidebar: React.FC = () => {
   const { t } = useI18n();
@@ -80,12 +100,28 @@ export const FolderSidebar: React.FC = () => {
     try {
       const dragDataString = e.dataTransfer.getData('application/json');
       if (!dragDataString) {
-        console.warn('No drag data found');
+        logger.warn('No drag data found');
         return;
       }
 
-      const dragData = JSON.parse(dragDataString);
-      console.log('Dropping item to remove from folder:', dragData);
+      // Safe JSON parsing with validation
+      let dragData: unknown;
+      try {
+        dragData = JSON.parse(dragDataString);
+      } catch (parseError) {
+        logger.error('Failed to parse drag data:', parseError);
+        showError(t('common_error'), 'Invalid drag data format');
+        return;
+      }
+
+      // Validate drag data structure
+      if (!isDragData(dragData)) {
+        logger.error('Invalid drag data structure:', dragData);
+        showError(t('common_error'), 'Invalid item data');
+        return;
+      }
+
+      logger.debug('Dropping item to remove from folder:', dragData);
 
       // Find which folder the item is currently in
       if (selectedFolderId) {
@@ -100,8 +136,6 @@ export const FolderSidebar: React.FC = () => {
             articleIds: [dragData.id],
             targetFolderId: null, // null removes from folder
           });
-        } else {
-          throw new Error(`Unknown content type: ${dragData.type}`);
         }
 
         showSuccess(
@@ -112,13 +146,14 @@ export const FolderSidebar: React.FC = () => {
         // Refresh content list
         await refreshContent();
       } else {
-        console.log('Item already in root folder');
+        logger.debug('Item already in root folder');
       }
-    } catch (error: any) {
-      console.error('Failed to remove item from folder:', error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to remove item from folder';
+      logger.error('Failed to remove item from folder:', error);
       showError(
         t('common_error') || 'Error',
-        error.message || t('folder_remove_failed') || 'Failed to remove item from folder'
+        errorMessage || t('folder_remove_failed') || 'Failed to remove item from folder'
       );
     }
   };

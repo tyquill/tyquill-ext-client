@@ -4,8 +4,28 @@ import { FolderResponse, folderService } from '../../../services/folderService';
 import { useContentStore } from '../../../stores/contentStore';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
+import { logger } from '../../../utils/logger';
 import styles from './FolderTreeItem.module.css';
 import Tooltip from '../../common/Tooltip';
+
+/**
+ * Type guard to validate drag data structure
+ */
+interface DragData {
+  type: 'SCRAP' | 'ARTICLE';
+  id: number;
+}
+
+function isDragData(data: unknown): data is DragData {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'type' in data &&
+    'id' in data &&
+    (data.type === 'SCRAP' || data.type === 'ARTICLE') &&
+    typeof data.id === 'number'
+  );
+}
 
 interface FolderTreeItemProps {
   folder: FolderResponse;
@@ -28,6 +48,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(folder.name);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [isMoving, setIsMoving] = useState(false);
   const hasChildren = folder.children && folder.children.length > 0;
   const { refreshContent } = useContentStore();
   const { showSuccess, showError } = useToastHelpers();
@@ -46,7 +67,8 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`Delete folder "${folder.name}"? All items will be moved to root.`)) {
+    const message = t('folder_delete_confirm_message').replace('{folderName}', folder.name);
+    if (confirm(message)) {
       onDelete(folder.folderId);
     }
   };
@@ -78,6 +100,11 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   };
 
   const handleDragOver = (e: React.DragEvent) => {
+    // Prevent drop if already moving an item
+    if (isMoving) {
+      e.dataTransfer.dropEffect = 'none';
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
@@ -95,15 +122,38 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
     e.stopPropagation();
     setIsDragOver(false);
 
+    // Prevent multiple concurrent operations
+    if (isMoving) {
+      return;
+    }
+
+    setIsMoving(true);
+
     try {
       const dragDataString = e.dataTransfer.getData('application/json');
       if (!dragDataString) {
-        console.warn('No drag data found');
+        logger.warn('No drag data found');
         return;
       }
 
-      const dragData = JSON.parse(dragDataString);
-      console.log('Dropping item:', dragData, 'into folder:', folder.name);
+      // Safe JSON parsing with validation
+      let dragData: unknown;
+      try {
+        dragData = JSON.parse(dragDataString);
+      } catch (parseError) {
+        logger.error('Failed to parse drag data:', parseError);
+        showError(t('common_error'), 'Invalid drag data format');
+        return;
+      }
+
+      // Validate drag data structure
+      if (!isDragData(dragData)) {
+        logger.error('Invalid drag data structure:', dragData);
+        showError(t('common_error'), 'Invalid item data');
+        return;
+      }
+
+      logger.debug('Dropping item:', dragData, 'into folder:', folder.name);
 
       // Call API to move item to folder
       // Backend expects { scrapIds: number[] } or { articleIds: number[] }
@@ -115,8 +165,6 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         await folderService.addItemsToFolder(folder.folderId, {
           articleIds: [dragData.id],
         });
-      } else {
-        throw new Error(`Unknown content type: ${dragData.type}`);
       }
 
       showSuccess(
@@ -126,12 +174,15 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
 
       // Refresh content list
       await refreshContent();
-    } catch (error: any) {
-      console.error('Failed to move item:', error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to move item to folder';
+      logger.error('Failed to move item:', error);
       showError(
         t('common_error') || 'Error',
-        error.message || t('folder_move_failed') || 'Failed to move item to folder'
+        errorMessage || t('folder_move_failed') || 'Failed to move item to folder'
       );
+    } finally {
+      setIsMoving(false);
     }
   };
 
