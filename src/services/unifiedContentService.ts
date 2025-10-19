@@ -4,9 +4,10 @@
  * @description Service for fetching scraps and articles in a unified view
  */
 
-import { globalApiClient } from './globalApiClient';
+import { globalApiClient, ApiRequestOptions } from './globalApiClient';
 import { ScrapResponse } from './scrapService';
 import { ArticleResponse } from './articleService';
+import { logger } from '../utils/logger';
 
 /**
  * Unified content item (discriminated union)
@@ -40,17 +41,49 @@ export interface UnifiedContentResponse {
   limit: number;
 }
 
+/**
+ * Raw API item from backend (flat structure)
+ */
+interface RawApiContentItem {
+  id: string;
+  type: 'scrap' | 'article';
+  title: string;
+  contentPreview?: string;
+  url?: string;
+  scrapType?: string;
+  heroImageUrl?: string;
+  faviconUrl?: string;
+  tags?: string[];
+  topic?: string;
+  keyInsight?: string;
+  generationStatus?: string;
+  createdAt: string;
+  updatedAt: string;
+  folderId?: number;
+}
+
+/**
+ * Raw API response from backend
+ */
+interface RawApiResponse {
+  items: RawApiContentItem[];
+  total: number;
+  hasMore: boolean;
+  page: number;
+  limit: number;
+}
+
 export class UnifiedContentService {
   /**
    * API request helper - uses global client
    */
   private async apiRequest<T>(
     endpoint: string,
-    options: RequestInit = {},
+    options: ApiRequestOptions = {},
     version: 'v1' = 'v1'
   ): Promise<T> {
     const versionedEndpoint = `/${version}${endpoint}`;
-    return globalApiClient.request<T>(versionedEndpoint, options as any);
+    return globalApiClient.request<T>(versionedEndpoint, options);
   }
 
   /**
@@ -73,55 +106,58 @@ export class UnifiedContentService {
 
       const endpoint = `/content/unified${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
 
-      const apiResponse = await this.apiRequest<any>(endpoint, {
+      const apiResponse = await this.apiRequest<RawApiResponse>(endpoint, {
         method: 'GET',
       });
 
-      console.log('🔍 API Response:', apiResponse);
+      logger.debug('🔍 API Response:', apiResponse);
 
       // Transform flat API response to nested structure expected by frontend
-      const transformedItems: UnifiedContentItem[] = apiResponse.items.map((item: any) => {
-        if (item.type === 'scrap') {
-          return {
-            type: 'SCRAP' as const,
-            data: {
-              scrapId: parseInt(item.id),
-              title: item.title,
-              content: item.contentPreview || '',
-              htmlContent: '', // Not provided in unified API response
-              url: item.url || '',
-              type: item.scrapType,
-              heroImageUrl: item.heroImageUrl,
-              faviconUrl: item.faviconUrl,
-              tags: item.tags || [],
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-              folderId: item.folderId,
-              contentInfo: {
-                text: item.contentPreview,
+      const transformedItems: UnifiedContentItem[] = apiResponse.items
+        .map((item: RawApiContentItem): UnifiedContentItem | null => {
+          if (item.type === 'scrap') {
+            return {
+              type: 'SCRAP' as const,
+              data: {
+                scrapId: parseInt(item.id, 10),
+                title: item.title,
+                content: item.contentPreview || '',
+                htmlContent: '', // Not provided in unified API response
+                url: item.url || '',
+                // Convert string tags to TagResponse format expected by frontend
+                tags: (item.tags || []).map((tagName, index) => ({
+                  tagId: index, // Temporary ID (not used in unified view)
+                  name: tagName,
+                  createdAt: item.createdAt,
+                  updatedAt: item.updatedAt,
+                })),
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                contentInfo: {
+                  text: item.contentPreview,
+                },
               },
-            },
-          };
-        } else if (item.type === 'article') {
-          return {
-            type: 'ARTICLE' as const,
-            data: {
-              articleId: parseInt(item.id),
-              title: item.title || '',
-              content: item.contentPreview || '',
-              topic: item.topic,
-              keyInsight: item.keyInsight,
-              generationStatus: item.generationStatus,
-              createdAt: item.createdAt,
-              updatedAt: item.updatedAt,
-              folderId: item.folderId,
-            },
-          };
-        }
-        return null as any;
-      }).filter(Boolean);
+            };
+          } else if (item.type === 'article') {
+            return {
+              type: 'ARTICLE' as const,
+              data: {
+                articleId: parseInt(item.id, 10),
+                title: item.title || '',
+                content: item.contentPreview || '',
+                topic: item.topic || '',
+                keyInsight: item.keyInsight || '',
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                // Note: generationStatus and folderId are not part of ArticleResponse
+              },
+            };
+          }
+          return null;
+        })
+        .filter((item): item is UnifiedContentItem => item !== null);
 
-      console.log('🔍 Transformed items:', transformedItems);
+      logger.debug('🔍 Transformed items:', transformedItems);
 
       return {
         items: transformedItems,

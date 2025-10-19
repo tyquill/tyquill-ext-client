@@ -11,6 +11,7 @@ import {
   UnifiedContentQuery,
   unifiedContentService,
 } from '../services/unifiedContentService';
+import { logger } from '../utils/logger';
 
 interface ContentState {
   // Folders
@@ -101,8 +102,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
     try {
       const folders = await folderService.getFolders();
       set({ folders, foldersLoading: false });
-    } catch (error: any) {
-      set({ foldersError: error.message || 'Failed to load folders', foldersLoading: false });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load folders';
+      logger.error('Failed to load folders:', error);
+      set({ foldersError: errorMessage, foldersLoading: false });
     }
   },
 
@@ -118,8 +121,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
       await folderService.createFolder({ name, color, parentId });
       // Reload folders
       await get().loadFolders();
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to create folder');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create folder';
+      logger.error('Failed to create folder:', error);
+      throw new Error(errorMessage);
     }
   },
 
@@ -128,8 +133,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
       await folderService.updateFolder(folderId, { name, color });
       // Reload folders
       await get().loadFolders();
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to update folder');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update folder';
+      logger.error('Failed to update folder:', error);
+      throw new Error(errorMessage);
     }
   },
 
@@ -144,15 +151,17 @@ export const useContentStore = create<ContentState>((set, get) => ({
       await get().loadFolders();
       // Reload content
       await get().refreshContent();
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to delete folder');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete folder';
+      logger.error('Failed to delete folder:', error);
+      throw new Error(errorMessage);
     }
   },
 
   // Actions - Content
   loadContent: async (append = false) => {
     const state = get();
-    console.log('🔄 contentStore.loadContent called:', { append, currentPage: state.itemsPage });
+    logger.debug('🔄 contentStore.loadContent called:', { append, currentPage: state.itemsPage });
     set({ itemsLoading: true, itemsError: null });
 
     try {
@@ -167,9 +176,9 @@ export const useContentStore = create<ContentState>((set, get) => ({
         folderId: state.selectedFolderId ? state.selectedFolderId.toString() : undefined,
       };
 
-      console.log('📤 contentStore: Fetching with query:', query);
+      logger.debug('📤 contentStore: Fetching with query:', query);
       const response = await unifiedContentService.getUnifiedContent(query);
-      console.log('📥 contentStore: Received response:', {
+      logger.debug('📥 contentStore: Received response:', {
         itemsCount: response.items.length,
         total: response.total,
         hasMore: response.hasMore,
@@ -177,7 +186,7 @@ export const useContentStore = create<ContentState>((set, get) => ({
       });
 
       const newItems = append ? [...state.items, ...response.items] : response.items;
-      console.log('✅ contentStore: Setting items:', { newItemsCount: newItems.length });
+      logger.debug('✅ contentStore: Setting items:', { newItemsCount: newItems.length });
 
       set({
         items: newItems,
@@ -186,10 +195,11 @@ export const useContentStore = create<ContentState>((set, get) => ({
         itemsPage: response.page,
         itemsLoading: false,
       });
-    } catch (error: any) {
-      console.error('❌ contentStore: Error loading content:', error);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load content';
+      logger.error('❌ contentStore: Error loading content:', error);
       set({
-        itemsError: error.message || 'Failed to load content',
+        itemsError: errorMessage,
         itemsLoading: false,
       });
     }
@@ -271,8 +281,10 @@ export const useContentStore = create<ContentState>((set, get) => ({
       // Close modal and refresh content
       set({ isMoveFolderModalOpen: false, selectedItemsForMove: [] });
       await get().refreshContent();
-    } catch (error: any) {
-      throw new Error(error.message || 'Failed to move items to folder');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to move items to folder';
+      logger.error('Failed to move items to folder:', error);
+      throw new Error(errorMessage);
     }
   },
 }));
