@@ -692,7 +692,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               <Header />
               <div className={styles.appMain}>
                 <div className={styles.appContent}>
-                  {currentPage.type === 'content' && <UnifiedContentPage />}
+                  {currentPage.type === 'content' && (
+                    <UnifiedContentPage onNavigateToDetail={handleNavigateToDetail} />
+                  )}
 
                   {currentPage.type === 'draft' && (
                     <ArticleGeneratePage

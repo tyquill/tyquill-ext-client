@@ -266,7 +266,9 @@ const SidePanelApp: React.FC = () => {
             <Header />
             <div className={styles.appMain}>
               <div className={styles.appContent}>
-                {currentPage.type === 'content' && <UnifiedContentPage />}
+                {currentPage.type === 'content' && (
+                  <UnifiedContentPage onNavigateToDetail={handleNavigateToDetail} />
+                )}
                 {currentPage.type === 'draft' && (
                   <ArticleGeneratePage
                     onNavigateToDetail={handleNavigateToDetail}

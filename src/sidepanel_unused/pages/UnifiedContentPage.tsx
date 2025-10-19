@@ -13,7 +13,11 @@ import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { scrapService } from '../../services/scrapService';
 import { articleService } from '../../services/articleService';
 
-export const UnifiedContentPage: React.FC = () => {
+interface UnifiedContentPageProps {
+  onNavigateToDetail: (articleId: number) => void;
+}
+
+export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNavigateToDetail }) => {
   const { t } = useI18n();
   const { showSuccess, showError } = useToastHelpers();
 
@@ -41,20 +45,8 @@ export const UnifiedContentPage: React.FC = () => {
 
   // Load content on mount
   useEffect(() => {
-    console.log('🚀 UnifiedContentPage: Loading content on mount');
     loadContent();
   }, []);
-
-  // Debug state changes
-  useEffect(() => {
-    console.log('🔍 UnifiedContentPage state:', {
-      itemsCount: items.length,
-      items: items.slice(0, 2), // Log first 2 items for inspection
-      itemsLoading,
-      itemsError,
-      itemsHasMore,
-    });
-  }, [items, itemsLoading, itemsError, itemsHasMore]);
 
   // Infinite scroll observer
   useEffect(() => {
@@ -116,11 +108,9 @@ export const UnifiedContentPage: React.FC = () => {
     }
   }, [showError, t]);
 
-  const openArticleInEditor = useCallback(async (articleId: number) => {
-    // This would navigate to the article editor
-    // For now, we'll just show a toast
-    showSuccess(t('common_info'), `Opening article ${articleId} in editor...`);
-  }, [showSuccess, t]);
+  const openArticleInEditor = useCallback((articleId: number) => {
+    onNavigateToDetail(articleId);
+  }, [onNavigateToDetail]);
 
   const handleRemoveTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: number, tagName: string) => {
     try {
