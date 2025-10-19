@@ -11,6 +11,7 @@ import styles from './UnifiedContentPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
 import Tooltip from '../../components/common/Tooltip';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
+import { TagAddButton } from '../../components/sidepanel/TagAddButton/TagAddButton';
 import { scrapService } from '../../services/scrapService';
 import { articleService } from '../../services/articleService';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
@@ -168,6 +169,19 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     }
   };
 
+  const handleAddTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: number, tagName: string) => {
+    try {
+      if (itemType === 'SCRAP') {
+        await scrapService.addTagToScrap(itemId, tagName);
+        await refreshContent();
+        showSuccess(t('common_success'), `Tag "${tagName}" added`);
+      }
+      // Article tags would be handled similarly if backend supports it
+    } catch (error: any) {
+      showError(t('common_error'), error.message || 'Failed to add tag');
+    }
+  };
+
   const handleDragStart = (e: React.DragEvent, itemType: 'SCRAP' | 'ARTICLE', itemId: number) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
@@ -244,6 +258,9 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
                   showRemoveButton={true}
                 />
               )}
+              <TagAddButton
+                onAddTag={(tagName) => handleAddTag('SCRAP', scrap.scrapId, tagName)}
+              />
             </div>
             <div className={styles.itemDate}>
               {new Date(scrap.createdAt).toLocaleDateString()}
@@ -288,6 +305,18 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           </div>
 
           <div className={styles.itemFooter}>
+            <div className={styles.tags}>
+              {article.tags && article.tags.length > 0 && (
+                <TagList
+                  tags={article.tags.map((t: any) => t.name)}
+                  onTagRemove={(tagName) => handleRemoveTag('ARTICLE', article.articleId, tagName)}
+                  showRemoveButton={true}
+                />
+              )}
+              <TagAddButton
+                onAddTag={(tagName) => handleAddTag('ARTICLE', article.articleId, tagName)}
+              />
+            </div>
             <div className={styles.itemDate}>
               {new Date(article.createdAt).toLocaleDateString()}
             </div>
