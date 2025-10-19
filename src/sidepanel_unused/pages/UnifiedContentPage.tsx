@@ -4,7 +4,7 @@ import { FolderSidebar } from '../../components/sidepanel/FolderSidebar/FolderSi
 import { CreateFolderModal } from '../../components/sidepanel/CreateFolderModal/CreateFolderModal';
 import { useI18n } from '../../hooks/useI18n';
 import { useToastHelpers } from '../../hooks/useToast';
-import { IoSearch, IoFilter, IoSwapVertical, IoDocument, IoLink, IoTrash } from 'react-icons/io5';
+import { IoSearch, IoFilter, IoSwapVertical, IoDocumentText, IoGlobe, IoDocument, IoTrash } from 'react-icons/io5';
 import { browser } from 'wxt/browser';
 import styles from './UnifiedContentPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
@@ -168,9 +168,13 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           onClick={() => openScrapInNewTab(scrap.scrapId, scrap.type)}
         >
           <div className={styles.itemHeader}>
-            <div className={styles.itemType} style={{ backgroundColor: '#3b82f6' }}>
-              <IoLink size={14} />
-              <span>{t('content_type_scrap')}</span>
+            <div className={`${styles.itemType} ${styles.itemTypeScrap}`}>
+              {scrap.type === 'webclip' ? (
+                <IoGlobe size={16} />
+              ) : (
+                <IoDocument size={16} />
+              )}
+              <span>{scrap.type === 'webclip' ? t('content_type_scrap') : 'PDF/File'}</span>
             </div>
             <Tooltip content={t('common_delete')}>
               <button
@@ -220,8 +224,8 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           onClick={() => openArticleInEditor(article.articleId)}
         >
           <div className={styles.itemHeader}>
-            <div className={styles.itemType} style={{ backgroundColor: '#10b981' }}>
-              <IoDocument size={14} />
+            <div className={`${styles.itemType} ${styles.itemTypeArticle}`}>
+              <IoDocumentText size={16} />
               <span>{t('content_type_article')}</span>
             </div>
             <Tooltip content={t('common_delete')}>

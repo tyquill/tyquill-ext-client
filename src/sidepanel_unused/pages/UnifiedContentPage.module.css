@@ -55,8 +55,8 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .filters {
@@ -82,8 +82,8 @@
 
 .filterSelect:focus {
   outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 .contentList {
@@ -153,7 +153,26 @@
   border-radius: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: white;
+  background-color: #f5f5f5;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  transition: all 0.15s ease;
+}
+
+.itemType:hover {
+  background-color: #e8e8e8;
+  border-color: #ccc;
+}
+
+.itemTypeScrap {
+  /* Globe/Link icon for web scraps - lighter gray */
+  color: #555;
+}
+
+.itemTypeArticle {
+  /* Document icon for articles - darker gray */
+  color: #111;
+  background-color: #fafafa;
 }
 
 .deleteButton {
