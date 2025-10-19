@@ -1,0 +1,221 @@
+import React, { useState } from 'react';
+import { IoChevronDown, IoChevronForward, IoFolder, IoFolderOpen, IoTrash, IoCreate } from 'react-icons/io5';
+import { FolderResponse, folderService } from '../../../services/folderService';
+import { useContentStore } from '../../../stores/contentStore';
+import { useToastHelpers } from '../../../hooks/useToast';
+import { useI18n } from '../../../hooks/useI18n';
+import styles from './FolderTreeItem.module.css';
+import Tooltip from '../../common/Tooltip';
+
+interface FolderTreeItemProps {
+  folder: FolderResponse;
+  isSelected: boolean;
+  onSelect: (folderId: number) => void;
+  onDelete: (folderId: number) => void;
+  onRename: (folderId: number, newName: string) => void;
+  level?: number;
+}
+
+export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
+  folder,
+  isSelected,
+  onSelect,
+  onDelete,
+  onRename,
+  level = 0,
+}) => {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(folder.name);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const hasChildren = folder.children && folder.children.length > 0;
+  const { refreshContent } = useContentStore();
+  const { showSuccess, showError } = useToastHelpers();
+  const { t } = useI18n();
+
+  const handleToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (hasChildren) {
+      setIsExpanded(!isExpanded);
+    }
+  };
+
+  const handleSelect = () => {
+    onSelect(folder.folderId);
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm(`Delete folder "${folder.name}"? All items will be moved to root.`)) {
+      onDelete(folder.folderId);
+    }
+  };
+
+  const handleStartEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsEditing(true);
+    setEditName(folder.name);
+  };
+
+  const handleSaveEdit = () => {
+    if (editName.trim() && editName !== folder.name) {
+      onRename(folder.folderId, editName.trim());
+    }
+    setIsEditing(false);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditName(folder.name);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSaveEdit();
+    } else if (e.key === 'Escape') {
+      handleCancelEdit();
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    try {
+      const dragDataString = e.dataTransfer.getData('application/json');
+      if (!dragDataString) {
+        console.warn('No drag data found');
+        return;
+      }
+
+      const dragData = JSON.parse(dragDataString);
+      console.log('Dropping item:', dragData, 'into folder:', folder.name);
+
+      // Call API to move item to folder
+      // Backend expects { scrapIds: number[] } or { articleIds: number[] }
+      if (dragData.type === 'SCRAP') {
+        await folderService.addItemsToFolder(folder.folderId, {
+          scrapIds: [dragData.id],
+        });
+      } else if (dragData.type === 'ARTICLE') {
+        await folderService.addItemsToFolder(folder.folderId, {
+          articleIds: [dragData.id],
+        });
+      } else {
+        throw new Error(`Unknown content type: ${dragData.type}`);
+      }
+
+      showSuccess(
+        t('folder_move_success') || 'Success',
+        `Moved ${dragData.type.toLowerCase()} to ${folder.name}`
+      );
+
+      // Refresh content list
+      await refreshContent();
+    } catch (error: any) {
+      console.error('Failed to move item:', error);
+      showError(
+        t('common_error') || 'Error',
+        error.message || t('folder_move_failed') || 'Failed to move item to folder'
+      );
+    }
+  };
+
+  return (
+    <div className={styles.folderTreeItem}>
+      <div
+        className={`${styles.folderRow} ${isSelected ? styles.selected : ''} ${isDragOver ? styles.dragOver : ''}`}
+        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        onClick={handleSelect}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div className={styles.folderLeft}>
+          {hasChildren ? (
+            <button className={styles.chevron} onClick={handleToggle} aria-label="Toggle folder">
+              {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
+            </button>
+          ) : (
+            <div className={styles.chevronPlaceholder} />
+          )}
+
+          {isExpanded && hasChildren ? (
+            <IoFolderOpen size={18} style={{ color: folder.color || '#888' }} />
+          ) : (
+            <IoFolder size={18} style={{ color: folder.color || '#888' }} />
+          )}
+
+          {isEditing ? (
+            <input
+              type="text"
+              className={styles.folderInput}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              onBlur={handleSaveEdit}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <span className={styles.folderName}>{folder.name}</span>
+          )}
+        </div>
+
+        <div className={styles.folderActions}>
+          {folder.itemCount !== undefined && (
+            <span className={styles.itemCount}>{folder.itemCount}</span>
+          )}
+          <Tooltip content="Rename folder">
+            <button
+              className={styles.actionButton}
+              onClick={handleStartEdit}
+              aria-label="Rename folder"
+            >
+              <IoCreate size={14} />
+            </button>
+          </Tooltip>
+          <Tooltip content="Delete folder">
+            <button
+              className={styles.actionButton}
+              onClick={handleDelete}
+              aria-label="Delete folder"
+            >
+              <IoTrash size={14} />
+            </button>
+          </Tooltip>
+        </div>
+      </div>
+
+      {isExpanded && hasChildren && (
+        <div className={styles.children}>
+          {folder.children!.map((child) => (
+            <FolderTreeItem
+              key={child.folderId}
+              folder={child}
+              isSelected={isSelected}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              onRename={onRename}
+              level={level + 1}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
