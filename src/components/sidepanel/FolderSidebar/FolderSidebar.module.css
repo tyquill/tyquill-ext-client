@@ -1,23 +1,26 @@
 .sidebar {
-  width: 240px;
+  width: 200px;
   height: 100%;
   background-color: #fafafa;
   border-right: 1px solid #e5e5e5;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
+  transition: width 0.2s ease;
 }
 
 .collapsedSidebar {
-  width: 40px;
+  width: 44px;
   height: 100%;
   background-color: #fafafa;
   border-right: 1px solid #e5e5e5;
   display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 12px;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px;
+  gap: 8px;
   flex-shrink: 0;
+  transition: width 0.2s ease;
 }
 
 .toggleButton {
@@ -31,6 +34,7 @@
   color: #666;
   border-radius: 6px;
   transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .toggleButton:hover {
@@ -38,8 +42,56 @@
   color: #000;
 }
 
+.collapsedAddButton {
+  background: none;
+  border: none;
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #3b82f6;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.collapsedAddButton:hover {
+  background-color: #dbeafe;
+  color: #2563eb;
+}
+
+.collapsedDivider {
+  width: 24px;
+  height: 1px;
+  background-color: #e5e5e5;
+  margin: 4px 0;
+}
+
+.collapsedFolderIcon {
+  padding: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.collapsedFolderIcon:hover {
+  background-color: #e5e5e5;
+  color: #333;
+}
+
+.collapsedFolderIcon.selected {
+  background-color: #f0f0f0;
+  color: #111;
+}
+
 .header {
-  padding: 16px 12px;
+  padding: 12px 10px;
   border-bottom: 1px solid #e5e5e5;
   display: flex;
   align-items: center;
@@ -47,7 +99,7 @@
 }
 
 .title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
   color: #111;
   margin: 0;
@@ -80,7 +132,7 @@
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: 8px;
+  padding: 6px;
 }
 
 .loading,
@@ -98,12 +150,12 @@
 .uncategorizedRow {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px;
+  gap: 6px;
+  padding: 6px 8px;
   cursor: pointer;
   border-radius: 6px;
   transition: background-color 0.15s ease;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .uncategorizedRow:hover {
@@ -111,12 +163,12 @@
 }
 
 .uncategorizedRow.selected {
-  background-color: #e8f4f8;
+  background-color: #f0f0f0;
   font-weight: 500;
 }
 
 .uncategorizedRow.selected:hover {
-  background-color: #d9edf7;
+  background-color: #e5e5e5;
 }
 
 .uncategorizedRow.dragOver {
@@ -126,7 +178,7 @@
 }
 
 .uncategorizedLabel {
-  font-size: 14px;
+  font-size: 13px;
   color: #333;
 }
 

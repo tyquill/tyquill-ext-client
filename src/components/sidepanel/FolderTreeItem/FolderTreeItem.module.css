@@ -6,11 +6,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 8px 6px 0;
+  padding: 4px 6px 4px 0;
   cursor: pointer;
   border-radius: 6px;
   transition: background-color 0.15s ease;
-  min-height: 32px;
+  min-height: 28px;
 }
 
 .folderRow:hover {
@@ -18,12 +18,12 @@
 }
 
 .folderRow.selected {
-  background-color: #e8f4f8;
+  background-color: #f0f0f0;
   font-weight: 500;
 }
 
 .folderRow.selected:hover {
-  background-color: #d9edf7;
+  background-color: #e5e5e5;
 }
 
 .folderRow.dragOver {
@@ -36,7 +36,7 @@
 .folderLeft {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
   min-width: 0;
 }
@@ -51,7 +51,8 @@
   justify-content: center;
   color: #666;
   flex-shrink: 0;
-  margin-left: -20px;
+  margin-left: -18px;
+  width: 14px;
 }
 
 .chevron:hover {
@@ -59,13 +60,13 @@
 }
 
 .chevronPlaceholder {
-  width: 16px;
+  width: 14px;
   flex-shrink: 0;
-  margin-left: -20px;
+  margin-left: -18px;
 }
 
 .folderName {
-  font-size: 14px;
+  font-size: 13px;
   color: #333;
   white-space: nowrap;
   overflow: hidden;
@@ -74,20 +75,20 @@
 }
 
 .folderInput {
-  font-size: 14px;
+  font-size: 13px;
   padding: 2px 6px;
   border: 1px solid #3b82f6;
   border-radius: 4px;
   outline: none;
   background: #fff;
   flex: 1;
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .folderActions {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -97,12 +98,12 @@
 }
 
 .itemCount {
-  font-size: 12px;
+  font-size: 11px;
   color: #888;
-  padding: 2px 6px;
+  padding: 1px 5px;
   background-color: #f0f0f0;
-  border-radius: 10px;
-  min-width: 20px;
+  border-radius: 8px;
+  min-width: 18px;
   text-align: center;
 }
 

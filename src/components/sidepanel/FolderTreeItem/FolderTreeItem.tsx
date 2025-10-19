@@ -190,7 +190,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
     <div className={styles.folderTreeItem}>
       <div
         className={`${styles.folderRow} ${isSelected ? styles.selected : ''} ${isDragOver ? styles.dragOver : ''}`}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ paddingLeft: `${level * 12 + 6}px` }}
         onClick={handleSelect}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -199,16 +199,16 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
         <div className={styles.folderLeft}>
           {hasChildren ? (
             <button className={styles.chevron} onClick={handleToggle} aria-label="Toggle folder">
-              {isExpanded ? <IoChevronDown size={16} /> : <IoChevronForward size={16} />}
+              {isExpanded ? <IoChevronDown size={14} /> : <IoChevronForward size={14} />}
             </button>
           ) : (
             <div className={styles.chevronPlaceholder} />
           )}
 
           {isExpanded && hasChildren ? (
-            <IoFolderOpen size={18} style={{ color: folder.color || '#888' }} />
+            <IoFolderOpen size={16} style={{ color: folder.color || '#888' }} />
           ) : (
-            <IoFolder size={18} style={{ color: folder.color || '#888' }} />
+            <IoFolder size={16} style={{ color: folder.color || '#888' }} />
           )}
 
           {isEditing ? (
