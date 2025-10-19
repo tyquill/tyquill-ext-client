@@ -119,7 +119,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
       await clipAndScrapCurrentPage();
 
       setClipStatus('success');
-      showSuccess(t('scrapPage_scrapSuccess'), t('scrapPage_scrapSuccess'));
+      // Success toast is shown in content script, no need to show again in sidepanel
 
       await refreshContent();
 
@@ -131,7 +131,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     } finally {
       setIsClipping(false);
     }
-  }, [isClipping, showSuccess, showError, refreshContent, t]);
+  }, [isClipping, showError, refreshContent, t]);
 
   const handlePDFUploadSuccess = useCallback(() => {
     refreshContent();
