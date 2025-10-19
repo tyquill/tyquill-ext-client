@@ -53,7 +53,7 @@ interface RawApiContentItem {
   scrapType?: string;
   heroImageUrl?: string;
   faviconUrl?: string;
-  tags?: string[];
+  tags?: (string | { tagId: number; name: string })[];
   topic?: string;
   keyInsight?: string;
   generationStatus?: string;
@@ -125,13 +125,19 @@ export class UnifiedContentService {
                 htmlContent: '', // Not provided in unified API response
                 url: item.url || '',
                 type: item.scrapType, // Map scrapType from API to type field
-                // Convert string tags to TagResponse format expected by frontend
-                tags: (item.tags || []).map((tagName, index) => ({
-                  tagId: index, // Temporary ID (not used in unified view)
-                  name: tagName,
-                  createdAt: item.createdAt,
-                  updatedAt: item.updatedAt,
-                })),
+                // Tags can be either string array or object array from API
+                tags: (item.tags || []).map((tag: any) => {
+                  if (typeof tag === 'string') {
+                    return {
+                      tagId: 0,
+                      name: tag,
+                      createdAt: item.createdAt,
+                      updatedAt: item.updatedAt,
+                    };
+                  }
+                  // If it's already an object, use it as is
+                  return tag;
+                }),
                 createdAt: item.createdAt,
                 updatedAt: item.updatedAt,
                 contentInfo: {
