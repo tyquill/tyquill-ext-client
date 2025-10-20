@@ -260,17 +260,15 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
     e.dataTransfer.setData('application/json', JSON.stringify(dragData));
 
-    // Visual feedback
+    // Visual feedback using CSS class
     const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '0.5';
-    target.style.cursor = 'grabbing';
+    target.classList.add(styles.dragging);
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
     e.stopPropagation();
     const target = e.currentTarget as HTMLElement;
-    target.style.opacity = '1';
-    target.style.cursor = 'grab';
+    target.classList.remove(styles.dragging);
   };
 
   const renderContentItem = (item: any, index: number) => {

@@ -90,6 +90,12 @@
   color: #111;
 }
 
+.collapsedFolderIcon.dragOver {
+  background-color: #f0f0f0;
+  border: 2px dashed #666;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+
 .header {
   padding: 12px 10px;
   border-bottom: 1px solid #e5e5e5;
@@ -172,9 +178,9 @@
 }
 
 .uncategorizedRow.dragOver {
-  background-color: #dbeafe;
-  border: 2px dashed #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background-color: #f0f0f0;
+  border: 2px dashed #666;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
 }
 
 .uncategorizedLabel {

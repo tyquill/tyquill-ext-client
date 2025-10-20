@@ -35,6 +35,7 @@ export const FolderSidebar: React.FC = () => {
   const { t } = useI18n();
   const { showSuccess, showError } = useToastHelpers();
   const [isAllItemsDragOver, setIsAllItemsDragOver] = useState(false);
+  const [dragOverFolderId, setDragOverFolderId] = useState<number | null>(null);
   const [isPanelWide, setIsPanelWide] = useState(true);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
@@ -187,6 +188,79 @@ export const FolderSidebar: React.FC = () => {
     }
   };
 
+  const handleFolderDragOver = (e: React.DragEvent, folderId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverFolderId(folderId);
+  };
+
+  const handleFolderDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolderId(null);
+  };
+
+  const handleFolderDrop = async (e: React.DragEvent, folderId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverFolderId(null);
+
+    try {
+      const dragDataString = e.dataTransfer.getData('application/json');
+      if (!dragDataString) {
+        logger.warn('No drag data found');
+        return;
+      }
+
+      // Safe JSON parsing with validation
+      let dragData: unknown;
+      try {
+        dragData = JSON.parse(dragDataString);
+      } catch (parseError) {
+        logger.error('Failed to parse drag data:', parseError);
+        showError(t('common_error'), 'Invalid drag data format');
+        return;
+      }
+
+      // Validate drag data structure
+      if (!isDragData(dragData)) {
+        logger.error('Invalid drag data structure:', dragData);
+        showError(t('common_error'), 'Invalid item data');
+        return;
+      }
+
+      logger.debug('Dropping item into folder:', dragData, 'folderId:', folderId);
+
+      // Call API to move item to folder
+      if (dragData.type === 'SCRAP') {
+        await folderService.addItemsToFolder(folderId, {
+          scrapIds: [dragData.id],
+        });
+      } else if (dragData.type === 'ARTICLE') {
+        await folderService.addItemsToFolder(folderId, {
+          articleIds: [dragData.id],
+        });
+      }
+
+      const folder = folders.find(f => f.folderId === folderId);
+      showSuccess(
+        t('folder_move_success') || 'Success',
+        `Moved ${dragData.type.toLowerCase()} to ${folder?.name || 'folder'}`
+      );
+
+      // Refresh content list
+      await refreshContent();
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to move item to folder';
+      logger.error('Failed to move item:', error);
+      showError(
+        t('common_error') || 'Error',
+        errorMessage || t('folder_move_failed') || 'Failed to move item to folder'
+      );
+    }
+  };
+
   if (isFolderSidebarCollapsed) {
     return (
       <div className={styles.collapsedSidebar} ref={sidebarRef}>
@@ -223,8 +297,11 @@ export const FolderSidebar: React.FC = () => {
         {/* Uncategorized in collapsed state */}
         <Tooltip content={t('uncategorized')} side="right">
           <div
-            className={`${styles.collapsedFolderIcon} ${selectedFolderId === null ? styles.selected : ''}`}
+            className={`${styles.collapsedFolderIcon} ${selectedFolderId === null ? styles.selected : ''} ${isAllItemsDragOver ? styles.dragOver : ''}`}
             onClick={handleSelectUncategorized}
+            onDragOver={handleUncategorizedDragOver}
+            onDragLeave={handleUncategorizedDragLeave}
+            onDrop={handleUncategorizedDrop}
             role="button"
             aria-label={t('uncategorized')}
           >
@@ -236,8 +313,11 @@ export const FolderSidebar: React.FC = () => {
         {folders.slice(0, 5).map((folder) => (
           <Tooltip key={folder.folderId} content={folder.name} side="right">
             <div
-              className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''}`}
+              className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''} ${dragOverFolderId === folder.folderId ? styles.dragOver : ''}`}
               onClick={() => handleSelectFolder(folder.folderId)}
+              onDragOver={(e) => handleFolderDragOver(e, folder.folderId)}
+              onDragLeave={handleFolderDragLeave}
+              onDrop={(e) => handleFolderDrop(e, folder.folderId)}
               role="button"
               aria-label={folder.name}
             >
