@@ -8,10 +8,9 @@ import { trackPageViewBridge, trackPageExitBridge } from '../analytics/bridge';
 import { authService } from '../services/auth.service';
 import LandingPage from './pages/LandingPage';
 import Header, { Sidebar } from '../components/sidepanel/Header/Header';
-import ScrapPage from './pages/ScrapPage';
+import UnifiedContentPage from './pages/UnifiedContentPage';
 
 import ArticleGeneratePage from './pages/ArticleGeneratePage';
-import ArchivePage from './pages/ArchivePage';
 import ArchiveDetailPage from './pages/ArchiveDetailPage';
 import StyleManagementPage from './pages/StyleManagementPage';
 import styles from './App.module.css';
@@ -30,23 +29,19 @@ const App: React.FC = () => {
   const pageStartTimeRef = useRef<number>(Date.now());
 
   const navigateToMain = () => {
-    setCurrentPage({ type: 'scrap' });
+    setCurrentPage({ type: 'content' });
   };
 
   const handleMenuClick = (menu: string) => {
     setCurrentPage({ type: menu as PageType });
   };
 
-  const handleArchiveDetail = (draftId: string) => {
-    setCurrentPage({ type: 'archive-detail', draftId });
+  const handleNavigateToDetail = (articleId: number) => {
+    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
   };
 
   const handleArchiveBack = () => {
-    setCurrentPage({ type: 'archive' });
-  };
-
-  const handleNavigateToDetail = (articleId: number) => {
-    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
+    setCurrentPage({ type: 'content' });
   };
 
   // 언어 설정 초기화 및 인증 체크
@@ -87,7 +82,7 @@ const App: React.FC = () => {
   // 인증 상태에 따른 페이지 렌더링
   useEffect(() => {
     if (isAuthenticated) {
-      setCurrentPage({ type: 'scrap' });
+      setCurrentPage({ type: 'content' });
     } else {
       setCurrentPage({ type: 'landing' });
     }
@@ -176,25 +171,22 @@ const App: React.FC = () => {
         <Header />
         <div className={styles.appMain}>
           <div className={styles.appContent}>
-            {currentPage.type === 'scrap' && <ScrapPage />}
+            {currentPage.type === 'content' && (
+              <UnifiedContentPage onNavigateToDetail={handleNavigateToDetail} />
+            )}
 
             {currentPage.type === 'draft' && (
-              <ArticleGeneratePage 
+              <ArticleGeneratePage
                 onNavigateToDetail={handleNavigateToDetail}
                 onNavigate={handleMenuClick}
-              />
-            )}
-            {currentPage.type === 'archive' && (
-              <ArchivePage 
-                onDraftClick={handleArchiveDetail}
               />
             )}
             {currentPage.type === 'archive-detail' && currentPage.draftId && (
               <ArchiveDetailPage draftId={currentPage.draftId} onBack={handleArchiveBack} />
             )}
-            {currentPage.type === 'style-management' && <StyleManagementPage />} 
+            {currentPage.type === 'style-management' && <StyleManagementPage />}
           </div>
-          <Sidebar activeMenu={currentPage.type === 'archive-detail' ? 'archive' : currentPage.type} onMenuClick={handleMenuClick} />
+          <Sidebar activeMenu={currentPage.type === 'archive-detail' ? 'content' : currentPage.type} onMenuClick={handleMenuClick} />
         </div>
       </div>
     </ToastProvider>

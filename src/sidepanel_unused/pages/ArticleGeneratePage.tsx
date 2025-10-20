@@ -561,7 +561,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
             event.title ? `${t('articleGenerate_titlePrefix')} ${event.title}` : ''
           );
 
-          if (currentPage === 'archive' && onRefreshArchiveList) {
+          if (currentPage === 'content' && onRefreshArchiveList) {
             onRefreshArchiveList();
           }
 
@@ -1367,7 +1367,7 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
                         setGenerating(false);
                         setGenerationStatus('idle');
                         setGenerationError(null);
-                        onNavigate('archive');
+                        onNavigate('content');
                       }}
                       style={{
                         padding: '10px 20px',

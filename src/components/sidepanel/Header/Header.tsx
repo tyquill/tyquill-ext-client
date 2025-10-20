@@ -56,9 +56,8 @@ const menuItemVariants = {
 export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => {
   const { t } = useI18n();
   const menuItems: MenuItem[] = [
-    { key: 'scrap', label: t('menu_scrap'), icon: FaBookmark },
+    { key: 'content', label: t('menu_content'), icon: FaBookmark },
     { key: 'draft', label: t('menu_draft'), icon: IoSparkles },
-    { key: 'archive', label: t('menu_archive'), icon: IoArchive },
   ];
 
 
