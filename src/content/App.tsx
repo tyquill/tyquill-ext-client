@@ -173,6 +173,73 @@ const App: React.FC = () => {
     };
   }, [initializeLanguage]);
 
+  // Web client -> Extension: 설치 감지 프로토콜 처리 (TYQUILL_GET_AUTH_REQUEST)
+  useEffect(() => {
+    const handleAuthHandshake = async (event: MessageEvent) => {
+      // Only accept messages from our SaaS domains: localhost or *.tyquill.ai
+      try {
+        const originHost = new URL(event.origin).hostname;
+        const isAllowed = originHost === 'localhost' || originHost.endsWith('tyquill.ai');
+        if (!isAllowed) return;
+      } catch { return; }
+
+      const data = event.data as any;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'TYQUILL_GET_AUTH_REQUEST' && data.source === 'tyquill-web-client') {
+        try {
+          const response = await browser.runtime.sendMessage({ action: 'getAuthState' });
+          window.postMessage({
+            type: 'TYQUILL_AUTH_RESPONSE',
+            source: 'tyquill-extension',
+            authState: response?.authState || null,
+          }, event.origin);
+        } catch (_error) {
+          window.postMessage({
+            type: 'TYQUILL_AUTH_RESPONSE',
+            source: 'tyquill-extension',
+            authState: null,
+          }, event.origin);
+        }
+      }
+    };
+
+    window.addEventListener('message', handleAuthHandshake);
+    return () => window.removeEventListener('message', handleAuthHandshake);
+  }, []);
+
+  // Web client -> Extension: 사이드패널 열기 브리지 (설치 감지 ACK 포함)
+  useEffect(() => {
+    const handleWebClientOpenRequest = async (event: MessageEvent) => {
+      // Only accept messages from our SaaS domains: localhost or *.tyquill.ai
+      try {
+        const originHost = new URL(event.origin).hostname;
+        const isAllowed = originHost === 'localhost' || originHost.endsWith('tyquill.ai');
+        if (!isAllowed) return;
+      } catch { return; }
+      const data = event.data as any;
+      if (!data || typeof data !== 'object') return;
+
+      if (data.type === 'TYQUILL_OPEN_EXTENSION' && data.source === 'tyquill-web-client') {
+        try {
+          // 설치 감지용 ACK 반환
+          window.postMessage({
+            type: 'TYQUILL_EXTENSION_ACK',
+            source: 'tyquill-extension',
+          }, event.origin);
+        } catch {}
+
+        try {
+          // 기존 플로팅 버튼과 동일 경로: background에 사이드패널 열기 요청
+          await browser.runtime.sendMessage({ action: 'openSidePanel' });
+        } catch {}
+      }
+    };
+
+    window.addEventListener('message', handleWebClientOpenRequest);
+    return () => window.removeEventListener('message', handleWebClientOpenRequest);
+  }, []);
+
 
   // DOM이 준비되면 FloatingButton 표시
   useEffect(() => {
