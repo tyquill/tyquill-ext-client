@@ -41,6 +41,14 @@
   gap: 12px;
 }
 
+/* Left controls container - Sort dropdown and Tag Filter */
+.leftControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* Search bar - Primary input */
 .searchBar {
   width: 100%;
@@ -82,6 +90,86 @@
 
 .searchInput::placeholder {
   color: #999;
+}
+
+/* Tag Filters Row */
+.tagFiltersRow {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background-color: #f0f0f0;
+  border-radius: 8px;
+}
+
+.tagFiltersLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  white-space: nowrap;
+}
+
+.tagFilters {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagFilterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 12px;
+  background-color: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 20px;
+  font-size: 13px;
+  color: #333;
+  transition: all 0.2s ease;
+}
+
+.tagFilterChip:hover {
+  border-color: #999;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+.tagFilterRemove {
+  background: none;
+  border: none;
+  padding: 2px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.tagFilterRemove:hover {
+  background-color: #f0f0f0;
+  color: #333;
+}
+
+.tagFilterClearAll {
+  padding: 4px 12px;
+  background-color: white;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tagFilterClearAll:hover {
+  border-color: #999;
+  background-color: #fafafa;
+  color: #333;
 }
 
 /* Action buttons container (right side of row 2) */

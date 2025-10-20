@@ -12,6 +12,7 @@ import layoutStyles from './CommonLayout.module.css';
 import Tooltip from '../../components/common/Tooltip';
 import { TagList } from '../../components/sidepanel/TagList/TagList';
 import { TagAddButton } from '../../components/sidepanel/TagAddButton/TagAddButton';
+import TagFilterButton from '../../components/sidepanel/TagFilterButton/TagFilterButton';
 import { scrapService } from '../../services/scrapService';
 import { articleService } from '../../services/articleService';
 import { clipAndScrapCurrentPage, ScrapStatus } from '../../utils/scrapHelper';
@@ -271,6 +272,23 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     target.classList.remove(styles.dragging);
   };
 
+  const handleTagClick = useCallback((tagName: string) => {
+    // Toggle tag selection
+    if (selectedTags.includes(tagName)) {
+      setSelectedTags(selectedTags.filter(t => t !== tagName));
+    } else {
+      setSelectedTags([...selectedTags, tagName]);
+    }
+  }, [selectedTags, setSelectedTags]);
+
+  const handleRemoveTagFilter = useCallback((tagName: string) => {
+    setSelectedTags(selectedTags.filter(t => t !== tagName));
+  }, [selectedTags, setSelectedTags]);
+
+  const handleClearAllTagFilters = useCallback(() => {
+    setSelectedTags([]);
+  }, [setSelectedTags]);
+
   const renderContentItem = (item: any, index: number) => {
     const isLast = index === items.length - 1;
     const maxVisibleTags = getMaxVisibleTags(cardWidth);
@@ -334,6 +352,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
                 tags={scrap.tags ? scrap.tags.map((t: any) => t.name) : []}
                 maxVisibleTags={maxVisibleTags}
                 onTagRemove={(tagName) => handleRemoveTag('SCRAP', scrap.scrapId, tagName)}
+                onTagClick={handleTagClick}
                 showRemoveButton={true}
               />
             </div>
@@ -394,6 +413,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
                 tags={article.tags ? article.tags.map((t: any) => t.name) : []}
                 maxVisibleTags={maxVisibleTags}
                 onTagRemove={(tagName) => handleRemoveTag('ARTICLE', article.articleId, tagName)}
+                onTagClick={handleTagClick}
                 showRemoveButton={true}
               />
             </div>
@@ -429,23 +449,56 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
             </div>
           </div>
 
-          {/* Row 2: Sort dropdown | Action buttons */}
+          {/* Tag Filters */}
+          {/* {selectedTags.length > 0 && (
+            <div className={styles.tagFiltersRow}>
+              <div className={styles.tagFilters}>
+                {selectedTags.map((tag) => (
+                  <span key={tag} className={styles.tagFilterChip}>
+                    {tag}
+                    <button
+                      className={styles.tagFilterRemove}
+                      onClick={() => handleRemoveTagFilter(tag)}
+                      aria-label={`Remove ${tag} filter`}
+                    >
+                      <IoClose size={14} />
+                    </button>
+                  </span>
+                ))}
+                <button
+                  className={styles.tagFilterClearAll}
+                  onClick={handleClearAllTagFilters}
+                >
+                  {t('clear_all')}
+                </button>
+              </div>
+            </div>
+          )} */}
+
+          {/* Row 2: Sort dropdown | Tag Filter | Action buttons */}
           <div className={styles.actionsRow}>
-            {/* Left: Sort dropdown */}
-            <Tooltip content={t('sort_by')}>
-              <select
-                className={styles.sortSelect}
-                value={`${sortBy}_${sortOrder}`}
-                onChange={(e) => {
-                  const [newSortBy, newSortOrder] = e.target.value.split('_');
-                  setSorting(newSortBy as any, newSortOrder as any);
-                }}
-                aria-label={t('sort_by')}
-              >
-                <option value="createdAt_DESC">{t('sort_newest')}</option>
-                <option value="createdAt_ASC">{t('sort_oldest')}</option>
-              </select>
-            </Tooltip>
+            {/* Left: Sort dropdown and Tag Filter */}
+            <div className={styles.leftControls}>
+              <Tooltip content={t('sort_by')}>
+                <select
+                  className={styles.sortSelect}
+                  value={`${sortBy}_${sortOrder}`}
+                  onChange={(e) => {
+                    const [newSortBy, newSortOrder] = e.target.value.split('_');
+                    setSorting(newSortBy as any, newSortOrder as any);
+                  }}
+                  aria-label={t('sort_by')}
+                >
+                  <option value="createdAt_DESC">{t('sort_newest')}</option>
+                  <option value="createdAt_ASC">{t('sort_oldest')}</option>
+                </select>
+              </Tooltip>
+
+              <TagFilterButton
+                selectedTags={selectedTags}
+                onTagsChange={setSelectedTags}
+              />
+            </div>
 
             {/* Right: Action buttons */}
             <div className={styles.actionButtons}>
