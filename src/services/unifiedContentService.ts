@@ -90,20 +90,30 @@ export class UnifiedContentService {
    */
   async getUnifiedContent(query: UnifiedContentQuery = {}): Promise<UnifiedContentResponse> {
     try {
-      const queryParams = new URLSearchParams();
+      // Build query string manually to properly handle arrays
+      const params: string[] = [];
 
-      if (query.page) queryParams.append('page', query.page.toString());
-      if (query.limit) queryParams.append('limit', query.limit.toString());
-      if (query.sortBy) queryParams.append('sortBy', query.sortBy);
-      if (query.sortOrder) queryParams.append('sortOrder', query.sortOrder);
-      if (query.type) queryParams.append('type', query.type);
-      if (query.search) queryParams.append('search', query.search);
-      if (query.folderId) queryParams.append('folderId', query.folderId);
+      if (query.page) params.push(`page=${query.page}`);
+      if (query.limit) params.push(`limit=${query.limit}`);
+      if (query.sortBy) params.push(`sortBy=${query.sortBy}`);
+      if (query.sortOrder) params.push(`sortOrder=${query.sortOrder}`);
+      if (query.type) params.push(`type=${query.type}`);
+      if (query.search) params.push(`search=${encodeURIComponent(query.search)}`);
+      if (query.folderId) params.push(`folderId=${query.folderId}`);
+
+      // NestJS expects multiple query params with the same key for arrays: ?tags=tag1&tags=tag2
       if (query.tags && query.tags.length > 0) {
-        query.tags.forEach(tag => queryParams.append('tags', tag));
+        query.tags.forEach(tag => {
+          params.push(`tags=${encodeURIComponent(tag)}`);
+        });
       }
 
-      const endpoint = `/content/unified${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+      const endpoint = `/content/unified${queryString}`;
+
+      console.log('🔍 Unified Content API Request:', endpoint);
+      console.log('🔍 Query object:', JSON.stringify(query, null, 2));
+      console.log('🔍 Tags array:', query.tags, 'Is Array?', Array.isArray(query.tags));
 
       const apiResponse = await this.apiRequest<RawApiResponse>(endpoint, {
         method: 'GET',

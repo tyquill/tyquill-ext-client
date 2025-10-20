@@ -7,6 +7,7 @@ interface TagListProps {
   maxVisibleTags?: number;
   className?: string;
   onTagRemove?: (tagName: string) => void;
+  onTagClick?: (tagName: string) => void;
   showRemoveButton?: boolean;
 }
 
@@ -15,6 +16,7 @@ export const TagList: React.FC<TagListProps> = ({
   maxVisibleTags = 2,
   className = '',
   onTagRemove,
+  onTagClick,
   showRemoveButton = false
 }) => {
   const [showAllTags, setShowAllTags] = useState(false);
@@ -47,10 +49,23 @@ export const TagList: React.FC<TagListProps> = ({
     }
   };
 
+  const handleTagClick = (tagName: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTagClick) {
+      onTagClick(tagName);
+    }
+  };
+
   return (
     <div className={`${styles.tagContainer} ${className}`} ref={containerRef}>
       {visibleTags.map((tag, index) => (
-        <span key={index} className={styles.tag} title={tag}>
+        <span
+          key={index}
+          className={styles.tag}
+          title={tag}
+          onClick={(e) => handleTagClick(tag, e)}
+          style={{ cursor: onTagClick ? 'pointer' : 'default' }}
+        >
           <span className={styles.tagText}>{tag}</span>
           {showRemoveButton && onTagRemove && (
             <button
@@ -75,13 +90,19 @@ export const TagList: React.FC<TagListProps> = ({
         </button>
       )}
       {showAllTags && (
-        <div 
+        <div
           className={styles.tagListTooltip}
           onClick={(e) => e.stopPropagation()}
         >
           <div className={styles.tagList}>
             {tags.slice(maxVisibleTags).map((tag, index) => (
-              <span key={index} className={styles.tag} title={tag}>
+              <span
+                key={index}
+                className={styles.tag}
+                title={tag}
+                onClick={(e) => handleTagClick(tag, e)}
+                style={{ cursor: onTagClick ? 'pointer' : 'default' }}
+              >
                 <span className={styles.tagText}>{tag}</span>
                 {showRemoveButton && onTagRemove && (
                   <button
