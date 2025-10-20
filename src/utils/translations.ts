@@ -44,6 +44,7 @@ const koTranslations = {
   search_tags: "태그 검색",
   no_tags_found: "검색 결과가 없습니다",
   no_tags_available: "사용 가능한 태그가 없습니다",
+  page: "페이지",
 
   language_selector_label: "언어",
   language_korean: "한국어",
@@ -538,6 +539,7 @@ const enTranslations = {
   search_tags: "Search tags",
   no_tags_found: "No tags found",
   no_tags_available: "No tags available",
+  page: "Page",
 
   language_selector_label: "Language",
   language_korean: "한국어",

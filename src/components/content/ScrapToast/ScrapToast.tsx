@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IoCheckmarkCircle } from 'react-icons/io5';
+import { useI18n } from '../../../hooks/useI18n';
 import styles from './ScrapToast.module.css';
 import Confetti from '../../sidepanel/Confetti/Confetti';
 
@@ -16,6 +17,7 @@ const ScrapToast: React.FC<ScrapToastProps> = ({
   onClose,
   duration = 4000,
 }) => {
+  const { t } = useI18n();
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
@@ -74,7 +76,7 @@ const ScrapToast: React.FC<ScrapToastProps> = ({
           <IoCheckmarkCircle className={styles.icon} />
         </div>
         <div className={styles.content}>
-          <div className={styles.title}>스크랩 완료!</div>
+          <div className={styles.title}>{t('scrapPage_scrapSuccess')}</div>
           <div className={styles.pageTitle}>{title}</div>
           {url && <div className={styles.url}>{url}</div>}
         </div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
+import { useI18n } from '../hooks/useI18n';
 import FloatingButton from '../components/content/FloatingButton/FloatingButton';
 import ScrapToast from '../components/content/ScrapToast/ScrapToast';
 import { WebClipper } from '../utils/webClipper';
@@ -18,6 +19,7 @@ interface ScrapData {
 
 const App: React.FC = () => {
   const { initializeLanguage } = useLanguageStore();
+  const { t } = useI18n();
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [scrapData, setScrapData] = useState<ScrapData | null>(null);
   const isThreads = (typeof window !== 'undefined') && (
@@ -133,7 +135,7 @@ const App: React.FC = () => {
           const { data } = request;
           if (data) {
             setScrapData({
-              title: data.title || data.url || '페이지',
+              title: data.title || data.url || t('page'),
               url: data.url,
             });
             setShowScrapToast(true);
