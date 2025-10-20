@@ -55,6 +55,19 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
   const lastItemRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver>();
 
+  // Dynamic maxVisibleTags based on card width
+  const [cardWidth, setCardWidth] = useState<number>(200);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // Calculate maxVisibleTags based on card width
+  // Tags container reserves 80px for date, ~28px for add button, ~65px per tag
+  const getMaxVisibleTags = (width: number): number => {
+    if (width < 230) return 1;
+    if (width < 290) return 2;
+    if (width < 360) return 3;
+    return 4;
+  };
+
   // Load content on mount
   useEffect(() => {
     loadContent();
@@ -85,6 +98,27 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
       }
     };
   }, [itemsLoading, itemsHasMore, loadMoreContent]);
+
+  // ResizeObserver to detect card width changes
+  useEffect(() => {
+    const resizeObserver = new ResizeObserver((entries) => {
+      if (entries.length > 0) {
+        // All cards have same width in grid, use first entry
+        const width = entries[0].contentRect.width;
+        setCardWidth(width);
+      }
+    });
+
+    // Observe only the first card (all cards have same width in grid layout)
+    const cards = Array.from(cardRefs.current.values());
+    if (cards.length > 0) {
+      resizeObserver.observe(cards[0]);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [items.length]);
 
   const handleDeleteScrap = async (scrapId: number) => {
     if (!confirm(t('scrapPage_confirmDelete'))) return;
@@ -160,7 +194,16 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
         const tag = tags.find(t => t.name === tagName);
         if (tag) {
           await scrapService.removeTagFromScrap(itemId, tag.tagId);
-          await refreshContent();
+          // Optimistic update: update tags locally without full page reload
+          const updatedTags = await scrapService.getScrapTags(itemId);
+          const updatedItems = items.map(item => {
+            if (item.type === 'SCRAP' && item.data.scrapId === itemId) {
+              return { ...item, data: { ...item.data, tags: updatedTags } };
+            }
+            return item;
+          });
+          // Update store directly without full reload
+          useContentStore.setState({ items: updatedItems });
         }
       }
       // Article tags would be handled similarly if backend supports it
@@ -172,8 +215,32 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
   const handleAddTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: number, tagName: string) => {
     try {
       if (itemType === 'SCRAP') {
+        // Find current item and check for duplicate tags
+        const currentItem = items.find(item => item.type === 'SCRAP' && item.data.scrapId === itemId);
+        if (currentItem && currentItem.type === 'SCRAP') {
+          const existingTags = currentItem.data.tags || [];
+          const isDuplicate = existingTags.some((tag: any) => {
+            const tagNameStr = typeof tag === 'string' ? tag : tag.name;
+            return tagNameStr.toLowerCase() === tagName.toLowerCase();
+          });
+
+          if (isDuplicate) {
+            showError(t('common_error'), `Tag "${tagName}" already exists`);
+            return;
+          }
+        }
+
         await scrapService.addTagToScrap(itemId, tagName);
-        await refreshContent();
+        // Optimistic update: update tags locally without full page reload
+        const updatedTags = await scrapService.getScrapTags(itemId);
+        const updatedItems = items.map(item => {
+          if (item.type === 'SCRAP' && item.data.scrapId === itemId) {
+            return { ...item, data: { ...item.data, tags: updatedTags } };
+          }
+          return item;
+        });
+        // Update store directly without full reload
+        useContentStore.setState({ items: updatedItems });
         showSuccess(t('common_success'), `Tag "${tagName}" added`);
       }
       // Article tags would be handled similarly if backend supports it
@@ -208,6 +275,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
   const renderContentItem = (item: any, index: number) => {
     const isLast = index === items.length - 1;
+    const maxVisibleTags = getMaxVisibleTags(cardWidth);
 
     if (item.type === 'SCRAP') {
       const scrap = item.data;
@@ -215,7 +283,11 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
         <div
           key={`scrap-${scrap.scrapId}`}
           className={styles.contentItem}
-          ref={isLast ? lastItemRef : null}
+          ref={(el) => {
+            if (isLast) lastItemRef.current = el;
+            if (el) cardRefs.current.set(`scrap-${scrap.scrapId}`, el);
+            else cardRefs.current.delete(`scrap-${scrap.scrapId}`);
+          }}
           draggable={true}
           onDragStart={(e) => handleDragStart(e, 'SCRAP', scrap.scrapId)}
           onDragEnd={handleDragEnd}
@@ -251,15 +323,14 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
           <div className={styles.itemFooter}>
             <div className={styles.tags}>
-              {scrap.tags && scrap.tags.length > 0 && (
-                <TagList
-                  tags={scrap.tags.map((t: any) => t.name)}
-                  onTagRemove={(tagName) => handleRemoveTag('SCRAP', scrap.scrapId, tagName)}
-                  showRemoveButton={true}
-                />
-              )}
               <TagAddButton
                 onAddTag={(tagName) => handleAddTag('SCRAP', scrap.scrapId, tagName)}
+              />
+              <TagList
+                tags={scrap.tags ? scrap.tags.map((t: any) => t.name) : []}
+                maxVisibleTags={maxVisibleTags}
+                onTagRemove={(tagName) => handleRemoveTag('SCRAP', scrap.scrapId, tagName)}
+                showRemoveButton={true}
               />
             </div>
             <div className={styles.itemDate}>
@@ -274,7 +345,11 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
         <div
           key={`article-${article.articleId}`}
           className={styles.contentItem}
-          ref={isLast ? lastItemRef : null}
+          ref={(el) => {
+            if (isLast) lastItemRef.current = el;
+            if (el) cardRefs.current.set(`article-${article.articleId}`, el);
+            else cardRefs.current.delete(`article-${article.articleId}`);
+          }}
           draggable={true}
           onDragStart={(e) => handleDragStart(e, 'ARTICLE', article.articleId)}
           onDragEnd={handleDragEnd}
@@ -306,15 +381,14 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
           <div className={styles.itemFooter}>
             <div className={styles.tags}>
-              {article.tags && article.tags.length > 0 && (
-                <TagList
-                  tags={article.tags.map((t: any) => t.name)}
-                  onTagRemove={(tagName) => handleRemoveTag('ARTICLE', article.articleId, tagName)}
-                  showRemoveButton={true}
-                />
-              )}
-              <TagAddButton
+            <TagAddButton
                 onAddTag={(tagName) => handleAddTag('ARTICLE', article.articleId, tagName)}
+              />
+              <TagList
+                tags={article.tags ? article.tags.map((t: any) => t.name) : []}
+                maxVisibleTags={maxVisibleTags}
+                onTagRemove={(tagName) => handleRemoveTag('ARTICLE', article.articleId, tagName)}
+                showRemoveButton={true}
               />
             </div>
             <div className={styles.itemDate}>

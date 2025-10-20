@@ -242,6 +242,7 @@
   padding: 14px; /* Reduced from 18px for more space */
   display: flex;
   flex-direction: column;
+  overflow: visible; /* Allow tag tooltip to escape card bounds */
 }
 
 .loading,
@@ -424,6 +425,8 @@
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #f0f0f0;
+  overflow: visible; /* Allow tag tooltip to display */
+  position: relative; /* Positioning context for absolute tooltip */
 }
 
 /* Optimize footer for square cards */
@@ -437,6 +440,13 @@
 .tags {
   flex: 1;
   min-width: 0;
+  max-width: calc(100% - 80px); /* Reserve space for date */
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  align-items: center;
+  overflow: visible; /* Allow tooltip to escape */
+  position: relative; /* Positioning context for tooltip */
 }
 
 .itemDate {

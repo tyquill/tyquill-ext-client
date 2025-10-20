@@ -106,7 +106,7 @@ export const TagAddButton: React.FC<TagAddButtonProps> = ({
             onChange={(e) => setTagValue(e.target.value)}
             onKeyDown={handleKeyDown}
             disabled={isSubmitting}
-            maxLength={30}
+            maxLength={20}
           />
           <button
             className={styles.tagSubmitButton}
