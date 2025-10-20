@@ -438,8 +438,6 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
               >
                 <option value="createdAt_DESC">{t('sort_newest')}</option>
                 <option value="createdAt_ASC">{t('sort_oldest')}</option>
-                <option value="title_ASC">{t('sort_title_asc')}</option>
-                <option value="title_DESC">{t('sort_title_desc')}</option>
               </select>
             </Tooltip>
 
