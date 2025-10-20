@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { IoAdd, IoDocuments, IoChevronBack, IoChevronForward, IoFolder } from 'react-icons/io5';
+import { IoAdd, IoChevronBack, IoChevronForward, IoFolder, IoFileTray } from 'react-icons/io5';
+import { FaRegFolderOpen } from 'react-icons/fa6';
 import { useContentStore } from '../../../stores/contentStore';
 import { FolderTreeItem } from '../FolderTreeItem/FolderTreeItem';
 import { folderService } from '../../../services/folderService';
@@ -305,7 +306,7 @@ export const FolderSidebar: React.FC = () => {
             role="button"
             aria-label={t('uncategorized')}
           >
-            <IoDocuments size={18} />
+            <IoFileTray size={18} />
           </div>
         </Tooltip>
 
@@ -321,7 +322,11 @@ export const FolderSidebar: React.FC = () => {
               role="button"
               aria-label={folder.name}
             >
-              <IoFolder size={18} style={{ color: folder.color || '#888' }} />
+              {selectedFolderId === folder.folderId ? (
+                <FaRegFolderOpen size={18} style={{ color: folder.color || '#888' }} />
+              ) : (
+                <IoFolder size={18} style={{ color: folder.color || '#888' }} />
+              )}
             </div>
           </Tooltip>
         ))}
@@ -379,7 +384,7 @@ export const FolderSidebar: React.FC = () => {
               onDragLeave={handleUncategorizedDragLeave}
               onDrop={handleUncategorizedDrop}
             >
-              <IoDocuments size={16} />
+              <IoFileTray size={16} />
               <span className={styles.uncategorizedLabel}>{t('uncategorized')}</span>
             </div>
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { IoChevronDown, IoChevronForward, IoFolder, IoFolderOpen, IoTrash, IoCreate } from 'react-icons/io5';
+import { IoChevronDown, IoChevronForward, IoFolder, IoTrash, IoCreate } from 'react-icons/io5';
+import { FaRegFolderOpen } from 'react-icons/fa6';
 import { FolderResponse, folderService } from '../../../services/folderService';
 import { useContentStore } from '../../../stores/contentStore';
 import { useToastHelpers } from '../../../hooks/useToast';
@@ -205,8 +206,8 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             <div className={styles.chevronPlaceholder} />
           )}
 
-          {isExpanded && hasChildren ? (
-            <IoFolderOpen size={16} style={{ color: folder.color || '#888' }} />
+          {isSelected || (isExpanded && hasChildren) ? (
+            <FaRegFolderOpen size={16} style={{ color: folder.color || '#888' }} />
           ) : (
             <IoFolder size={16} style={{ color: folder.color || '#888' }} />
           )}
