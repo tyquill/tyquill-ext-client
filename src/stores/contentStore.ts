@@ -161,7 +161,6 @@ export const useContentStore = create<ContentState>((set, get) => ({
   // Actions - Content
   loadContent: async (append = false) => {
     const state = get();
-    logger.debug('🔄 contentStore.loadContent called:', { append, currentPage: state.itemsPage });
     set({ itemsLoading: true, itemsError: null });
 
     try {
@@ -177,17 +176,9 @@ export const useContentStore = create<ContentState>((set, get) => ({
         folderId: state.selectedFolderId !== null ? state.selectedFolderId.toString() : 'null',
       };
 
-      logger.debug('📤 contentStore: Fetching with query:', query);
       const response = await unifiedContentService.getUnifiedContent(query);
-      logger.debug('📥 contentStore: Received response:', {
-        itemsCount: response.items.length,
-        total: response.total,
-        hasMore: response.hasMore,
-        page: response.page,
-      });
 
       const newItems = append ? [...state.items, ...response.items] : response.items;
-      logger.debug('✅ contentStore: Setting items:', { newItemsCount: newItems.length });
 
       set({
         items: newItems,

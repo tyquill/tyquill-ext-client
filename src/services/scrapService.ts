@@ -109,6 +109,8 @@ export interface ScrapResponse {
     picture?: string;
   }>;
   type?: string;
+  scrapType?: string; // 'webclip' or 'upload' - for unified content API
+  faviconUrl?: string; // Favicon URL - for unified content API
   from?: string;
   mimeType?: string; // PDF 등 업로드 파일의 MIME 타입
   fileName?: string; // 업로드 파일명

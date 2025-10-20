@@ -291,16 +291,20 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           draggable={true}
           onDragStart={(e) => handleDragStart(e, 'SCRAP', scrap.scrapId)}
           onDragEnd={handleDragEnd}
-          onClick={() => openScrapInNewTab(scrap.scrapId, scrap.type)}
+          onClick={() => openScrapInNewTab(scrap.scrapId, scrap.scrapType)}
         >
           <div className={styles.itemHeader}>
             <div className={`${styles.itemType} ${styles.itemTypeScrap}`}>
-              {scrap.type === 'webclip' ? (
-                <IoGlobe size={16} />
+              {scrap.scrapType === 'webclip' ? (
+                scrap.faviconUrl ? (
+                  <img src={scrap.faviconUrl} alt="" style={{ width: 16, height: 16, objectFit: 'contain' }} />
+                ) : (
+                  <IoGlobe size={16} />
+                )
               ) : (
                 <IoDocument size={16} />
               )}
-              <span>{scrap.type === 'webclip' ? t('content_type_scrap') : 'PDF/File'}</span>
+              <span>{scrap.scrapType === 'webclip' ? t('content_type_scrap') : 'PDF/File'}</span>
             </div>
             <Tooltip content={t('common_delete')}>
               <button

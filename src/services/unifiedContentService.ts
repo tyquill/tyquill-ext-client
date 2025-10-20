@@ -7,7 +7,6 @@
 import { globalApiClient, ApiRequestOptions } from './globalApiClient';
 import { ScrapResponse } from './scrapService';
 import { ArticleResponse } from './articleService';
-import { logger } from '../utils/logger';
 
 /**
  * Unified content item (discriminated union)
@@ -110,8 +109,6 @@ export class UnifiedContentService {
         method: 'GET',
       });
 
-      logger.debug('🔍 API Response:', apiResponse);
-
       // Transform flat API response to nested structure expected by frontend
       const transformedItems: UnifiedContentItem[] = apiResponse.items
         .map((item: RawApiContentItem): UnifiedContentItem | null => {
@@ -125,6 +122,9 @@ export class UnifiedContentService {
                 htmlContent: '', // Not provided in unified API response
                 url: item.url || '',
                 type: item.scrapType, // Map scrapType from API to type field
+                scrapType: item.scrapType, // Keep scrapType for backward compatibility
+                faviconUrl: item.faviconUrl, // Map faviconUrl from API
+                heroImageUrl: item.heroImageUrl, // Map heroImageUrl from API
                 // Tags can be either string array or object array from API
                 tags: (item.tags || []).map((tag: any) => {
                   if (typeof tag === 'string') {
@@ -163,8 +163,6 @@ export class UnifiedContentService {
           return null;
         })
         .filter((item): item is UnifiedContentItem => item !== null);
-
-      logger.debug('🔍 Transformed items:', transformedItems);
 
       return {
         items: transformedItems,
