@@ -52,7 +52,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
   // PDF Upload state
   const [showPDFUploadModal, setShowPDFUploadModal] = useState(false);
 
-  const lastItemRef = useRef<HTMLDivElement>(null);
+  const lastItemRef = useRef<HTMLDivElement | null>(null);
   const observerRef = useRef<IntersectionObserver>();
 
   // Dynamic maxVisibleTags based on card width
@@ -170,7 +170,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
 
   const handlePDFUploadSuccess = useCallback(() => {
     refreshContent();
-    showSuccess(t('common_success'), t('scrapPage_uploadSuccess'));
+    showSuccess(t('common_success'), t('pdfUpload_uploadSuccess'));
   }, [refreshContent, showSuccess, t]);
 
   const openScrapInNewTab = useCallback(async (scrapId: number, scrapType?: string) => {
@@ -282,7 +282,9 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           key={`scrap-${scrap.scrapId}`}
           className={styles.contentItem}
           ref={(el) => {
-            if (isLast) lastItemRef.current = el;
+            if (isLast) {
+              lastItemRef.current = el;
+            }
             if (el) cardRefs.current.set(`scrap-${scrap.scrapId}`, el);
             else cardRefs.current.delete(`scrap-${scrap.scrapId}`);
           }}
@@ -344,7 +346,9 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
           key={`article-${article.articleId}`}
           className={styles.contentItem}
           ref={(el) => {
-            if (isLast) lastItemRef.current = el;
+            if (isLast) {
+              lastItemRef.current = el;
+            }
             if (el) cardRefs.current.set(`article-${article.articleId}`, el);
             else cardRefs.current.delete(`article-${article.articleId}`);
           }}
@@ -507,7 +511,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
       <PDFUploadModal
         isOpen={showPDFUploadModal}
         onClose={() => setShowPDFUploadModal(false)}
-        onSuccess={handlePDFUploadSuccess}
+        onUploadSuccess={handlePDFUploadSuccess}
       />
     </div>
   );
