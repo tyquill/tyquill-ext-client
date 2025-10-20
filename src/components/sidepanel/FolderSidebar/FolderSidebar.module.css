@@ -50,15 +50,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #3b82f6;
+  color: #666;
   border-radius: 6px;
   transition: all 0.15s ease;
   flex-shrink: 0;
 }
 
 .collapsedAddButton:hover {
-  background-color: #dbeafe;
-  color: #2563eb;
+  background-color: #e5e5e5;
+  color: #000;
 }
 
 .collapsedDivider {
@@ -200,7 +200,7 @@
 }
 
 .createFirstButton {
-  background-color: #3b82f6;
+  background-color: #333;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -212,5 +212,5 @@
 }
 
 .createFirstButton:hover {
-  background-color: #2563eb;
+  background-color: #000;
 }
