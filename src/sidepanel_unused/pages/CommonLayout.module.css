@@ -3,7 +3,8 @@
 .pageLayout {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 100vh !important;
+  max-height: 100vh;
   background-color: #ffffff;
   padding: 0;
   overflow: hidden;
