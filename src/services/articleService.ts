@@ -182,6 +182,18 @@ export interface ArchiveResponse {
 }
 
 /**
+ * 스크랩 응답 타입 (아티클 상세에서 사용)
+ */
+export interface ScrapResponse {
+    scrapId: number;
+    title: string;
+    url: string;
+    content: string;
+    userComment?: string;
+    createdAt: string;
+}
+
+/**
  * 버전 히스토리 아이템 인터페이스
  */
 export interface VersionHistoryItem {
@@ -209,6 +221,9 @@ export interface ArticleResponse {
     createdAt: string;
     updatedAt: string;
     archives?: ArchiveResponse[];
+    writingStyleId?: number;
+    writingStyleName?: string;
+    scraps?: ScrapResponse[];
 }
 
 export class ArticleService {

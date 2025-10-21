@@ -718,6 +718,110 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           )}
         </div>
 
+        {/* WritingStyle 및 Scraps 메타 정보 */}
+        {(article.writingStyleName || (article.scraps && article.scraps.length > 0)) && (
+          <div style={{
+            marginBottom: '20px',
+            padding: '16px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            borderRadius: '8px',
+            border: '1px solid rgba(255, 255, 255, 0.08)'
+          }}>
+            {/* Writing Style */}
+            {article.writingStyleName && (
+              <div style={{ marginBottom: article.scraps && article.scraps.length > 0 ? '16px' : '0' }}>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  marginBottom: '6px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  {t('archiveDetailPage_writingStyle') || 'Writing Style'}
+                </div>
+                <div style={{
+                  fontSize: '14px',
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}>
+                  <span style={{
+                    padding: '4px 10px',
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    borderRadius: '6px',
+                    color: '#818cf8',
+                    fontWeight: '500'
+                  }}>
+                    {article.writingStyleName}
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Scraps */}
+            {article.scraps && article.scraps.length > 0 && (
+              <div>
+                <div style={{
+                  fontSize: '12px',
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  marginBottom: '8px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px'
+                }}>
+                  {t('archiveDetailPage_usedScraps') || 'Used Scraps'} ({article.scraps.length})
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {article.scraps.map((scrap) => (
+                    <div
+                      key={scrap.scrapId}
+                      style={{
+                        padding: '10px 12px',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        borderRadius: '6px',
+                        border: '1px solid rgba(255, 255, 255, 0.05)',
+                        fontSize: '13px'
+                      }}
+                    >
+                      <div style={{
+                        color: 'rgba(255, 255, 255, 0.85)',
+                        fontWeight: '500',
+                        marginBottom: '4px',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {scrap.title || 'Untitled'}
+                      </div>
+                      {scrap.url && (
+                        <div style={{
+                          color: 'rgba(99, 102, 241, 0.7)',
+                          fontSize: '12px',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {scrap.url}
+                        </div>
+                      )}
+                      {scrap.userComment && (
+                        <div style={{
+                          color: 'rgba(255, 255, 255, 0.6)',
+                          fontSize: '12px',
+                          marginTop: '6px',
+                          fontStyle: 'italic'
+                        }}>
+                          "{scrap.userComment}"
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className={styles.detailContent}>
           <div className={styles.previewContainer}>
             {/* <div className={styles.previewHeader}>
