@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { browser } from 'wxt/browser';
 import { useLanguageStore } from '../stores/languageStore';
 import { useI18n } from '../hooks/useI18n';
@@ -22,23 +22,61 @@ const App: React.FC = () => {
   const { t } = useI18n();
   const [showScrapToast, setShowScrapToast] = useState(false);
   const [scrapData, setScrapData] = useState<ScrapData | null>(null);
-  const isThreads = (typeof window !== 'undefined') && (
+  const [currentUrl, setCurrentUrl] = useState(window.location.href);
+
+  // URL 변경 감지
+  useEffect(() => {
+    const handleUrlChange = () => {
+      setCurrentUrl(window.location.href);
+    };
+
+    // SPA 네비게이션 감지
+    window.addEventListener('popstate', handleUrlChange);
+    window.addEventListener('pushstate', handleUrlChange);
+    window.addEventListener('replacestate', handleUrlChange);
+
+    // MutationObserver로 URL 변경 감지 (SPA 보조)
+    const observer = new MutationObserver(() => {
+      if (window.location.href !== currentUrl) {
+        handleUrlChange();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('pushstate', handleUrlChange);
+      window.removeEventListener('replacestate', handleUrlChange);
+      observer.disconnect();
+    };
+  }, [currentUrl]);
+
+  const isThreads = useMemo(() => (typeof window !== 'undefined') && (
     window.location.hostname.includes('threads.net') ||
     window.location.hostname.includes('threads.com') ||
     window.location.href.startsWith('https://www.instagram.com/threads/')
-  );
-  const isYouTube = (typeof window !== 'undefined') && (
+  ), [currentUrl]);
+
+  const isYouTube = useMemo(() => (typeof window !== 'undefined') && (
     window.location.hostname.includes('youtube.com') ||
     window.location.hostname.includes('m.youtube.com')
-  );
-  const isX = (typeof window !== 'undefined') && (
+  ), [currentUrl]);
+
+  const isX = useMemo(() => (typeof window !== 'undefined') && (
     window.location.hostname.includes('x.com') ||
     window.location.hostname.includes('twitter.com')
-  );
-  const isReddit = (typeof window !== 'undefined') && (
+  ), [currentUrl]);
+
+  const isReddit = useMemo(() => (typeof window !== 'undefined') && (
     window.location.hostname.includes('reddit.com') ||
     window.location.hostname.includes('redd.it')
-  );
+  ), [currentUrl]);
+
+  const isLinkedIn = useMemo(() => (typeof window !== 'undefined') && window.location.hostname.includes('linkedin.com'), [currentUrl]);
 
   // 언어 설정 초기화
   useEffect(() => {
@@ -262,7 +300,7 @@ const App: React.FC = () => {
 
   // LinkedIn 피드 컨트롤 메뉴에 Tyquill 버튼 주입 (기본 동작만 유지)
   useEffect(() => {
-    if (!window.location.hostname.includes('linkedin.com')) return;
+    if (!isLinkedIn) return;
 
     const cleanup = initLinkedInInjector();
 
@@ -277,7 +315,7 @@ const App: React.FC = () => {
       cleanup();
       window.removeEventListener('tyquill:li-button-click', handleClick as EventListener);
     };
-  }, []);
+  }, [isLinkedIn]);
 
   // Threads 피드 카드에 Tyquill 버튼 주입
   useEffect(() => {
