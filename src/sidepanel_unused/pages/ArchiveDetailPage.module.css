@@ -452,3 +452,154 @@
     justify-content: flex-end;
   }
 }
+
+/* ============================================
+   Metadata Section - Subtle & Integrated
+   ============================================ */
+
+.metadataSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.metadataRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metadataLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.metadataIcon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+/* Writing Style Badge */
+.writingStyleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 4px;
+  color: #6366f1;
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 0.2s ease;
+}
+
+.writingStyleBadge:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* Scraps Badge */
+.scrapsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.scrapsBadge:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.scrapsCount {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.chevronIcon {
+  color: rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevronIcon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Scraps List */
+.scrapsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+}
+
+.scrapItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.scrapItem:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.scrapTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  line-height: 1.4;
+}
+
+.scrapTitleIcon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.scrapUrl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrapUrlIcon {
+  color: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.scrapComment {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+  font-style: italic;
+  line-height: 1.4;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 0, 0, 0.08);
+}

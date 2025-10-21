@@ -117,6 +117,9 @@ const koTranslations = {
   archiveDetailPage_editingInPageEditorAlert: "페이지 편집기에서 편집 중입니다. 페이지 편집기를 먼저 닫아주세요.",
   archiveDetailPage_loadArticleError: "Failed to load article",
   archiveDetailPage_saveArticleError: "Failed to save article",
+  archiveDetailPage_sources: "출처",
+  archiveDetailPage_style: "스타일",
+  archiveDetailPage_itemsCount: "개 항목",
 
   // Article Generate Page
   articleGenerate_title: "초안 생성",
@@ -612,6 +615,9 @@ const enTranslations = {
   archiveDetailPage_editingInPageEditorAlert: "Editing in page editor. Please close the page editor first.",
   archiveDetailPage_loadArticleError: "Failed to load article",
   archiveDetailPage_saveArticleError: "Failed to save article",
+  archiveDetailPage_sources: "Sources",
+  archiveDetailPage_style: "Style",
+  archiveDetailPage_itemsCount: " items",
 
   // Article Generate Page
   articleGenerate_title: "Generate Draft",

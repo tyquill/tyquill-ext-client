@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp, IoBrush, IoDocumentText, IoLink } from 'react-icons/io5';
 import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
@@ -38,6 +38,66 @@ interface ArchiveDetailPageProps {
   draftId: string;
   onBack: () => void;
 }
+
+// Scraps Section Component with collapsible functionality
+interface ScrapsSectionProps {
+  scraps: Array<{
+    scrapId: number;
+    title: string;
+    url: string;
+    userComment?: string;
+  }>;
+}
+
+const ScrapsSectionComponent: React.FC<ScrapsSectionProps> = ({ scraps }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const { t } = useI18n();
+
+  return (
+    <div className={detailStyles.metadataRow}>
+      <span className={detailStyles.metadataLabel}>
+        <IoDocumentText size={14} className={detailStyles.metadataIcon} />
+        {t('archiveDetailPage_sources')}
+      </span>
+      <div
+        className={detailStyles.scrapsBadge}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className={detailStyles.scrapsCount}>{scraps.length}{t('archiveDetailPage_itemsCount')}</span>
+        <IoChevronDown
+          size={14}
+          className={`${detailStyles.chevronIcon} ${isExpanded ? detailStyles.expanded : ''}`}
+        />
+      </div>
+      {isExpanded && (
+        <div className={detailStyles.scrapsList} style={{ width: '100%' }}>
+          {scraps.map((scrap) => (
+            <div key={scrap.scrapId} className={detailStyles.scrapItem}>
+              <div className={detailStyles.scrapTitle}>
+                <IoDocumentText size={12} className={detailStyles.scrapTitleIcon} />
+                <span>{scrap.title || 'Untitled'}</span>
+              </div>
+
+              {scrap.url && (
+                <div className={detailStyles.scrapUrl}>
+                  <IoLink size={10} className={detailStyles.scrapUrlIcon} />
+                  <span>{scrap.url}</span>
+                </div>
+              )}
+
+              {scrap.userComment && (
+                <div className={detailStyles.scrapComment}>
+                  "{scrap.userComment}"
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
   const { t } = useI18n();
@@ -718,106 +778,27 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
           )}
         </div>
 
-        {/* WritingStyle 및 Scraps 메타 정보 */}
+        {/* Metadata Section */}
         {(article.writingStyleName || (article.scraps && article.scraps.length > 0)) && (
-          <div style={{
-            marginBottom: '20px',
-            padding: '16px',
-            background: 'rgba(255, 255, 255, 0.03)',
-            borderRadius: '8px',
-            border: '1px solid rgba(255, 255, 255, 0.08)'
-          }}>
+          <div className={detailStyles.metadataSection}>
             {/* Writing Style */}
             {article.writingStyleName && (
-              <div style={{ marginBottom: article.scraps && article.scraps.length > 0 ? '16px' : '0' }}>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  marginBottom: '6px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  {t('archiveDetailPage_writingStyle') || 'Writing Style'}
-                </div>
-                <div style={{
-                  fontSize: '14px',
-                  color: 'rgba(255, 255, 255, 0.9)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <span style={{
-                    padding: '4px 10px',
-                    background: 'rgba(99, 102, 241, 0.15)',
-                    borderRadius: '6px',
-                    color: '#818cf8',
-                    fontWeight: '500'
-                  }}>
-                    {article.writingStyleName}
-                  </span>
-                </div>
+              <div className={detailStyles.metadataRow}>
+                <span className={detailStyles.metadataLabel}>
+                  <IoBrush size={14} className={detailStyles.metadataIcon} />
+                  {t('archiveDetailPage_style')}
+                </span>
+                <span className={detailStyles.writingStyleBadge}>
+                  {article.writingStyleName}
+                </span>
               </div>
             )}
 
-            {/* Scraps */}
+            {/* Scraps - Collapsible */}
             {article.scraps && article.scraps.length > 0 && (
-              <div>
-                <div style={{
-                  fontSize: '12px',
-                  color: 'rgba(255, 255, 255, 0.5)',
-                  marginBottom: '8px',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
-                }}>
-                  {t('archiveDetailPage_usedScraps') || 'Used Scraps'} ({article.scraps.length})
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {article.scraps.map((scrap) => (
-                    <div
-                      key={scrap.scrapId}
-                      style={{
-                        padding: '10px 12px',
-                        background: 'rgba(255, 255, 255, 0.02)',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(255, 255, 255, 0.05)',
-                        fontSize: '13px'
-                      }}
-                    >
-                      <div style={{
-                        color: 'rgba(255, 255, 255, 0.85)',
-                        fontWeight: '500',
-                        marginBottom: '4px',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                      }}>
-                        {scrap.title || 'Untitled'}
-                      </div>
-                      {scrap.url && (
-                        <div style={{
-                          color: 'rgba(99, 102, 241, 0.7)',
-                          fontSize: '12px',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          whiteSpace: 'nowrap'
-                        }}>
-                          {scrap.url}
-                        </div>
-                      )}
-                      {scrap.userComment && (
-                        <div style={{
-                          color: 'rgba(255, 255, 255, 0.6)',
-                          fontSize: '12px',
-                          marginTop: '6px',
-                          fontStyle: 'italic'
-                        }}>
-                          "{scrap.userComment}"
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ScrapsSectionComponent
+                scraps={article.scraps}
+              />
             )}
           </div>
         )}
