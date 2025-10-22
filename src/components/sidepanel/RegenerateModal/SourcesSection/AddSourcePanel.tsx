@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { IoClose, IoSearch } from 'react-icons/io5';
 import { ScrapResponse } from '../../../../services/scrapService';
 import { useI18n } from '../../../../hooks/useI18n';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import SourceListItem from './SourceListItem';
 import styles from './SourcesSection.module.css';
 
@@ -22,41 +23,34 @@ const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
 }) => {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Debounced search (using useMemo for simple case)
+  // Optimized search with debounced query
   const filteredScraps = useMemo(() => {
-    if (!searchQuery.trim()) {
+    if (!debouncedSearchQuery.trim()) {
       return allScraps;
     }
 
-    const query = searchQuery.toLowerCase();
+    const query = debouncedSearchQuery.toLowerCase();
     return allScraps.filter((scrap) => {
-      // Search in title
-      if (scrap.title?.toLowerCase().includes(query)) {
-        return true;
-      }
+      // Combine all searchable fields into one string for efficiency
+      const searchableText = [
+        scrap.title,
+        scrap.url,
+        scrap.userComment,
+        scrap.tags?.map(t => t.name).join(' ')
+      ].filter(Boolean).join(' ').toLowerCase();
 
-      // Search in URL
-      if (scrap.url?.toLowerCase().includes(query)) {
-        return true;
-      }
-
-      // Search in user comment
-      if (scrap.userComment?.toLowerCase().includes(query)) {
-        return true;
-      }
-
-      // Search in tags
-      if (scrap.tags?.some((tag) => tag.name?.toLowerCase().includes(query))) {
-        return true;
-      }
-
-      return false;
+      return searchableText.includes(query);
     });
-  }, [allScraps, searchQuery]);
+  }, [allScraps, debouncedSearchQuery]);
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
   };
 
   return (
@@ -85,7 +79,24 @@ const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
           disabled={disabled}
           aria-label="Search sources"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            className={styles.clearSearchButton}
+            onClick={handleClearSearch}
+            disabled={disabled}
+            aria-label="Clear search"
+          >
+            <IoClose size={14} />
+          </button>
+        )}
       </div>
+
+      {debouncedSearchQuery && (
+        <div className={styles.searchResults}>
+          {filteredScraps.length} {t('archiveDetailPage_itemsCount')}
+        </div>
+      )}
 
       <div className={styles.availableSourcesList} role="list">
         {filteredScraps.length === 0 ? (

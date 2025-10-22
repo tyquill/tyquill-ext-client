@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { IoAdd, IoDocumentTextOutline } from 'react-icons/io5';
 import { ScrapResponse } from '../../../../services/scrapService';
 import { useI18n } from '../../../../hooks/useI18n';
+import { getScrapFaviconUrl, getScrapDomain, formatRelativeTime } from '../../../../utils/scrapHelpers';
 import styles from './SourcesSection.module.css';
 
 interface SourceListItemProps {
@@ -19,50 +20,13 @@ const SourceListItem: React.FC<SourceListItemProps> = ({
 }) => {
   const { t } = useI18n();
 
-  const getFaviconUrl = () => {
-    if (scrap.webpage?.site?.favicon_url) {
-      return scrap.webpage.site.favicon_url;
-    }
-    if (scrap.faviconUrl) {
-      return scrap.faviconUrl;
-    }
-    return null;
-  };
-
-  const getDomain = () => {
-    if (scrap.webpage?.site?.host) {
-      return scrap.webpage.site.host;
-    }
-    try {
-      const url = new URL(scrap.url);
-      return url.hostname;
-    } catch {
-      return '';
-    }
-  };
-
-  const getRelativeDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) {
-      return `${diffMins}${t('articleGenerate_minutes')} ${t('common_ago')}`;
-    }
-    if (diffHours < 24) {
-      return `${diffHours}${t('common_hoursAgo')}`;
-    }
-    if (diffDays < 7) {
-      return `${diffDays}${t('common_daysAgo')}`;
-    }
-    return date.toLocaleDateString();
-  };
-
-  const faviconUrl = getFaviconUrl();
-  const domain = getDomain();
+  // Memoize computed values to avoid recalculation on every render
+  const faviconUrl = useMemo(() => getScrapFaviconUrl(scrap), [scrap]);
+  const domain = useMemo(() => getScrapDomain(scrap), [scrap]);
+  const relativeDate = useMemo(
+    () => scrap.createdAt ? formatRelativeTime(scrap.createdAt, t) : null,
+    [scrap.createdAt, t]
+  );
 
   const handleClick = () => {
     if (!disabled) {
@@ -115,10 +79,10 @@ const SourceListItem: React.FC<SourceListItemProps> = ({
               <span>{domain}</span>
             </div>
           )}
-          {scrap.createdAt && (
+          {relativeDate && (
             <>
               <span>•</span>
-              <span className={styles.sourceDate}>{getRelativeDate(scrap.createdAt)}</span>
+              <span className={styles.sourceDate}>{relativeDate}</span>
             </>
           )}
         </div>

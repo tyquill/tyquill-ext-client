@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { IoClose, IoDocumentTextOutline } from 'react-icons/io5';
 import { ScrapResponse } from '../../../../services/scrapService';
+import { getScrapFaviconUrl } from '../../../../utils/scrapHelpers';
 import styles from './SourcesSection.module.css';
 
 interface SourcePillProps {
@@ -22,17 +23,8 @@ const SourcePill: React.FC<SourcePillProps> = ({ scrap, onRemove, disabled }) =>
     }, 150);
   };
 
-  const getFaviconUrl = () => {
-    if (scrap.webpage?.site?.favicon_url) {
-      return scrap.webpage.site.favicon_url;
-    }
-    if (scrap.faviconUrl) {
-      return scrap.faviconUrl;
-    }
-    return null;
-  };
-
-  const faviconUrl = getFaviconUrl();
+  // Memoize favicon URL computation
+  const faviconUrl = useMemo(() => getScrapFaviconUrl(scrap), [scrap]);
 
   return (
     <div className={`${styles.sourcePill} ${isRemoving ? styles.removing : ''}`}>
