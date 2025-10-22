@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp, IoBrush, IoDocumentText, IoLink, IoTimeOutline, IoCheckmarkCircle } from 'react-icons/io5';
+import { MingcuteRefresh4AiFill } from '../../components/icons/MingcuteRefresh4AiFill';
 import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
-import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
+import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse, GenerateArticleV3Dto, StreamEvent } from '../../services/articleService';
+import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../../components/sidepanel/ExportButton/ExportButton';
 import CopyButton from '../../components/sidepanel/CopyButton/CopyButton';
+import RegenerateModal, { RegenerateParams } from '../../components/sidepanel/RegenerateModal/RegenerateModal';
+import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import { useEditor } from '@tiptap/react';
 import { generateHTML } from '@tiptap/core';
 import { CharacterCount } from '@tiptap/extension-character-count';
@@ -24,6 +28,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 import { useI18n } from '../../hooks/useI18n';
+import { useToastHelpers } from '../../hooks/useToast';
 import { formatRelativeTime } from '../../utils/timeFormat';
 import {
   trackArchiveContentCopiedBridge,
@@ -101,7 +106,8 @@ const ScrapsSectionComponent: React.FC<ScrapsSectionProps> = ({ scraps }) => {
 };
 
 const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
-  const { t } = useI18n();
+  const { t, currentLanguage } = useI18n();
+  const { showSuccess, showError: showErrorToast } = useToastHelpers();
   const [article, setArticle] = useState<ArticleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +124,13 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [previewingVersion, setPreviewingVersion] = useState<ArchiveResponse | null>(null);
   const [isEditorPageOpen, setIsEditorPageOpen] = useState(false);
+
+  // Regeneration state
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerationProgress, setRegenerationProgress] = useState(0);
+  const [regenerationMessage, setRegenerationMessage] = useState('');
+  const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
@@ -232,7 +245,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       try {
         setLoading(true);
         const articleData = await articleService.getArticle(parseInt(draftId));
-        
+
         // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
         const normalizeContent = (content: string) => {
           return content.replace(/\n{2,}/g, '\n').trim();
@@ -247,9 +260,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             content: normalizeContent(archive.content)
           }))
         };
-        
+
         setArticle(normalizedArticle);
-        
+
         // 기본적으로 최신 버전 선택
         if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
           const latestArchive = normalizedArticle.archives[0]; // 이미 정렬된 상태
@@ -271,6 +284,19 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
     fetchArticle();
   }, [draftId]);
+
+  // Load writing styles for regeneration
+  useEffect(() => {
+    const fetchStyles = async () => {
+      try {
+        const styles = await writingStyleService.getWritingStyles();
+        setWritingStyles(styles);
+      } catch (error) {
+        console.error('Failed to fetch writing styles:', error);
+      }
+    };
+    fetchStyles();
+  }, []);
 
   // Character count를 위한 별도 에디터 (읽기 전용)
   const countEditor = useEditor({
@@ -552,6 +578,122 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }, 300);
   };
 
+  // Regeneration handlers
+  const handleOpenRegenerateModal = () => {
+    setShowRegenerateModal(true);
+  };
+
+  const handleCloseRegenerateModal = () => {
+    if (!isRegenerating) {
+      setShowRegenerateModal(false);
+    }
+  };
+
+  const handleRegenerate = async (params: RegenerateParams) => {
+    if (!article) return;
+
+    // Analytics can be added later if needed
+
+    setIsRegenerating(true);
+    setRegenerationProgress(0);
+    setRegenerationMessage('');
+
+    try {
+      // Prepare generation data
+      const generateData: GenerateArticleV3Dto = {
+        topic: params.topic,
+        keyInsight: params.keyInsight,
+        scrapWithOptionalComment: params.selectedScrapIds.map(scrapId => {
+          const scrap = article.scraps?.find(s => s.scrapId === scrapId);
+          return {
+            scrapId,
+            userComment: scrap?.userComment || undefined,
+          };
+        }),
+        writingStyleId: params.writingStyleId,
+        generationParams: params.additionalInstructions,
+      };
+
+      // Stream event handler
+      const handleStreamEvent = (event: StreamEvent) => {
+        const getLocalizedMessage = (event: StreamEvent): string => {
+          if (currentLanguage === 'en' && event.message_en) {
+            return event.message_en;
+          } else if (currentLanguage === 'ko' && event.message_ko) {
+            return event.message_ko;
+          }
+          return event.message || event.node || '';
+        };
+
+        if (event.type === 'progress') {
+          if (event.progress !== undefined) {
+            setRegenerationProgress(event.progress);
+          }
+          const localizedMessage = getLocalizedMessage(event);
+          if (localizedMessage) {
+            setRegenerationMessage(localizedMessage);
+          }
+        } else if (event.type === 'node_start') {
+          const localizedMessage = getLocalizedMessage(event);
+          if (localizedMessage) {
+            setRegenerationMessage(localizedMessage);
+          }
+        } else if (event.type === 'complete') {
+          setRegenerationProgress(100);
+          setRegenerationMessage(t('regenerateModal_complete'));
+        } else if (event.type === 'error') {
+          throw new Error(event.message || 'Generation failed');
+        }
+      };
+
+      // Start streaming generation
+      await articleService.generateArticleV3Stream(generateData, handleStreamEvent);
+
+      // Reload article to get the new version
+      const updatedArticle = await articleService.getArticle(article.articleId);
+
+      // Normalize content
+      const normalizeContent = (content: string) => {
+        return content.replace(/\n{2,}/g, '\n').trim();
+      };
+
+      const normalizedArticle = {
+        ...updatedArticle,
+        content: normalizeContent(updatedArticle.content),
+        archives: updatedArticle.archives?.map(archive => ({
+          ...archive,
+          content: normalizeContent(archive.content)
+        }))
+      };
+
+      setArticle(normalizedArticle);
+
+      // Switch to the latest version
+      if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
+        const latestArchive = normalizedArticle.archives[0];
+        setSelectedVersionNumber(latestArchive.versionNumber);
+        setCurrentArchive(latestArchive);
+        setEditTitle(latestArchive.title);
+        setEditContent(latestArchive.content);
+      }
+
+      // Close modal and show success message
+      setShowRegenerateModal(false);
+      showSuccess(t('regenerateModal_success'));
+
+    } catch (error: any) {
+      console.error('Regeneration failed:', error);
+      showErrorToast(
+        t('regenerateModal_error'),
+        error.message || t('regenerateModal_unknownError')
+      );
+    } finally {
+      setIsRegenerating(false);
+      setRegenerationProgress(0);
+      setRegenerationMessage('');
+    }
+  };
+
 
   if (loading) {
     return <div className={styles.loadingContainer}>{t('archiveDetailPage_loading')}</div>;
@@ -670,6 +812,19 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                       } catch {}
                     }}
                   />
+                </Tooltip>
+                <Tooltip content={t('archiveDetailPage_regenerate')} side='top'>
+                  <button
+                    className={detailStyles.primaryActionButton}
+                    onClick={handleOpenRegenerateModal}
+                    disabled={isRegenerating}
+                    style={{
+                      opacity: isRegenerating ? 0.5 : 1,
+                      cursor: isRegenerating ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <MingcuteRefresh4AiFill width={20} height={20} />
+                  </button>
                 </Tooltip>
                 <Tooltip content={isEditorPageOpen ? t('archiveDetailPage_editingInPageEditorTooltip') : t('archiveDetailPage_editDraft')}>
                   <button
@@ -993,6 +1148,44 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
               </div>
             </div>
           </>
+        )}
+
+        {/* Regenerate Modal */}
+        {article && (
+          <RegenerateModal
+            article={article}
+            writingStyles={writingStyles}
+            isOpen={showRegenerateModal}
+            onClose={handleCloseRegenerateModal}
+            onRegenerate={handleRegenerate}
+            isRegenerating={isRegenerating}
+          />
+        )}
+
+        {/* Regeneration Loading Screen */}
+        {isRegenerating && (
+          <div className={detailStyles.loadingOverlay}>
+            <div className={detailStyles.loadingContent}>
+              <div className={detailStyles.discoBallContainer}>
+                <DiscoBallScene />
+              </div>
+              <div className={detailStyles.loadingText}>
+                <h3>{t('regenerateModal_regenerating')}</h3>
+                {regenerationMessage && (
+                  <p className={detailStyles.loadingMessage}>{regenerationMessage}</p>
+                )}
+                <div className={detailStyles.progressBar}>
+                  <div
+                    className={detailStyles.progressFill}
+                    style={{ width: `${regenerationProgress}%` }}
+                  />
+                </div>
+                <p className={detailStyles.progressText}>
+                  {Math.round(regenerationProgress)}%
+                </p>
+              </div>
+            </div>
+          </div>
         )}
         </div>
       </div>

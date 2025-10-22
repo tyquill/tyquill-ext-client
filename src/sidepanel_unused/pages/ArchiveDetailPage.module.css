@@ -818,3 +818,92 @@
     max-width: 100%;
   }
 }
+
+/* ============================================
+   Regeneration Loading Overlay
+   ============================================ */
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 90%;
+}
+
+.discoBallContainer {
+  width: 200px;
+  height: 200px;
+}
+
+.loadingText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.loadingText h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgb(55, 53, 47);
+  margin: 0;
+}
+
+.loadingMessage {
+  font-size: 14px;
+  color: rgba(55, 53, 47, 0.7);
+  margin: 0;
+  max-width: 400px;
+}
+
+.progressBar {
+  width: 300px;
+  height: 4px;
+  background: rgba(55, 53, 47, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #000 0%, #333 100%);
+  transition: width 0.3s ease-out;
+  border-radius: 2px;
+}
+
+.progressText {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.6);
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .discoBallContainer {
+    width: 150px;
+    height: 150px;
+  }
+
+  .progressBar {
+    width: 250px;
+  }
+
+  .loadingText h3 {
+    font-size: 16px;
+  }
+}
