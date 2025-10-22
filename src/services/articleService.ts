@@ -73,6 +73,21 @@ export interface UploadWithUsagePromptDto {
 }
 
 /**
+ * V3 아티클 재생성 DTO
+ * Note: articleId는 URL 파라미터로 전달되므로 DTO에 포함하지 않음
+ */
+export interface RegenerateArticleV3Dto {
+    topic?: string;
+    keyInsight?: string;
+    // 추가된 scraps (기존 article에 없던 것들)
+    addedScrapIds?: number[];
+    // 제거된 scraps (기존 article에서 제거할 것들)
+    removedScrapIds?: number[];
+    writingStyleId?: number | null;
+    generationParams?: string;
+}
+
+/**
  * 스트리밍 이벤트 타입
  */
 export interface StreamEvent {
@@ -606,6 +621,113 @@ export class ArticleService {
                 if (eventSource) {
                     eventSource.close();
                 }
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * V3 API: 기존 아티클 재생성 (동기)
+     * @param articleId - 재생성할 아티클 ID
+     * @param dto - 재생성 요청 데이터
+     * @returns Promise<ArticleResponse>
+     */
+    async regenerateArticleV3(
+        articleId: number,
+        dto: RegenerateArticleV3Dto
+    ): Promise<ArticleResponse> {
+        const response = await globalApiClient.post<ArticleResponse>(
+            `/v3/articles/${articleId}/regenerate`,
+            dto
+        );
+        return response;
+    }
+
+    /**
+     * V3 API: 기존 아티클 재생성 (스트리밍)
+     * @param articleId - 재생성할 아티클 ID
+     * @param dto - 재생성 요청 데이터
+     * @param onEvent - 스트리밍 이벤트 핸들러
+     * @returns Promise<void>
+     */
+    async regenerateArticleV3Stream(
+        articleId: number,
+        dto: RegenerateArticleV3Dto,
+        onEvent: (event: StreamEvent) => void
+    ): Promise<void> {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // Get auth headers
+                const authHeaders = await authService.getAuthHeaders();
+
+                const response = await fetch(
+                    `${API_BASE_URL}/v3/articles/${articleId}/regenerate-stream`,
+                    {
+                        method: 'POST',
+                        headers: {
+                            ...authHeaders,
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(dto)
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                if (!response.body) {
+                    throw new Error('Response body is null');
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+
+                    if (done) {
+                        break;
+                    }
+
+                    // Decode chunk and add to buffer
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Process complete SSE messages
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6).trim();
+
+                            if (!data || data === '[DONE]') {
+                                continue;
+                            }
+
+                            try {
+                                const event = JSON.parse(data) as StreamEvent;
+                                onEvent(event);
+
+                                // If complete or error, resolve/reject
+                                if (event.type === 'complete') {
+                                    resolve();
+                                    return;
+                                } else if (event.type === 'error') {
+                                    reject(new Error(event.message || 'Regeneration failed'));
+                                    return;
+                                }
+                            } catch (parseError) {
+                                console.warn('Failed to parse SSE event:', data, parseError);
+                            }
+                        }
+                    }
+                }
+
+                resolve();
+            } catch (error) {
+                console.error('Regeneration streaming error:', error);
                 reject(error);
             }
         });
