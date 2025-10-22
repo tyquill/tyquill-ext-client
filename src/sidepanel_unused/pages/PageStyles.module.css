@@ -1145,6 +1145,8 @@ div.contentDisplay ol li {
 .previewContent {
   padding: 0%;
   background-color: #fff;
+  overflow-y: auto;
+  max-height: calc(100vh - 400px); /* Adjust based on header and metadata sections */
 }
 
 /* 스크롤바 스타일 */
