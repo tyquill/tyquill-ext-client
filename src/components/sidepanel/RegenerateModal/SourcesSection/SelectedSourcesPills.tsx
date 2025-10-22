@@ -1,4 +1,5 @@
 import React from 'react';
+import { IoDocumentTextOutline } from 'react-icons/io5';
 import { ScrapResponse } from '../../../../services/scrapService';
 import SourcePill from './SourcePill';
 import { useI18n } from '../../../../hooks/useI18n';
@@ -20,7 +21,13 @@ const SelectedSourcesPills: React.FC<SelectedSourcesPillsProps> = ({
   if (selectedScraps.length === 0) {
     return (
       <div className={styles.selectedPillsEmpty}>
-        {t('regenerateModal_noSourcesSelected')}
+        <IoDocumentTextOutline size={24} />
+        <p className={styles.emptyMessage}>
+          {t('regenerateModal_noSourcesSelected')}
+        </p>
+        <p className={styles.emptyHint}>
+          {t('regenerateModal_selectSourcesHint')}
+        </p>
       </div>
     );
   }
