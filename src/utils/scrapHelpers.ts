@@ -26,7 +26,7 @@ export const getScrapDomain = (scrap: ScrapResponse): string => {
  */
 export const formatRelativeTime = (
   dateString: string,
-  t: (key: string) => string
+  t: (key: any) => string
 ): string => {
   const date = new Date(dateString);
   const now = new Date();

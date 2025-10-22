@@ -22,6 +22,7 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   const [isLoadingScraps, setIsLoadingScraps] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   // Fetch all scraps on mount
   useEffect(() => {
@@ -32,16 +33,20 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
       try {
         const scraps = await scrapService.getScraps();
         setAllScraps(scraps);
+        setRetryCount(0); // Reset retry count on success
       } catch (err) {
-        console.error('Failed to fetch scraps:', err);
-        setError(t('regenerateModal_loadScrapsFailed'));
+        const errorMessage = err instanceof Error
+          ? err.message
+          : t('regenerateModal_loadScrapsFailed');
+        console.error('Failed to fetch scraps:', errorMessage);
+        setError(errorMessage);
       } finally {
         setIsLoadingScraps(false);
       }
     };
 
     fetchScraps();
-  }, [t]);
+  }, [t, retryCount]);
 
   // Get selected scraps for display
   const selectedScraps = allScraps.filter((scrap) =>
@@ -77,11 +82,23 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
     setIsPanelOpen(false);
   };
 
+  const handleRetry = () => {
+    setRetryCount((prev) => prev + 1);
+  };
+
   if (error) {
     return (
       <div className={styles.sourcesSection}>
-        <div className={styles.emptyState} role="alert">
-          {error}
+        <div className={styles.errorState} role="alert">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={handleRetry}
+            className={styles.retryButton}
+            disabled={isLoadingScraps}
+          >
+            {isLoadingScraps ? t('common_loading') : t('common_retry')}
+          </button>
         </div>
       </div>
     );
