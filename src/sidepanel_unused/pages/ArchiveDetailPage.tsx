@@ -6,7 +6,7 @@ import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
-import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse, GenerateArticleV3Dto, StreamEvent } from '../../services/articleService';
+import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse, RegenerateArticleV3Dto, StreamEvent } from '../../services/articleService';
 import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
@@ -599,18 +599,21 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     setRegenerationMessage('');
 
     try {
-      // Prepare generation data
-      const generateData: GenerateArticleV3Dto = {
-        topic: params.topic,
-        keyInsight: params.keyInsight,
-        scrapWithOptionalComment: params.selectedScrapIds.map(scrapId => {
-          const scrap = article.scraps?.find(s => s.scrapId === scrapId);
-          return {
-            scrapId,
-            userComment: scrap?.userComment || undefined,
-          };
-        }),
-        writingStyleId: params.writingStyleId,
+      // Calculate added and removed scraps
+      const originalScrapIds = article.scraps?.map(s => s.scrapId) || [];
+      const selectedScrapIds = params.selectedScrapIds;
+
+      const addedScrapIds = selectedScrapIds.filter(id => !originalScrapIds.includes(id));
+      const removedScrapIds = originalScrapIds.filter(id => !selectedScrapIds.includes(id));
+
+      // Prepare regeneration data - only include changed fields
+      // Note: articleId is passed as URL parameter, not in DTO body
+      const regenerateData: RegenerateArticleV3Dto = {
+        topic: params.topic !== article.topic ? params.topic : undefined,
+        keyInsight: params.keyInsight !== article.keyInsight ? params.keyInsight : undefined,
+        addedScrapIds: addedScrapIds.length > 0 ? addedScrapIds : undefined,
+        removedScrapIds: removedScrapIds.length > 0 ? removedScrapIds : undefined,
+        writingStyleId: params.writingStyleId !== article.writingStyleId ? params.writingStyleId : undefined,
         generationParams: params.additionalInstructions,
       };
 
@@ -646,8 +649,12 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
         }
       };
 
-      // Start streaming generation
-      await articleService.generateArticleV3Stream(generateData, handleStreamEvent);
+      // Start streaming regeneration (uses existing article content as base)
+      await articleService.regenerateArticleV3Stream(
+        article.articleId,
+        regenerateData,
+        handleStreamEvent
+      );
 
       // Reload article to get the new version
       const updatedArticle = await articleService.getArticle(article.articleId);
