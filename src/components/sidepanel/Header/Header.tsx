@@ -1,9 +1,9 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IoSparkles, IoArchive } from 'react-icons/io5';
-import { FaBookmark } from 'react-icons/fa6';
+import { IoSparkles, IoArchive, IoDocuments } from 'react-icons/io5';
 import { IconType } from 'react-icons';
 import { useI18n } from '../../../hooks/useI18n';
+import { AnimatedContent3D } from '../../icons/AnimatedContent3D';
 import styles from './Header.module.css';
 
 interface HeaderProps {}
@@ -11,7 +11,8 @@ interface HeaderProps {}
 interface MenuItem {
   key: string;
   label: string;
-  icon: IconType;
+  icon?: IconType;
+  customIcon?: React.ComponentType<{ size?: number; isActive?: boolean; className?: string }>;
 }
 
 const Header: React.FC<HeaderProps> = () => {
@@ -56,7 +57,7 @@ const menuItemVariants = {
 export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => {
   const { t } = useI18n();
   const menuItems: MenuItem[] = [
-    { key: 'content', label: t('menu_content'), icon: FaBookmark },
+    { key: 'content', label: t('menu_content'), customIcon: AnimatedContent3D },
     { key: 'draft', label: t('menu_draft'), icon: IoSparkles },
   ];
 
@@ -72,9 +73,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
       {/* 메인 메뉴 아이템들 */}
       <div className={styles.menuItemsContainer}>
         {menuItems.map((item) => {
-          const IconComponent = item.icon;
           const isActive = activeMenu === item.key;
-          
+
           return (
             <motion.button
               key={item.key}
@@ -98,17 +98,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeMenu, onMenuClick }) => 
                   />
                 )}
               </AnimatePresence>
-              
-              <motion.span 
-                className={styles.menuIcon}
-                whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
-                animate={isActive ? { scale: 1.1 } : { scale: 1 }}
-                transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
-              >
-                <IconComponent size={item.key === 'style-management' ? 26 : 20} />
-              </motion.span>
-              
-              <motion.span 
+
+              <span className={styles.menuIcon}>
+                {item.customIcon ? (
+                  <item.customIcon size={20} isActive={isActive} />
+                ) : item.icon ? (
+                  <motion.span
+                    whileHover={{ scale: 1.1, rotate: 5, transition: { duration: 0.2, ease: [0.4, 0, 0.2, 1] } }}
+                    animate={isActive ? { scale: 1.1 } : { scale: 1 }}
+                    transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                  >
+                    <item.icon size={item.key === 'style-management' ? 26 : 20} />
+                  </motion.span>
+                ) : null}
+              </span>
+
+              <motion.span
                 className={styles.menuLabel}
                 animate={{
                   color: isActive ? '#ffffff' : '#666666',
