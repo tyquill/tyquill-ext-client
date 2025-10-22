@@ -74,6 +74,22 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     loadContent();
   }, []);
 
+  // Listen for scrap creation events from background script
+  useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.action === 'scrapCreated') {
+        // Refresh content when a scrap is created from injectors or context menu
+        refreshContent();
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      browser.runtime.onMessage.removeListener(handleMessage);
+    };
+  }, [refreshContent]);
+
   // Infinite scroll observer
   useEffect(() => {
     if (itemsLoading || !itemsHasMore) return;
