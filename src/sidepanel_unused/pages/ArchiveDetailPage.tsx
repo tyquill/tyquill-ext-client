@@ -690,7 +690,18 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             // 편집 페이지: 한 줄 레이아웃 (왼쪽: 버전, 오른쪽: 저장/취소 버튼들)
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <div className={styles.versionControls}>
-                {/* Version history is disabled during edit mode */}
+                {article.archives && article.archives.length > 0 && (
+                  <Tooltip content={t('archiveDetailPage_versionHistory')} side='top'>
+                    <button
+                      className={detailStyles.versionHistoryButton}
+                      onClick={() => setShowVersionHistory(true)}
+                      disabled={saving}
+                    >
+                      <IoTimeOutline size={18} />
+                      <span className={detailStyles.versionLabel}>v{selectedVersionNumber || ''}</span>
+                    </button>
+                  </Tooltip>
+                )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 <Tooltip content={t('archiveDetailPage_openFullscreenEditor')}>
