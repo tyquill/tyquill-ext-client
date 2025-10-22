@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { IoClose, IoChevronDown, IoChevronUp, IoRefreshOutline } from 'react-icons/io5';
-import { ArticleResponse, ScrapResponse } from '../../../services/articleService';
+import { ArticleResponse } from '../../../services/articleService';
 import { WritingStyle } from '../../../services/writingStyleService';
 import { useI18n } from '../../../hooks/useI18n';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
@@ -55,6 +55,32 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
   // Use articleId instead of entire article object to avoid unnecessary re-renders
   useEffect(() => {
     if (isOpen) {
+      // Try to load draft from storage first
+      const draftKey = `regenerate_draft_${article.articleId}`;
+      const savedDraft = localStorage.getItem(draftKey);
+
+      if (savedDraft) {
+        try {
+          const draft = JSON.parse(savedDraft);
+          const savedAt = new Date(draft.savedAt);
+          const now = new Date();
+          const hoursSinceUpdate = (now.getTime() - savedAt.getTime()) / (1000 * 60 * 60);
+
+          // Use draft if saved within last 24 hours
+          if (hoursSinceUpdate < 24) {
+            setTopic(draft.topic || article.topic || '');
+            setKeyInsight(draft.keyInsight || article.keyInsight || '');
+            setSelectedScrapIds(draft.selectedScrapIds || article.scraps?.map(s => s.scrapId) || []);
+            setWritingStyleId(draft.writingStyleId || article.writingStyleId || undefined);
+            setAdditionalInstructions(draft.additionalInstructions || '');
+            return;
+          }
+        } catch (err) {
+          console.error('Failed to load draft:', err);
+        }
+      }
+
+      // If no valid draft, use article data
       setTopic(article.topic || '');
       setKeyInsight(article.keyInsight || '');
       setSelectedScrapIds(article.scraps?.map(s => s.scrapId) || []);
@@ -62,6 +88,30 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
       setAdditionalInstructions('');
     }
   }, [isOpen, article.articleId]);
+
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const draftKey = `regenerate_draft_${article.articleId}`;
+    const timeoutId = setTimeout(() => {
+      try {
+        const draft = {
+          topic,
+          keyInsight,
+          selectedScrapIds,
+          writingStyleId,
+          additionalInstructions,
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(draftKey, JSON.stringify(draft));
+      } catch (err) {
+        console.error('Failed to save draft:', err);
+      }
+    }, 1000); // Debounce 1 second
+
+    return () => clearTimeout(timeoutId);
+  }, [isOpen, article.articleId, topic, keyInsight, selectedScrapIds, writingStyleId, additionalInstructions]);
 
   const handleSelectionChange = useCallback((scrapIds: number[]) => {
     setSelectedScrapIds(scrapIds);
@@ -74,6 +124,14 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
       return;
     }
 
+    // Clear draft on successful submission
+    try {
+      const draftKey = `regenerate_draft_${article.articleId}`;
+      localStorage.removeItem(draftKey);
+    } catch (err) {
+      console.error('Failed to remove draft:', err);
+    }
+
     onRegenerate({
       topic: topic.trim(),
       keyInsight: keyInsight.trim(),
@@ -81,7 +139,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
       writingStyleId,
       additionalInstructions: additionalInstructions.trim() || undefined,
     });
-  }, [topic, keyInsight, selectedScrapIds, writingStyleId, additionalInstructions, onRegenerate]);
+  }, [topic, keyInsight, selectedScrapIds, writingStyleId, additionalInstructions, article.articleId, onRegenerate]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape' && !isRegenerating) {
