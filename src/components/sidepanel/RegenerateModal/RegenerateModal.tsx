@@ -3,6 +3,7 @@ import { IoClose, IoChevronDown, IoChevronUp, IoRefreshOutline } from 'react-ico
 import { ArticleResponse, ScrapResponse } from '../../../services/articleService';
 import { WritingStyle } from '../../../services/writingStyleService';
 import { useI18n } from '../../../hooks/useI18n';
+import { useFocusTrap } from '../../../hooks/useFocusTrap';
 import SourcesSection from './SourcesSection';
 import styles from './RegenerateModal.module.css';
 
@@ -33,6 +34,9 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
 }) => {
   const { t } = useI18n();
 
+  // Focus trap for accessibility
+  const modalRef = useFocusTrap<HTMLDivElement>(isOpen);
+
   // Form state
   const [topic, setTopic] = useState(article.topic || '');
   const [keyInsight, setKeyInsight] = useState(article.keyInsight || '');
@@ -47,7 +51,8 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
   // UI state
   const [isOriginalSettingsExpanded, setIsOriginalSettingsExpanded] = useState(false);
 
-  // Reset form when article changes
+  // Reset form when modal opens or article ID changes
+  // Use articleId instead of entire article object to avoid unnecessary re-renders
   useEffect(() => {
     if (isOpen) {
       setTopic(article.topic || '');
@@ -56,7 +61,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
       setWritingStyleId(article.writingStyleId || undefined);
       setAdditionalInstructions('');
     }
-  }, [isOpen, article]);
+  }, [isOpen, article.articleId]);
 
   const handleSelectionChange = useCallback((scrapIds: number[]) => {
     setSelectedScrapIds(scrapIds);
@@ -97,6 +102,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
 
       {/* Panel */}
       <div
+        ref={modalRef}
         className={styles.panel}
         onKeyDown={handleKeyDown}
         role="dialog"
