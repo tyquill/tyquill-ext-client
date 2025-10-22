@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp, IoBrush, IoDocumentText, IoLink } from 'react-icons/io5';
+import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp, IoBrush, IoDocumentText, IoLink, IoTimeOutline, IoCheckmarkCircle } from 'react-icons/io5';
 import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
@@ -24,6 +24,7 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 import { useI18n } from '../../hooks/useI18n';
+import { formatRelativeTime } from '../../utils/timeFormat';
 import {
   trackArchiveContentCopiedBridge,
   trackArchiveExportedBridge,
@@ -114,9 +115,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [showWidthTip, setShowWidthTip] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
-  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewingVersion, setPreviewingVersion] = useState<ArchiveResponse | null>(null);
   const [isEditorPageOpen, setIsEditorPageOpen] = useState(false);
-  const versionDropdownRef = useRef<HTMLDivElement>(null);
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
@@ -505,30 +506,43 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   };
 
-  const handleVersionSelect = async (versionNumber: number) => {
+  const handleVersionSelect = async (archive: ArchiveResponse) => {
     if (!article || !article.archives) return;
 
-    const selectedArchive = article.archives.find(archive => archive.versionNumber === versionNumber);
-    if (selectedArchive) {
-      const previousVersion = selectedVersionNumber;
+    const previousVersion = selectedVersionNumber;
 
-      try {
-        await trackArchiveVersionChangedBridge({
-          article_id: article.articleId,
-          previous_version: previousVersion,
-          new_version: versionNumber,
-          total_versions: article.archives.length,
-          was_editing: isEditing
-        });
-      } catch {}
+    try {
+      await trackArchiveVersionChangedBridge({
+        article_id: article.articleId,
+        previous_version: previousVersion,
+        new_version: archive.versionNumber,
+        total_versions: article.archives.length,
+        was_editing: isEditing
+      });
+    } catch {}
 
-      setSelectedVersionNumber(versionNumber);
-      setCurrentArchive(selectedArchive);
-      setEditTitle(selectedArchive.title);
-      setEditContent(selectedArchive.content);
-      setIsEditing(false); // 버전 변경 시 편집 모드 종료
-    }
+    // Preview the selected version
+    setPreviewingVersion(archive);
+    setSelectedVersionNumber(archive.versionNumber);
+    setCurrentArchive(archive);
+    setEditTitle(archive.title);
+    setEditContent(archive.content);
+    setIsEditing(false); // 버전 변경 시 편집 모드 종료
   };
+
+  const handleBackToCurrent = useCallback(async () => {
+    if (!article || !article.archives) return;
+
+    // Load the latest version
+    const latestArchive = article.archives[0];
+    if (latestArchive) {
+      setSelectedVersionNumber(latestArchive.versionNumber);
+      setCurrentArchive(latestArchive);
+      setEditTitle(latestArchive.title);
+      setEditContent(latestArchive.content);
+      setPreviewingVersion(null);
+    }
+  }, [article]);
 
   const handleCloseTip = () => {
     setTipVisible(false);
@@ -537,27 +551,6 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       setShowWidthTip(false);
     }, 300);
   };
-
-  // 버전 드롭박스 토글
-  const toggleVersionDropdown = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsVersionDropdownOpen(prev => !prev);
-  };
-
-  // 바깥 클릭으로 드롭박스 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (versionDropdownRef.current && !versionDropdownRef.current.contains(event.target as Node)) {
-        setIsVersionDropdownOpen(false);
-      }
-    };
-
-    document.addEventListener('click', handleClickOutside);
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
 
 
   if (loading) {
@@ -633,33 +626,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
-                  <div className={detailStyles.versionSelector} ref={versionDropdownRef}>
-                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
+                  <Tooltip content={t('archiveDetailPage_versionHistory')} side='top'>
                     <button
-                      className={detailStyles.versionDropdownButton}
-                      onClick={toggleVersionDropdown}
-                      disabled={isEditing}
+                      className={detailStyles.versionHistoryButton}
+                      onClick={() => setShowVersionHistory(true)}
                     >
-                      {selectedVersionNumber || ''}
-                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                      <IoTimeOutline size={18} />
+                      <span className={detailStyles.versionLabel}>v{selectedVersionNumber || ''}</span>
                     </button>
-                    
-                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
-                      {article.archives.map(archive => (
-                        <div
-                          key={archive.versionNumber}
-                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVersionSelect(archive.versionNumber);
-                            setIsVersionDropdownOpen(false);
-                          }}
-                        >
-                          {archive.versionNumber}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  </Tooltip>
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
@@ -697,11 +672,11 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   />
                 </Tooltip>
                 <Tooltip content={isEditorPageOpen ? t('archiveDetailPage_editingInPageEditorTooltip') : t('archiveDetailPage_editDraft')}>
-                  <button 
-                    className={detailStyles.primaryActionButton} 
+                  <button
+                    className={detailStyles.primaryActionButton}
                     onClick={handleEdit}
                     disabled={isEditorPageOpen}
-                    style={{ 
+                    style={{
                       opacity: isEditorPageOpen ? 0.5 : 1,
                       cursor: isEditorPageOpen ? 'not-allowed' : 'pointer'
                     }}
@@ -715,35 +690,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             // 편집 페이지: 한 줄 레이아웃 (왼쪽: 버전, 오른쪽: 저장/취소 버튼들)
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <div className={styles.versionControls}>
-                {article.archives && article.archives.length > 0 && (
-                  <div className={detailStyles.versionSelector}>
-                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
-                    <button
-                      className={detailStyles.versionDropdownButton}
-                      onClick={toggleVersionDropdown}
-                      disabled={isEditing}
-                    >
-                      {selectedVersionNumber || ''}
-                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
-                    </button>
-                    
-                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
-                      {article.archives.map(archive => (
-                        <div
-                          key={archive.versionNumber}
-                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVersionSelect(archive.versionNumber);
-                            setIsVersionDropdownOpen(false);
-                          }}
-                        >
-                          {archive.versionNumber}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Version history is disabled during edit mode */}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
                 <Tooltip content={t('archiveDetailPage_openFullscreenEditor')}>
@@ -924,11 +871,11 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 <IoClose size={16} />
               </button>
             </div>
-            
+
               <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
                 {t('archiveDetailPage_widthTipContent')}
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ccc' }}>
                   <input
@@ -947,6 +894,94 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 </label>
               </div>
           </div>
+        )}
+
+        {/* Version Preview Banner */}
+        {previewingVersion && previewingVersion.versionNumber !== article.archives?.[0]?.versionNumber && (
+          <div className={detailStyles.versionPreviewBanner}>
+            <div className={detailStyles.versionPreviewText}>
+              {t('archiveDetailPage_viewingVersion')} {formatRelativeTime(previewingVersion.createdAt)}
+            </div>
+            <div className={detailStyles.versionPreviewActions}>
+              <button
+                onClick={handleBackToCurrent}
+                className={detailStyles.backToCurrentButton}
+              >
+                {t('archiveDetailPage_backToCurrent')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Version History Panel */}
+        {showVersionHistory && article && article.archives && article.archives.length > 0 && (
+          <>
+            {/* Backdrop */}
+            <div className={detailStyles.versionHistoryBackdrop} onClick={() => {
+              setShowVersionHistory(false);
+              setPreviewingVersion(null);
+            }} />
+
+            {/* Panel */}
+            <div className={detailStyles.versionHistoryPanel}>
+              {/* Header */}
+              <div className={detailStyles.versionHistoryHeader}>
+                <h2 className={detailStyles.versionHistoryTitle}>{t('archiveDetailPage_versionHistoryTitle')}</h2>
+                <button
+                  onClick={() => {
+                    setShowVersionHistory(false);
+                    setPreviewingVersion(null);
+                  }}
+                  className={detailStyles.versionHistoryCloseButton}
+                  title={t('common_close')}
+                >
+                  <IoClose size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className={detailStyles.versionHistoryContent}>
+                <div className={detailStyles.versionList}>
+                  {article.archives.map((archive) => {
+                    const isSelected = selectedVersionNumber === archive.versionNumber;
+                    const isCurrent = article.archives?.[0]?.versionNumber === archive.versionNumber;
+
+                    return (
+                      <div
+                        key={archive.versionNumber}
+                        className={`${detailStyles.versionItem} ${isSelected ? detailStyles.versionItemSelected : ''} ${isCurrent ? detailStyles.versionItemCurrent : ''}`}
+                        onClick={() => handleVersionSelect(archive)}
+                      >
+                        <div className={detailStyles.versionItemHeader}>
+                          <div className={detailStyles.versionNumber}>
+                            {isCurrent && (
+                              <IoCheckmarkCircle
+                                size={14}
+                                className={detailStyles.versionCurrentIcon}
+                              />
+                            )}
+                            v{archive.versionNumber}
+                          </div>
+                          <div className={detailStyles.versionTime}>
+                            {formatRelativeTime(archive.createdAt)}
+                          </div>
+                        </div>
+
+                        <div className={detailStyles.versionItemBody}>
+                          <div className={detailStyles.versionTitle}>
+                            {archive.title || 'Untitled'}
+                          </div>
+                          <div className={detailStyles.versionMeta}>
+                            {archive.content?.length.toLocaleString() || 0} {t('archiveDetailPage_characters')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
         )}
         </div>
       </div>

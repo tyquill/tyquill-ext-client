@@ -120,6 +120,11 @@ const koTranslations = {
   archiveDetailPage_sources: "출처",
   archiveDetailPage_style: "스타일",
   archiveDetailPage_itemsCount: "개 항목",
+  archiveDetailPage_versionHistory: "버전 히스토리",
+  archiveDetailPage_versionHistoryTitle: "버전 히스토리",
+  archiveDetailPage_viewingVersion: "버전 보기",
+  archiveDetailPage_backToCurrent: "현재 버전으로",
+  archiveDetailPage_characters: "자",
 
   // Article Generate Page
   articleGenerate_title: "초안 생성",
@@ -618,6 +623,11 @@ const enTranslations = {
   archiveDetailPage_sources: "Sources",
   archiveDetailPage_style: "Style",
   archiveDetailPage_itemsCount: " items",
+  archiveDetailPage_versionHistory: "Version History",
+  archiveDetailPage_versionHistoryTitle: "Version History",
+  archiveDetailPage_viewingVersion: "Viewing version from",
+  archiveDetailPage_backToCurrent: "Back to current",
+  archiveDetailPage_characters: " characters",
 
   // Article Generate Page
   articleGenerate_title: "Generate Draft",
