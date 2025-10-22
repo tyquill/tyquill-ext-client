@@ -1,0 +1,637 @@
+/* ========== SourcesSection Container ========== */
+.sourcesSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ========== Selected Sources Pills Area ========== */
+.selectedPillsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 40px;
+  align-items: flex-start;
+}
+
+.selectedPillsEmpty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px;
+  color: rgba(55, 53, 47, 0.4);
+  font-size: 13px;
+  text-align: center;
+  border: 1px dashed rgba(55, 53, 47, 0.16);
+  border-radius: 6px;
+  background: rgba(55, 53, 47, 0.02);
+}
+
+/* ========== Source Pill ========== */
+.sourcePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px 6px 8px;
+  background: rgba(55, 53, 47, 0.08);
+  border-radius: 16px;
+  font-size: 13px;
+  color: rgba(55, 53, 47, 0.87);
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: pillSlideIn 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 280px;
+}
+
+@keyframes pillSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.sourcePill.removing {
+  animation: pillSlideOut 0.15s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes pillSlideOut {
+  to {
+    opacity: 0;
+    transform: scale(0.9) translateY(-4px);
+  }
+}
+
+.sourcePill:hover {
+  background: rgba(55, 53, 47, 0.12);
+}
+
+.pillIcon {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pillIcon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pillTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.pillRemoveButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: rgba(55, 53, 47, 0.4);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.pillRemoveButton:hover {
+  background: rgba(231, 76, 60, 0.1);
+  color: #e74c3c;
+}
+
+.pillRemoveButton:active {
+  transform: scale(0.95);
+}
+
+/* ========== Add Source Button ========== */
+.addSourceButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.7);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+  align-self: flex-start;
+}
+
+.addSourceButton:hover {
+  background: rgba(55, 53, 47, 0.04);
+  border-color: rgba(55, 53, 47, 0.24);
+  color: rgba(55, 53, 47, 0.87);
+}
+
+.addSourceButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== Add Source Panel ========== */
+.addSourcePanel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(55, 53, 47, 0.02);
+  border: 1px solid rgba(55, 53, 47, 0.09);
+  border-radius: 6px;
+  animation: panelExpand 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+@keyframes panelExpand {
+  from {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+}
+
+.addSourcePanel.collapsing {
+  animation: panelCollapse 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes panelCollapse {
+  to {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.panelTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.panelCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(55, 53, 47, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.panelCloseButton:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgba(55, 53, 47, 0.8);
+}
+
+/* ========== Search Input ========== */
+.searchInput {
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  font-size: 13px;
+  color: rgb(55, 53, 47);
+  background: #ffffff;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.searchInput:focus {
+  border-color: rgba(55, 53, 47, 0.5);
+}
+
+.searchInput::placeholder {
+  color: rgba(55, 53, 47, 0.4);
+}
+
+.searchInputWrapper {
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: rgba(55, 53, 47, 0.4);
+  pointer-events: none;
+}
+
+/* ========== Available Sources List ========== */
+.availableSourcesList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.availableSourcesList::-webkit-scrollbar {
+  width: 6px;
+}
+
+.availableSourcesList::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.availableSourcesList::-webkit-scrollbar-thumb {
+  background: rgba(55, 53, 47, 0.12);
+  border-radius: 3px;
+}
+
+.availableSourcesList::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 53, 47, 0.24);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: rgba(55, 53, 47, 0.4);
+  font-size: 13px;
+  text-align: center;
+}
+
+/* ========== Source List Item ========== */
+.sourceListItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid rgba(55, 53, 47, 0.09);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.sourceListItem:hover {
+  border-color: rgba(55, 53, 47, 0.2);
+  background: rgba(55, 53, 47, 0.02);
+}
+
+.sourceListItem:hover .quickAddButton {
+  opacity: 1;
+}
+
+.sourceListItem.selected {
+  background: rgba(55, 53, 47, 0.04);
+  border-color: rgba(55, 53, 47, 0.24);
+}
+
+.selectCircle {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border: 2px solid rgba(55, 53, 47, 0.3);
+  border-radius: 50%;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.sourceListItem.selected .selectCircle {
+  border-color: #000;
+  background: #000;
+}
+
+.sourceListItem.selected .selectCircle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.sourceInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sourceTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.87);
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.sourceMetadata {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: rgba(55, 53, 47, 0.5);
+  flex-wrap: wrap;
+}
+
+.sourceDomain {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sourceFavicon {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.sourceDate {
+  white-space: nowrap;
+}
+
+.sourceComment {
+  font-size: 11px;
+  color: rgba(55, 53, 47, 0.6);
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.quickAddButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #000;
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.quickAddButton:hover {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.quickAddButton:active {
+  transform: translateY(0);
+}
+
+/* ========== Create New Scrap Form ========== */
+.createNewScrapForm {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 6px;
+  animation: formSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes formSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.formHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.formTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.formCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  color: rgba(55, 53, 47, 0.5);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.formCloseButton:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.formInputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(55, 53, 47, 0.7);
+}
+
+.formRequired {
+  color: #e74c3c;
+  margin-left: 2px;
+}
+
+.formInput,
+.formTextarea {
+  width: 100%;
+  padding: 6px 8px;
+  font-size: 12px;
+  color: rgb(55, 53, 47);
+  background: #ffffff;
+  border: 1px solid rgba(55, 53, 47, 0.16);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.15s ease;
+  font-family: inherit;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  border-color: rgba(55, 53, 47, 0.5);
+}
+
+.formInput.error,
+.formTextarea.error {
+  border-color: #e74c3c;
+}
+
+.formTextarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.4;
+}
+
+.formError {
+  font-size: 11px;
+  color: #e74c3c;
+  margin-top: -4px;
+}
+
+.formActions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.formCancelButton,
+.formSubmitButton {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.formCancelButton {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.formCancelButton:hover {
+  background: rgba(55, 53, 47, 0.12);
+}
+
+.formSubmitButton {
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.formSubmitButton:hover:not(:disabled) {
+  background: #333;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.formSubmitButton:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.formSubmitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== Add New Source Button ========== */
+.addNewSourceButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 12px;
+  background: transparent;
+  border: 1px dashed rgba(55, 53, 47, 0.24);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+  width: 100%;
+  justify-content: center;
+}
+
+.addNewSourceButton:hover {
+  background: rgba(55, 53, 47, 0.03);
+  border-color: rgba(55, 53, 47, 0.4);
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.addNewSourceButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ========== Mobile Responsive ========== */
+@media (max-width: 480px) {
+  .sourcePill {
+    max-width: 100%;
+  }
+
+  .availableSourcesList {
+    max-height: 240px;
+  }
+
+  .quickAddButton {
+    opacity: 1;
+  }
+}
