@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { IoClose, IoChevronDown, IoChevronUp, IoRefreshOutline } from 'react-icons/io5';
+import { IoClose, IoChevronDown, IoChevronUp } from 'react-icons/io5';
 import { ArticleResponse } from '../../../services/articleService';
 import { WritingStyle } from '../../../services/writingStyleService';
 import { useI18n } from '../../../hooks/useI18n';
 import { useFocusTrap } from '../../../hooks/useFocusTrap';
+import { MingcuteRefresh4AiFill } from '../../icons/MingcuteRefresh4AiFill';
 import SourcesSection from './SourcesSection';
 import styles from './RegenerateModal.module.css';
 
@@ -170,7 +171,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.headerTitle}>
-            <IoRefreshOutline size={20} />
+            <MingcuteRefresh4AiFill style={{ fontSize: '20px' }} />
             <h2 id="regenerate-modal-title">{t('regenerateModal_title')}</h2>
           </div>
           <button
@@ -346,7 +347,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
                 className={styles.submitButton}
                 disabled={isRegenerating || !topic.trim() || !keyInsight.trim()}
               >
-                <IoRefreshOutline size={16} />
+                <MingcuteRefresh4AiFill style={{ fontSize: '16px' }} />
                 {isRegenerating ? t('regenerateModal_regenerating') : t('regenerateModal_regenerate')}
               </button>
             </div>
