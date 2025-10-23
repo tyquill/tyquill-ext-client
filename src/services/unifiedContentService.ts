@@ -111,10 +111,6 @@ export class UnifiedContentService {
       const queryString = params.length > 0 ? `?${params.join('&')}` : '';
       const endpoint = `/content/unified${queryString}`;
 
-      console.log('🔍 Unified Content API Request:', endpoint);
-      console.log('🔍 Query object:', JSON.stringify(query, null, 2));
-      console.log('🔍 Tags array:', query.tags, 'Is Array?', Array.isArray(query.tags));
-
       const apiResponse = await this.apiRequest<RawApiResponse>(endpoint, {
         method: 'GET',
       });

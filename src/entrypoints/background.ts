@@ -283,7 +283,7 @@ export default defineBackground(() => {
         await browser.tabs.sendMessage(tabInfo.id, { type: 'PING' });
       } catch (pingError) {
         // Content script not loaded, inject it
-        console.log('Content script not loaded on active tab, injecting...');
+        // console.log('Content script not loaded on active tab, injecting...');
         try {
           await browser.scripting.executeScript({
             target: { tabId: tabInfo.id },
