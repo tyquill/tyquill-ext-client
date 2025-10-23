@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp } from 'react-icons/io5';
+import { IoArrowBack, IoCreate, IoClose, IoCheckmark, IoChevronDown, IoChevronUp, IoBrush, IoDocumentText, IoLink, IoTimeOutline, IoCheckmarkCircle } from 'react-icons/io5';
+import { MingcuteRefresh4AiFill } from '../../components/icons/MingcuteRefresh4AiFill';
 import { CgArrowsExpandRight } from "react-icons/cg";
 import { browser } from 'wxt/browser';
 import styles from './PageStyles.module.css';
 import detailStyles from './ArchiveDetailPage.module.css';
 import layoutStyles from './CommonLayout.module.css';
-import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse } from '../../services/articleService';
+import { articleService, ArticleResponse, UpdateArticleDto, ArchiveResponse, RegenerateArticleV3Dto, StreamEvent } from '../../services/articleService';
+import { writingStyleService, WritingStyle } from '../../services/writingStyleService';
 import EditorWrapper from '../../components/sidepanel/Editor/Editor';
 import MarkdownRenderer from '../../utils/markdownRenderer';
 import { markdownToHtml } from '../../utils/markdownConverter';
 import ErrorBoundary from '../../components/ErrorBoundary';
 import ExportButton from '../../components/sidepanel/ExportButton/ExportButton';
 import CopyButton from '../../components/sidepanel/CopyButton/CopyButton';
+import RegenerateModal, { RegenerateParams } from '../../components/sidepanel/RegenerateModal/RegenerateModal';
+import DiscoBallScene from '../../components/sidepanel/DiscoBallScene/DiscoBallScene';
 import { useEditor } from '@tiptap/react';
 import { generateHTML } from '@tiptap/core';
 import { CharacterCount } from '@tiptap/extension-character-count';
@@ -24,6 +28,8 @@ import TextAlign from '@tiptap/extension-text-align';
 import { TextStyle } from '@tiptap/extension-text-style';
 import Tooltip from '../../components/common/Tooltip'; // Tooltip 컴포넌트 import
 import { useI18n } from '../../hooks/useI18n';
+import { useToastHelpers } from '../../hooks/useToast';
+import { formatRelativeTime } from '../../utils/timeFormat';
 import {
   trackArchiveContentCopiedBridge,
   trackArchiveExportedBridge,
@@ -39,8 +45,69 @@ interface ArchiveDetailPageProps {
   onBack: () => void;
 }
 
-const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
+// Scraps Section Component with collapsible functionality
+interface ScrapsSectionProps {
+  scraps: Array<{
+    scrapId: number;
+    title: string;
+    url: string;
+    userComment?: string;
+  }>;
+}
+
+const ScrapsSectionComponent: React.FC<ScrapsSectionProps> = ({ scraps }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const { t } = useI18n();
+
+  return (
+    <div className={detailStyles.metadataRow}>
+      <span className={detailStyles.metadataLabel}>
+        <IoDocumentText size={14} className={detailStyles.metadataIcon} />
+        {t('archiveDetailPage_sources')}
+      </span>
+      <div
+        className={detailStyles.scrapsBadge}
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <span className={detailStyles.scrapsCount}>{scraps.length}{t('archiveDetailPage_itemsCount')}</span>
+        <IoChevronDown
+          size={14}
+          className={`${detailStyles.chevronIcon} ${isExpanded ? detailStyles.expanded : ''}`}
+        />
+      </div>
+      {isExpanded && (
+        <div className={detailStyles.scrapsList} style={{ width: '100%' }}>
+          {scraps.map((scrap) => (
+            <div key={scrap.scrapId} className={detailStyles.scrapItem}>
+              <div className={detailStyles.scrapTitle}>
+                <IoDocumentText size={12} className={detailStyles.scrapTitleIcon} />
+                <span>{scrap.title || 'Untitled'}</span>
+              </div>
+
+              {scrap.url && (
+                <div className={detailStyles.scrapUrl}>
+                  <IoLink size={10} className={detailStyles.scrapUrlIcon} />
+                  <span>{scrap.url}</span>
+                </div>
+              )}
+
+              {scrap.userComment && (
+                <div className={detailStyles.scrapComment}>
+                  "{scrap.userComment}"
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }) => {
+  const { t, currentLanguage } = useI18n();
+  const { showSuccess, showError: showErrorToast } = useToastHelpers();
   const [article, setArticle] = useState<ArticleResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,9 +121,16 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   const [showWidthTip, setShowWidthTip] = useState(false);
   const [dontShowAgain, setDontShowAgain] = useState(false);
   const [tipVisible, setTipVisible] = useState(false);
-  const [isVersionDropdownOpen, setIsVersionDropdownOpen] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const [previewingVersion, setPreviewingVersion] = useState<ArchiveResponse | null>(null);
   const [isEditorPageOpen, setIsEditorPageOpen] = useState(false);
-  const versionDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Regeneration state
+  const [showRegenerateModal, setShowRegenerateModal] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [regenerationProgress, setRegenerationProgress] = useState(0);
+  const [regenerationMessage, setRegenerationMessage] = useState('');
+  const [writingStyles, setWritingStyles] = useState<WritingStyle[]>([]);
 
   // 툴팁 표시 여부 확인
   useEffect(() => {
@@ -171,7 +245,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
       try {
         setLoading(true);
         const articleData = await articleService.getArticle(parseInt(draftId));
-        
+
         // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
         const normalizeContent = (content: string) => {
           return content.replace(/\n{2,}/g, '\n').trim();
@@ -186,9 +260,9 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             content: normalizeContent(archive.content)
           }))
         };
-        
+
         setArticle(normalizedArticle);
-        
+
         // 기본적으로 최신 버전 선택
         if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
           const latestArchive = normalizedArticle.archives[0]; // 이미 정렬된 상태
@@ -210,6 +284,19 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
 
     fetchArticle();
   }, [draftId]);
+
+  // Load writing styles for regeneration
+  useEffect(() => {
+    const fetchStyles = async () => {
+      try {
+        const styles = await writingStyleService.getWritingStyles();
+        setWritingStyles(styles);
+      } catch (error) {
+        console.error('Failed to fetch writing styles:', error);
+      }
+    };
+    fetchStyles();
+  }, []);
 
   // Character count를 위한 별도 에디터 (읽기 전용)
   const countEditor = useEditor({
@@ -445,30 +532,43 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }
   };
 
-  const handleVersionSelect = async (versionNumber: number) => {
+  const handleVersionSelect = async (archive: ArchiveResponse) => {
     if (!article || !article.archives) return;
 
-    const selectedArchive = article.archives.find(archive => archive.versionNumber === versionNumber);
-    if (selectedArchive) {
-      const previousVersion = selectedVersionNumber;
+    const previousVersion = selectedVersionNumber;
 
-      try {
-        await trackArchiveVersionChangedBridge({
-          article_id: article.articleId,
-          previous_version: previousVersion,
-          new_version: versionNumber,
-          total_versions: article.archives.length,
-          was_editing: isEditing
-        });
-      } catch {}
+    try {
+      await trackArchiveVersionChangedBridge({
+        article_id: article.articleId,
+        previous_version: previousVersion,
+        new_version: archive.versionNumber,
+        total_versions: article.archives.length,
+        was_editing: isEditing
+      });
+    } catch {}
 
-      setSelectedVersionNumber(versionNumber);
-      setCurrentArchive(selectedArchive);
-      setEditTitle(selectedArchive.title);
-      setEditContent(selectedArchive.content);
-      setIsEditing(false); // 버전 변경 시 편집 모드 종료
-    }
+    // Preview the selected version
+    setPreviewingVersion(archive);
+    setSelectedVersionNumber(archive.versionNumber);
+    setCurrentArchive(archive);
+    setEditTitle(archive.title);
+    setEditContent(archive.content);
+    setIsEditing(false); // 버전 변경 시 편집 모드 종료
   };
+
+  const handleBackToCurrent = useCallback(async () => {
+    if (!article || !article.archives) return;
+
+    // Load the latest version
+    const latestArchive = article.archives[0];
+    if (latestArchive) {
+      setSelectedVersionNumber(latestArchive.versionNumber);
+      setCurrentArchive(latestArchive);
+      setEditTitle(latestArchive.title);
+      setEditContent(latestArchive.content);
+      setPreviewingVersion(null);
+    }
+  }, [article]);
 
   const handleCloseTip = () => {
     setTipVisible(false);
@@ -478,26 +578,128 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     }, 300);
   };
 
-  // 버전 드롭박스 토글
-  const toggleVersionDropdown = (event: React.MouseEvent) => {
-    event.stopPropagation();
-    setIsVersionDropdownOpen(prev => !prev);
+  // Regeneration handlers
+  const handleOpenRegenerateModal = () => {
+    setShowRegenerateModal(true);
   };
 
-  // 바깥 클릭으로 드롭박스 닫기
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (versionDropdownRef.current && !versionDropdownRef.current.contains(event.target as Node)) {
-        setIsVersionDropdownOpen(false);
-      }
-    };
+  const handleCloseRegenerateModal = () => {
+    if (!isRegenerating) {
+      setShowRegenerateModal(false);
+    }
+  };
 
-    document.addEventListener('click', handleClickOutside);
-    
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-    };
-  }, []);
+  const handleRegenerate = async (params: RegenerateParams) => {
+    if (!article) return;
+
+    // Analytics can be added later if needed
+
+    setIsRegenerating(true);
+    setRegenerationProgress(0);
+    setRegenerationMessage('');
+
+    try {
+      // Calculate added and removed scraps
+      const originalScrapIds = article.scraps?.map(s => s.scrapId) || [];
+      const selectedScrapIds = params.selectedScrapIds;
+
+      const addedScrapIds = selectedScrapIds.filter(id => !originalScrapIds.includes(id));
+      const removedScrapIds = originalScrapIds.filter(id => !selectedScrapIds.includes(id));
+
+      // Prepare regeneration data - only include changed fields
+      // Note: articleId is passed as URL parameter, not in DTO body
+      const regenerateData: RegenerateArticleV3Dto = {
+        topic: params.topic !== article.topic ? params.topic : undefined,
+        keyInsight: params.keyInsight !== article.keyInsight ? params.keyInsight : undefined,
+        addedScrapIds: addedScrapIds.length > 0 ? addedScrapIds : undefined,
+        removedScrapIds: removedScrapIds.length > 0 ? removedScrapIds : undefined,
+        writingStyleId: params.writingStyleId !== article.writingStyleId ? params.writingStyleId : undefined,
+        generationParams: params.additionalInstructions,
+      };
+
+      // Stream event handler
+      const handleStreamEvent = (event: StreamEvent) => {
+        const getLocalizedMessage = (event: StreamEvent): string => {
+          if (currentLanguage === 'en' && event.message_en) {
+            return event.message_en;
+          } else if (currentLanguage === 'ko' && event.message_ko) {
+            return event.message_ko;
+          }
+          return event.message || event.node || '';
+        };
+
+        if (event.type === 'progress') {
+          if (event.progress !== undefined) {
+            setRegenerationProgress(event.progress);
+          }
+          const localizedMessage = getLocalizedMessage(event);
+          if (localizedMessage) {
+            setRegenerationMessage(localizedMessage);
+          }
+        } else if (event.type === 'node_start') {
+          const localizedMessage = getLocalizedMessage(event);
+          if (localizedMessage) {
+            setRegenerationMessage(localizedMessage);
+          }
+        } else if (event.type === 'complete') {
+          setRegenerationProgress(100);
+          setRegenerationMessage(t('regenerateModal_complete'));
+        } else if (event.type === 'error') {
+          throw new Error(event.message || 'Generation failed');
+        }
+      };
+
+      // Start streaming regeneration (uses existing article content as base)
+      await articleService.regenerateArticleV3Stream(
+        article.articleId,
+        regenerateData,
+        handleStreamEvent
+      );
+
+      // Reload article to get the new version
+      const updatedArticle = await articleService.getArticle(article.articleId);
+
+      // Normalize content
+      const normalizeContent = (content: string) => {
+        return content.replace(/\n{2,}/g, '\n').trim();
+      };
+
+      const normalizedArticle = {
+        ...updatedArticle,
+        content: normalizeContent(updatedArticle.content),
+        archives: updatedArticle.archives?.map(archive => ({
+          ...archive,
+          content: normalizeContent(archive.content)
+        }))
+      };
+
+      setArticle(normalizedArticle);
+
+      // Switch to the latest version
+      if (normalizedArticle.archives && normalizedArticle.archives.length > 0) {
+        const latestArchive = normalizedArticle.archives[0];
+        setSelectedVersionNumber(latestArchive.versionNumber);
+        setCurrentArchive(latestArchive);
+        setEditTitle(latestArchive.title);
+        setEditContent(latestArchive.content);
+      }
+
+      // Close modal and show success message
+      setShowRegenerateModal(false);
+      showSuccess(t('regenerateModal_success'));
+
+    } catch (error: any) {
+      console.error('Regeneration failed:', error);
+      showErrorToast(
+        t('regenerateModal_error'),
+        error.message || t('regenerateModal_unknownError')
+      );
+    } finally {
+      setIsRegenerating(false);
+      setRegenerationProgress(0);
+      setRegenerationMessage('');
+    }
+  };
 
 
   if (loading) {
@@ -573,33 +775,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
-                  <div className={detailStyles.versionSelector} ref={versionDropdownRef}>
-                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
+                  <Tooltip content={t('archiveDetailPage_versionHistory')} side='top'>
                     <button
-                      className={detailStyles.versionDropdownButton}
-                      onClick={toggleVersionDropdown}
-                      disabled={isEditing}
+                      className={detailStyles.versionHistoryButton}
+                      onClick={() => setShowVersionHistory(true)}
                     >
-                      {selectedVersionNumber || ''}
-                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                      <IoTimeOutline size={18} />
+                      <span className={detailStyles.versionLabel}>v{selectedVersionNumber || ''}</span>
                     </button>
-                    
-                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
-                      {article.archives.map(archive => (
-                        <div
-                          key={archive.versionNumber}
-                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVersionSelect(archive.versionNumber);
-                            setIsVersionDropdownOpen(false);
-                          }}
-                        >
-                          {archive.versionNumber}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  </Tooltip>
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
@@ -636,12 +820,25 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                     }}
                   />
                 </Tooltip>
+                <Tooltip content={t('archiveDetailPage_regenerate')} side='top'>
+                  <button
+                    className={detailStyles.primaryActionButton}
+                    onClick={handleOpenRegenerateModal}
+                    disabled={isRegenerating}
+                    style={{
+                      opacity: isRegenerating ? 0.5 : 1,
+                      cursor: isRegenerating ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    <MingcuteRefresh4AiFill width={20} height={20} />
+                  </button>
+                </Tooltip>
                 <Tooltip content={isEditorPageOpen ? t('archiveDetailPage_editingInPageEditorTooltip') : t('archiveDetailPage_editDraft')}>
-                  <button 
-                    className={detailStyles.primaryActionButton} 
+                  <button
+                    className={detailStyles.primaryActionButton}
                     onClick={handleEdit}
                     disabled={isEditorPageOpen}
-                    style={{ 
+                    style={{
                       opacity: isEditorPageOpen ? 0.5 : 1,
                       cursor: isEditorPageOpen ? 'not-allowed' : 'pointer'
                     }}
@@ -656,33 +853,16 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <div className={styles.versionControls}>
                 {article.archives && article.archives.length > 0 && (
-                  <div className={detailStyles.versionSelector}>
-                    <span className={detailStyles.versionLabel}>{t('archiveDetailPage_version')}:</span>
+                  <Tooltip content={t('archiveDetailPage_versionHistory')} side='top'>
                     <button
-                      className={detailStyles.versionDropdownButton}
-                      onClick={toggleVersionDropdown}
-                      disabled={isEditing}
+                      className={detailStyles.versionHistoryButton}
+                      onClick={() => setShowVersionHistory(true)}
+                      disabled={saving}
                     >
-                      {selectedVersionNumber || ''}
-                      {isVersionDropdownOpen ? <IoChevronUp size={16} /> : <IoChevronDown size={16} />}
+                      <IoTimeOutline size={18} />
+                      <span className={detailStyles.versionLabel}>v{selectedVersionNumber || ''}</span>
                     </button>
-                    
-                    <div className={`${detailStyles.versionDropdown} ${isVersionDropdownOpen ? detailStyles.visible : ''}`}>
-                      {article.archives.map(archive => (
-                        <div
-                          key={archive.versionNumber}
-                          className={`${detailStyles.versionOption} ${selectedVersionNumber === archive.versionNumber ? detailStyles.selected : ''}`}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleVersionSelect(archive.versionNumber);
-                            setIsVersionDropdownOpen(false);
-                          }}
-                        >
-                          {archive.versionNumber}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  </Tooltip>
                 )}
               </div>
               <div className={styles.rightActionButtons} style={{display: 'flex'}}>
@@ -717,6 +897,31 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
             </div>
           )}
         </div>
+
+        {/* Metadata Section */}
+        {(article.writingStyleName || (article.scraps && article.scraps.length > 0)) && (
+          <div className={detailStyles.metadataSection}>
+            {/* Writing Style */}
+            {article.writingStyleName && (
+              <div className={detailStyles.metadataRow}>
+                <span className={detailStyles.metadataLabel}>
+                  <IoBrush size={14} className={detailStyles.metadataIcon} />
+                  {t('archiveDetailPage_style')}
+                </span>
+                <span className={detailStyles.writingStyleBadge}>
+                  {article.writingStyleName}
+                </span>
+              </div>
+            )}
+
+            {/* Scraps - Collapsible */}
+            {article.scraps && article.scraps.length > 0 && (
+              <ScrapsSectionComponent
+                scraps={article.scraps}
+              />
+            )}
+          </div>
+        )}
 
         <div className={styles.detailContent}>
           <div className={styles.previewContainer}>
@@ -839,11 +1044,11 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                 <IoClose size={16} />
               </button>
             </div>
-            
+
               <div style={{ marginBottom: '12px', marginLeft: '5px' }}>
                 {t('archiveDetailPage_widthTipContent')}
               </div>
-              
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '8px' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#ccc' }}>
                   <input
@@ -861,6 +1066,132 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
                   {t('archiveDetailPage_dontShowAgain')}
                 </label>
               </div>
+          </div>
+        )}
+
+        {/* Version Preview Banner */}
+        {previewingVersion && previewingVersion.versionNumber !== article.archives?.[0]?.versionNumber && (
+          <div className={detailStyles.versionPreviewBanner}>
+            <div className={detailStyles.versionPreviewText}>
+              {t('archiveDetailPage_viewingVersion')} {formatRelativeTime(previewingVersion.createdAt)}
+            </div>
+            <div className={detailStyles.versionPreviewActions}>
+              <button
+                onClick={handleBackToCurrent}
+                className={detailStyles.backToCurrentButton}
+              >
+                {t('archiveDetailPage_backToCurrent')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Version History Panel */}
+        {showVersionHistory && article && article.archives && article.archives.length > 0 && (
+          <>
+            {/* Backdrop */}
+            <div className={detailStyles.versionHistoryBackdrop} onClick={() => {
+              setShowVersionHistory(false);
+              setPreviewingVersion(null);
+            }} />
+
+            {/* Panel */}
+            <div className={detailStyles.versionHistoryPanel}>
+              {/* Header */}
+              <div className={detailStyles.versionHistoryHeader}>
+                <h2 className={detailStyles.versionHistoryTitle}>{t('archiveDetailPage_versionHistoryTitle')}</h2>
+                <button
+                  onClick={() => {
+                    setShowVersionHistory(false);
+                    setPreviewingVersion(null);
+                  }}
+                  className={detailStyles.versionHistoryCloseButton}
+                  title={t('common_close')}
+                >
+                  <IoClose size={20} />
+                </button>
+              </div>
+
+              {/* Content */}
+              <div className={detailStyles.versionHistoryContent}>
+                <div className={detailStyles.versionList}>
+                  {article.archives.map((archive) => {
+                    const isSelected = selectedVersionNumber === archive.versionNumber;
+                    const isCurrent = article.archives?.[0]?.versionNumber === archive.versionNumber;
+
+                    return (
+                      <div
+                        key={archive.versionNumber}
+                        className={`${detailStyles.versionItem} ${isSelected ? detailStyles.versionItemSelected : ''} ${isCurrent ? detailStyles.versionItemCurrent : ''}`}
+                        onClick={() => handleVersionSelect(archive)}
+                      >
+                        <div className={detailStyles.versionItemHeader}>
+                          <div className={detailStyles.versionNumber}>
+                            {isCurrent && (
+                              <IoCheckmarkCircle
+                                size={14}
+                                className={detailStyles.versionCurrentIcon}
+                              />
+                            )}
+                            v{archive.versionNumber}
+                          </div>
+                          <div className={detailStyles.versionTime}>
+                            {formatRelativeTime(archive.createdAt)}
+                          </div>
+                        </div>
+
+                        <div className={detailStyles.versionItemBody}>
+                          <div className={detailStyles.versionTitle}>
+                            {archive.title || 'Untitled'}
+                          </div>
+                          <div className={detailStyles.versionMeta}>
+                            {archive.content?.length.toLocaleString() || 0} {t('archiveDetailPage_characters')}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Regenerate Modal */}
+        {article && (
+          <RegenerateModal
+            article={article}
+            writingStyles={writingStyles}
+            isOpen={showRegenerateModal}
+            onClose={handleCloseRegenerateModal}
+            onRegenerate={handleRegenerate}
+            isRegenerating={isRegenerating}
+          />
+        )}
+
+        {/* Regeneration Loading Screen */}
+        {isRegenerating && (
+          <div className={detailStyles.loadingOverlay}>
+            <div className={detailStyles.loadingContent}>
+              <div className={detailStyles.discoBallContainer}>
+                <DiscoBallScene />
+              </div>
+              <div className={detailStyles.loadingText}>
+                <h3>{t('regenerateModal_regenerating')}</h3>
+                {regenerationMessage && (
+                  <p className={detailStyles.loadingMessage}>{regenerationMessage}</p>
+                )}
+                <div className={detailStyles.progressBar}>
+                  <div
+                    className={detailStyles.progressFill}
+                    style={{ width: `${regenerationProgress}%` }}
+                  />
+                </div>
+                <p className={detailStyles.progressText}>
+                  {Math.round(regenerationProgress)}%
+                </p>
+              </div>
+            </div>
           </div>
         )}
         </div>

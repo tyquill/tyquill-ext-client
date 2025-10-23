@@ -163,91 +163,46 @@
   /* Framer Motion handles the rotation animation */
 }
 
-/* Version Controls - Custom Dropdown */
+/* ============================================
+   Version History Button
+   ============================================ */
 .versionControls {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
-.versionSelector {
-  position: relative;
+.versionHistoryButton {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 6px;
+  color: rgba(55, 53, 47, 0.7);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.versionHistoryButton:hover {
+  background: rgba(55, 53, 47, 0.04);
+  border-color: rgba(55, 53, 47, 0.2);
+  color: rgb(55, 53, 47);
+}
+
+.versionHistoryButton:active {
+  background: rgba(55, 53, 47, 0.08);
+  transform: scale(0.98);
 }
 
 .versionLabel {
   font-size: 13px;
-  color: #666;
+  color: rgba(55, 53, 47, 0.7);
   font-weight: 500;
-}
-
-.versionDropdownButton {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background-color: #f5f5f5;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.2s ease;
-  outline: none;
-  min-width: 60px;
-  justify-content: space-between;
-}
-
-.versionDropdownButton:hover {
-  background-color: #eee;
-  border-color: #bbb;
-}
-
-.versionDropdownButton:focus {
-  border-color: #000;
-  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
-}
-
-.versionDropdownButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  background-color: #f8f9fa;
-}
-
-.versionDropdown {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  min-width: 100px;
-  max-height: 200px;
-  overflow-y: auto;
-  background-color: white;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  margin-top: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-}
-
-.versionDropdown.visible {
-  display: block;
-}
-
-.versionOption {
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  font-size: 13px;
-}
-
-.versionOption:hover {
-  background-color: #f5f5f5;
-}
-
-.versionOption.selected {
-  background-color: #f0f0f0;
-  font-weight: 500;
+  letter-spacing: 0.3px;
 }
 
 /* Edit Mode Layout - Consistent with Preview Mode */
@@ -450,5 +405,505 @@
 
   .editModeButtons {
     justify-content: flex-end;
+  }
+}
+
+/* ============================================
+   Metadata Section - Subtle & Integrated
+   ============================================ */
+
+.metadataSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.metadataRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metadataLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.metadataIcon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+/* Writing Style Badge */
+.writingStyleBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 4px;
+  color: #6366f1;
+  font-weight: 500;
+  font-size: 12px;
+  transition: background 0.2s ease;
+}
+
+.writingStyleBadge:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+
+/* Scraps Badge */
+.scrapsBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.04);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.scrapsBadge:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.scrapsCount {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.chevronIcon {
+  color: rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.chevronIcon.expanded {
+  transform: rotate(180deg);
+}
+
+/* Scraps List */
+.scrapsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 6px;
+}
+
+.scrapItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
+  transition: border-color 0.2s ease;
+}
+
+.scrapItem:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+}
+
+.scrapTitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
+  line-height: 1.4;
+}
+
+.scrapTitleIcon {
+  color: rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+}
+
+.scrapUrl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scrapUrlIcon {
+  color: rgba(0, 0, 0, 0.25);
+  flex-shrink: 0;
+}
+
+.scrapComment {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+  font-style: italic;
+  line-height: 1.4;
+  padding-left: 12px;
+  border-left: 2px solid rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================
+   Version History Panel (Slide-in from right)
+   ============================================ */
+.versionHistoryBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.1);
+  z-index: 9998;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.versionHistoryPanel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 320px;
+  background: #ffffff;
+  border-left: 1px solid rgba(55, 53, 47, 0.09);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: -2px 0 8px rgba(0, 0, 0, 0.04);
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Header */
+.versionHistoryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.09);
+  flex-shrink: 0;
+}
+
+.versionHistoryTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgb(55, 53, 47);
+  margin: 0;
+}
+
+.versionHistoryCloseButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: rgba(55, 53, 47, 0.6);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  outline: none;
+}
+
+.versionHistoryCloseButton:hover {
+  background: rgba(55, 53, 47, 0.08);
+  color: rgb(55, 53, 47);
+}
+
+/* Content */
+.versionHistoryContent {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.versionHistoryContent::-webkit-scrollbar {
+  width: 6px;
+}
+
+.versionHistoryContent::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.versionHistoryContent::-webkit-scrollbar-thumb {
+  background: rgba(55, 53, 47, 0.12);
+  border-radius: 3px;
+}
+
+.versionHistoryContent::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 53, 47, 0.24);
+}
+
+/* Version List */
+.versionList {
+  padding: 8px 0;
+}
+
+/* Version Item */
+.versionItem {
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border-left: 3px solid transparent;
+}
+
+.versionItem:hover {
+  background: rgba(55, 53, 47, 0.04);
+}
+
+.versionItemSelected {
+  background: rgba(55, 53, 47, 0.08);
+  border-left-color: rgba(55, 53, 47, 0.8);
+}
+
+.versionItemCurrent {
+  background: rgba(55, 53, 47, 0.06);
+}
+
+.versionItemCurrent.versionItemSelected {
+  background: rgba(55, 53, 47, 0.12);
+}
+
+/* Version Item Header */
+.versionItemHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.versionNumber {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.versionCurrentIcon {
+  color: rgba(55, 53, 47, 0.8);
+}
+
+.versionTime {
+  font-size: 12px;
+  color: rgba(55, 53, 47, 0.6);
+}
+
+/* Version Item Body */
+.versionItemBody {
+  margin-bottom: 4px;
+}
+
+.versionTitle {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgb(55, 53, 47);
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.versionMeta {
+  font-size: 11px;
+  color: rgba(55, 53, 47, 0.5);
+}
+
+/* ============================================
+   Version Preview Banner
+   ============================================ */
+.versionPreviewBanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(55, 53, 47, 0.95);
+  color: white;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 9997;
+  animation: slideDown 0.3s ease-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.versionPreviewText {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.versionPreviewActions {
+  display: flex;
+  gap: 8px;
+}
+
+.backToCurrentButton {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: white;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.backToCurrentButton:hover {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.backToCurrentButton:active {
+  transform: scale(0.98);
+}
+
+/* ============================================
+   Responsive Design for Version History
+   ============================================ */
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  .versionHistoryPanel {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* ============================================
+   Regeneration Loading Overlay
+   ============================================ */
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.95);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  max-width: 90%;
+}
+
+.discoBallContainer {
+  width: 200px;
+  height: 200px;
+}
+
+.loadingText {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.loadingText h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: rgb(55, 53, 47);
+  margin: 0;
+}
+
+.loadingMessage {
+  font-size: 14px;
+  color: rgba(55, 53, 47, 0.7);
+  margin: 0;
+  max-width: 400px;
+}
+
+.progressBar {
+  width: 300px;
+  height: 4px;
+  background: rgba(55, 53, 47, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #000 0%, #333 100%);
+  transition: width 0.3s ease-out;
+  border-radius: 2px;
+}
+
+.progressText {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(55, 53, 47, 0.6);
+  margin: 0;
+}
+
+@media (max-width: 480px) {
+  .discoBallContainer {
+    width: 150px;
+    height: 150px;
+  }
+
+  .progressBar {
+    width: 250px;
+  }
+
+  .loadingText h3 {
+    font-size: 16px;
   }
 }
