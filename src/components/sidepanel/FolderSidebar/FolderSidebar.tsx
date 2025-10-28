@@ -10,9 +10,6 @@ import { logger } from '../../../utils/logger';
 import styles from './FolderSidebar.module.css';
 import Tooltip from '../../common/Tooltip';
 
-// Minimum panel width to show toggle button (in pixels)
-const MIN_PANEL_WIDTH_FOR_TOGGLE = 600;
-
 /**
  * Type guard to validate drag data structure
  */
@@ -37,7 +34,6 @@ export const FolderSidebar: React.FC = () => {
   const { showSuccess, showError } = useToastHelpers();
   const [isAllItemsDragOver, setIsAllItemsDragOver] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<number | null>(null);
-  const [isPanelWide, setIsPanelWide] = useState(true);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -54,30 +50,6 @@ export const FolderSidebar: React.FC = () => {
     toggleFolderSidebar,
     openCreateFolderModal,
   } = useContentStore();
-
-  // Monitor panel width and conditionally show toggle button
-  useEffect(() => {
-    const updatePanelWidth = () => {
-      const width = window.innerWidth;
-      const isWide = width >= MIN_PANEL_WIDTH_FOR_TOGGLE;
-      setIsPanelWide(isWide);
-
-      // Auto-collapse when panel is too narrow
-      if (!isWide && !isFolderSidebarCollapsed) {
-        toggleFolderSidebar();
-      }
-    };
-
-    // Initial check
-    updatePanelWidth();
-
-    // Listen for resize events
-    window.addEventListener('resize', updatePanelWidth);
-
-    return () => {
-      window.removeEventListener('resize', updatePanelWidth);
-    };
-  }, [isFolderSidebarCollapsed, toggleFolderSidebar]);
 
   // Load folders on mount
   useEffect(() => {
@@ -265,22 +237,19 @@ export const FolderSidebar: React.FC = () => {
   if (isFolderSidebarCollapsed) {
     return (
       <div className={styles.collapsedSidebar} ref={sidebarRef}>
-        {/* Only show toggle button when panel is wide enough */}
-        {isPanelWide && (
-          <>
-            <Tooltip content={t('folder_expand')} side="right">
-              <button
-                className={styles.toggleButton}
-                onClick={toggleFolderSidebar}
-                aria-label={t('folder_expand')}
-              >
-                <IoChevronForward size={18} />
-              </button>
-            </Tooltip>
+        <>
+          <Tooltip content={t('folder_expand')} side="right">
+            <button
+              className={styles.toggleButton}
+              onClick={toggleFolderSidebar}
+              aria-label={t('folder_expand')}
+            >
+              <IoChevronForward size={18} />
+            </button>
+          </Tooltip>
 
-            <div className={styles.collapsedDivider} />
-          </>
-        )}
+          <div className={styles.collapsedDivider} />
+        </>
 
         {/* Add Folder button in collapsed state */}
         <Tooltip content={t('folder_create')} side="right">
@@ -310,32 +279,27 @@ export const FolderSidebar: React.FC = () => {
           </div>
         </Tooltip>
 
-        {/* Show folder icons vertically */}
-        {folders.slice(0, 5).map((folder) => (
-          <Tooltip key={folder.folderId} content={folder.name} side="right">
-            <div
-              className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''} ${dragOverFolderId === folder.folderId ? styles.dragOver : ''}`}
-              onClick={() => handleSelectFolder(folder.folderId)}
-              onDragOver={(e) => handleFolderDragOver(e, folder.folderId)}
-              onDragLeave={handleFolderDragLeave}
-              onDrop={(e) => handleFolderDrop(e, folder.folderId)}
-              role="button"
-              aria-label={folder.name}
-            >
-              {selectedFolderId === folder.folderId ? (
-                <FaRegFolderOpen size={18} style={{ color: folder.color || '#888' }} />
-              ) : (
-                <IoFolder size={18} style={{ color: folder.color || '#888' }} />
-              )}
-            </div>
-          </Tooltip>
-        ))}
-
-        {folders.length > 5 && (
-          <div className={styles.collapsedFolderIcon} style={{ opacity: 0.5 }}>
-            <span style={{ fontSize: '10px' }}>+{folders.length - 5}</span>
-          </div>
-        )}
+        <div className={styles.collapsedFolderScroll}>
+          {folders.map((folder) => (
+            <Tooltip key={folder.folderId} content={folder.name} side="right">
+              <div
+                className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''} ${dragOverFolderId === folder.folderId ? styles.dragOver : ''}`}
+                onClick={() => handleSelectFolder(folder.folderId)}
+                onDragOver={(e) => handleFolderDragOver(e, folder.folderId)}
+                onDragLeave={handleFolderDragLeave}
+                onDrop={(e) => handleFolderDrop(e, folder.folderId)}
+                role="button"
+                aria-label={folder.name}
+              >
+                {selectedFolderId === folder.folderId ? (
+                  <FaRegFolderOpen size={18} style={{ color: folder.color || '#888' }} />
+                ) : (
+                  <IoFolder size={18} style={{ color: folder.color || '#888' }} />
+                )}
+              </div>
+            </Tooltip>
+          ))}
+        </div>
       </div>
     );
   }
@@ -354,18 +318,15 @@ export const FolderSidebar: React.FC = () => {
               <IoAdd size={20} />
             </button>
           </Tooltip>
-          {/* Only show toggle button when panel is wide enough */}
-          {isPanelWide && (
-            <Tooltip content={t('folder_collapse')}>
-              <button
-                className={styles.headerButton}
-                onClick={toggleFolderSidebar}
-                aria-label={t('folder_collapse')}
-              >
-                <IoChevronBack size={20} />
-              </button>
-            </Tooltip>
-          )}
+          <Tooltip content={t('folder_collapse')}>
+            <button
+              className={styles.headerButton}
+              onClick={toggleFolderSidebar}
+              aria-label={t('folder_collapse')}
+            >
+              <IoChevronBack size={20} />
+            </button>
+          </Tooltip>
         </div>
       </div>
 
