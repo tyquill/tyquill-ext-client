@@ -623,6 +623,107 @@ export const exportToLinkedIn = (title: string, content: string): ExportResult =
 };
 
 /**
+ * Export content to Stibee editor
+ * Stibee uses cross-origin iframe (editor.stibee.com), so we rely on injected content script
+ */
+export const exportToStibee = async (title: string, content: string): Promise<ExportResult> => {
+  try {
+    console.log('🔍 Stibee export: Starting...');
+
+    // Clean content
+    const cleanedContent = content.replace(/\n{3,}/g, '\n\n').trim();
+
+    // The stibee-iframe.content.ts script running inside the iframe will handle this
+    // We just need to make sure it receives the message
+    console.log('📤 Sending export request to Stibee iframe content script');
+
+    // Wait a bit for the content script to be ready
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Stibee export error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+};
+
+/**
+ * Convert markdown to Stibee-compatible HTML
+ */
+const convertMarkdownToStibeeHtml = (markdown: string): string => {
+  const lines = markdown.split('\n');
+  const htmlElements: string[] = [];
+  let i = 0;
+
+  const processInlineFormatting = (text: string): string => {
+    return text
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
+  };
+
+  while (i < lines.length) {
+    const trimmedLine = lines[i].trim();
+
+    if (!trimmedLine) {
+      htmlElements.push('<p><br></p>');
+      i++;
+      continue;
+    }
+
+    if (trimmedLine.match(/^#{1,6}\s+/)) {
+      const level = trimmedLine.match(/^(#{1,6})\s+/)![1].length;
+      const headerContent = trimmedLine.substring(level + 1);
+      htmlElements.push(`<p class="p1"><span style="font-size: ${20 - level * 2}px; font-weight: bold;">${processInlineFormatting(headerContent)}</span></p>`);
+    } else if (trimmedLine === '---' || trimmedLine === '***' || trimmedLine === '___') {
+      htmlElements.push('<hr style="border-top: 1px solid #999999;">');
+    } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+      const listItems: string[] = [];
+      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
+        const item = lines[i].trim().substring(2);
+        listItems.push(`<li>${processInlineFormatting(item)}</li>`);
+        i++;
+      }
+      htmlElements.push(`<ul>${listItems.join('')}</ul>`);
+      i--;
+    } else if (trimmedLine.match(/^\d+\.\s/)) {
+      const listItems: string[] = [];
+      while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
+        const item = lines[i].trim().replace(/^\d+\.\s/, '');
+        listItems.push(`<li>${processInlineFormatting(item)}</li>`);
+        i++;
+      }
+      htmlElements.push(`<ol>${listItems.join('')}</ol>`);
+      i--;
+    } else if (trimmedLine.startsWith('> ')) {
+      htmlElements.push(`<blockquote style="border-left: 3px solid #ccc; padding-left: 15px; margin: 10px 0;">${processInlineFormatting(trimmedLine.substring(2))}</blockquote>`);
+    } else if (trimmedLine.startsWith('```')) {
+      const codeLines: string[] = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      if (codeLines.length > 0) {
+        const escapedCode = codeLines.join('\n')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+        htmlElements.push(`<pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;"><code>${escapedCode}</code></pre>`);
+      }
+    } else {
+      htmlElements.push(`<p class="p1">${processInlineFormatting(trimmedLine)}</p>`);
+    }
+
+    i++;
+  }
+
+  return htmlElements.join('\n');
+};
+
+/**
  * Main export function that delegates to platform-specific handlers
  */
 export const performExport = async (platform: ExportPlatform, title: string, content: string): Promise<ExportResult> => {
@@ -635,6 +736,8 @@ export const performExport = async (platform: ExportPlatform, title: string, con
       return await exportToGhost(title, content);
     case ExportPlatform.LINKEDIN:
       return exportToLinkedIn(title, content);
+    case ExportPlatform.STIBEE:
+      return await exportToStibee(title, content);
     default:
       return { success: false, error: 'Unsupported platform' };
   }

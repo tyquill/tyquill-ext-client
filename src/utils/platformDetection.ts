@@ -7,6 +7,7 @@ export enum ExportPlatform {
   SUBSTACK = 'substack',
   GHOST = 'ghost',
   LINKEDIN = 'linkedin',
+  STIBEE = 'stibee',
   UNKNOWN = 'unknown'
 }
 
@@ -101,6 +102,17 @@ export const detectPlatform = (url: string): PlatformInfo => {
     };
   }
 
+  // Stibee detection
+  if (url.includes('stibee.com') && url.includes('/email/') && url.includes('/edit/')) {
+    return {
+      platform: ExportPlatform.STIBEE,
+      isEditorPage: true,
+      editorSelectors: {
+        content: 'iframe' // Stibee uses iframe-based editor
+      }
+    };
+  }
+
   return {
     platform: ExportPlatform.UNKNOWN,
     isEditorPage: false,
@@ -114,7 +126,7 @@ export const detectPlatform = (url: string): PlatformInfo => {
  * @returns True if platform is supported
  */
 export const isSupportedPlatform = (platform: ExportPlatform): boolean => {
-  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK || platform === ExportPlatform.GHOST || platform === ExportPlatform.LINKEDIN;
+  return platform === ExportPlatform.MAILY || platform === ExportPlatform.SUBSTACK || platform === ExportPlatform.GHOST || platform === ExportPlatform.LINKEDIN || platform === ExportPlatform.STIBEE;
 };
 
 /**
@@ -132,6 +144,8 @@ export const getPlatformDisplayName = (platform: ExportPlatform): string => {
       return 'Ghost';
     case ExportPlatform.LINKEDIN:
       return 'LinkedIn';
+    case ExportPlatform.STIBEE:
+      return 'Stibee';
     default:
       return 'Unknown';
   }
