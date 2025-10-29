@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import DOMPurify from 'dompurify';
+import { logger } from '../../utils/logger';
 
 /**
  * Content script for Stibee iframe editor
@@ -91,7 +92,7 @@ function clearMemoCache(): void {
   memoCache.skippableParagraphs.clear();
   // WeakMap clears automatically when references are lost
   memoCache.domElements.clear();
-  console.log('🧹 Memoization cache cleared');
+  logger.debug('🧹 Memoization cache cleared');
 }
 
 // DOMPurify configuration for HTML sanitization
@@ -129,14 +130,14 @@ export default defineContentScript({
   allFrames: true,
 
   main() {
-    console.log('🎨 Stibee iframe content script loaded');
-    console.log('📍 Current URL:', window.location.href);
-    console.log('📍 Is top frame?', window === window.top);
-    console.log('📍 Frame ID:', window.name);
+    logger.debug('🎨 Stibee iframe content script loaded');
+    logger.debug('📍 Current URL:', window.location.href);
+    logger.debug('📍 Is top frame?', window === window.top);
+    logger.debug('📍 Frame ID:', window.name);
 
     // Cleanup function to remove event listeners and UI elements
     const cleanup = () => {
-      console.log('🧹 Cleaning up Stibee export listeners and UI');
+      logger.debug('🧹 Cleaning up Stibee export listeners and UI');
       const prompt = document.getElementById('tyquill-stibee-prompt');
       if (prompt) {
         removeInteractivePrompt(prompt);
@@ -163,10 +164,10 @@ export default defineContentScript({
       }
 
       // Log message type only (not sensitive content)
-      console.log('📨 Message received in Stibee iframe:', request.type);
+      logger.debug('📨 Message received in Stibee iframe:', request.type);
 
       if (request.type === 'STIBEE_IFRAME_EXPORT') {
-        console.log('📥 Processing STIBEE_IFRAME_EXPORT');
+        logger.debug('📥 Processing STIBEE_IFRAME_EXPORT');
 
         (async () => {
           try {
@@ -174,17 +175,17 @@ export default defineContentScript({
             // Use exact match to prevent malicious domain spoofing
             const isEditorFrame = location.hostname === 'editor.stibee.com';
             if (!isEditorFrame) {
-              console.log('⏭️ Skipping export in non-editor frame:', location.hostname);
+              logger.debug('⏭️ Skipping export in non-editor frame:', location.hostname);
               sendResponse({ success: false, skipped: true, reason: 'non-editor-frame' });
               return;
             }
             // Cross-frame mutex: ensure only one iframe handles the flow
             if (!tryAcquireExportLock()) {
-              console.log('🔒 Another frame is already handling Stibee export. Skipping in this frame.');
+              logger.debug('🔒 Another frame is already handling Stibee export. Skipping in this frame.');
               sendResponse({ success: false, skipped: true, reason: 'locked' });
               return;
             }
-            console.log('📥 Processing export request in Stibee iframe');
+            logger.debug('📥 Processing export request in Stibee iframe');
             const { content } = request;
 
             // Parse content into paragraphs
@@ -219,12 +220,12 @@ export default defineContentScript({
 
             // Skip skippable paragraphs upfront
             while (paragraphIndex < paragraphs.length && isSkippableParagraph(paragraphs[paragraphIndex])) {
-              console.log(`⏭️ Skipping paragraph ${paragraphIndex + 1} (no visible text/hr only):`, paragraphs[paragraphIndex]);
+              logger.debug(`⏭️ Skipping paragraph ${paragraphIndex + 1} (no visible text/hr only):`, paragraphs[paragraphIndex]);
               paragraphIndex++;
             }
 
             if (paragraphIndex >= paragraphs.length) {
-              console.log('✅ No paragraphs to insert after skipping skippable ones.');
+              logger.debug('✅ No paragraphs to insert after skipping skippable ones.');
               sendResponse({ success: true, blocksProcessed: successCount });
               return;
             }
@@ -314,7 +315,7 @@ export default defineContentScript({
               const html = paragraphs[paragraphIndex];
               
               if (isSkippableParagraph(html)) {
-                console.log(`⏭️ Skipping paragraph ${paragraphIndex + 1} (no visible text/hr only):`, html);
+                logger.debug(`⏭️ Skipping paragraph ${paragraphIndex + 1} (no visible text/hr only):`, html);
                 // Batch button state updates for better performance
                 setButtonsDisabled(true);
                 let skipped = 0;
@@ -337,7 +338,7 @@ export default defineContentScript({
               blockIndex = Math.max(0, Math.min(blockIndex, allTextBlocks.length - 1));
               const block = allTextBlocks[blockIndex];
 
-              console.log(`🎯 Selecting block ${blockIndex + 1}/${allTextBlocks.length} for paragraph ${paragraphIndex + 1}`);
+              logger.debug(`🎯 Selecting block ${blockIndex + 1}/${allTextBlocks.length} for paragraph ${paragraphIndex + 1}`);
               updatePosition(prompt, blockIndex + 1, allTextBlocks.length, getDisplayParagraphNumber(paragraphs, paragraphIndex), totalNonSkippableCount);
               updateStatus(prompt, `블록 ${blockIndex + 1}/${allTextBlocks.length} 선택됨 - 작업을 선택하세요`);
 
@@ -426,7 +427,7 @@ export default defineContentScript({
               const action = await actionPromise;
               
               if (action === 'next-block') {
-                console.log(`⏭️ User moved to next block from ${blockIndex + 1}`);
+                logger.debug(`⏭️ User moved to next block from ${blockIndex + 1}`);
                 blockIndex++;
 
                 // Update preview for current paragraph in next block
@@ -443,7 +444,7 @@ export default defineContentScript({
               }
 
               if (action === 'none') {
-                console.log('No action taken, breaking');
+                logger.debug('No action taken, breaking');
                 break;
               }
               
@@ -462,7 +463,7 @@ export default defineContentScript({
 
               // Insert content
               const isAppend = action === 'append';
-              console.log(`📝 ${isAppend ? 'Appending' : 'Inserting'} content into block ${blockIndex + 1}`);
+              logger.debug(`📝 ${isAppend ? 'Appending' : 'Inserting'} content into block ${blockIndex + 1}`);
               updateStatus(prompt, `블록 ${blockIndex + 1}에 콘텐츠 ${isAppend ? UI_TEXT.INSERTING_APPEND : UI_TEXT.INSERTING_REPLACE} 중...`);
               try {
                 iframeBody.focus();
@@ -546,7 +547,7 @@ export default defineContentScript({
             releaseExportLock();
             clearMemoCache();
 
-            console.log(`\n✅ Completed sequential insertion. Inserted ${successCount} paragraph(s).`);
+            logger.debug(`\n✅ Completed sequential insertion. Inserted ${successCount} paragraph(s).`);
             sendResponse({ success: true, blocksProcessed: successCount });
           } catch (error) {
             console.error('❌ Stibee iframe export error:', error);
@@ -570,7 +571,7 @@ export default defineContentScript({
       }
 
       // For debugging - respond to other message types too
-      console.log('⚠️ Unhandled message type in Stibee iframe:', request.type);
+      logger.debug('⚠️ Unhandled message type in Stibee iframe:', request.type);
       return false;
     });
   }
@@ -615,7 +616,7 @@ function isSkippableParagraph(html: string): boolean {
   }
 
   // Debug: log what we're checking
-  console.log('🔍 isSkippableParagraph checking:', s);
+  logger.debug('🔍 isSkippableParagraph checking:', s);
 
   // Unwrap common wrappers around hr (p/div/span) and remove surrounding <br>
   s = s.replace(/<(p|div|span)[^>]*>\s*<hr\s*\/?>(\s*<br\s*\/?\s*>)?\s*<\/(p|div|span)>/gi, '<hr/>');
@@ -624,7 +625,7 @@ function isSkippableParagraph(html: string): boolean {
   // If consists only of hr(s)
   const withoutHr = s.replace(/<hr\s*\/?>(\s*<hr\s*\/?\s*>)*?/gi, '').trim();
   if (!withoutHr) {
-    console.log('⏭️ isSkippableParagraph: only hr found, skipping');
+    logger.debug('⏭️ isSkippableParagraph: only hr found, skipping');
     memoCache.skippableParagraphs.set(html, true);
     return true;
   }
@@ -641,7 +642,7 @@ function isSkippableParagraph(html: string): boolean {
   visible = visible.replace(/<[^>]+>/g, '').trim();
 
   const result = visible.length === 0;
-  console.log('🔍 isSkippableParagraph result:', result, 'visible text:', visible);
+  logger.debug('🔍 isSkippableParagraph result:', result, 'visible text:', visible);
 
   // Cache the result
   memoCache.skippableParagraphs.set(html, result);
@@ -658,7 +659,7 @@ function parseContentToParagraphs(content: string): string[] {
     // Split content into paragraphs (top-level nodes in doc.content)
     if (jsonData.type === 'doc' && jsonData.content) {
       paragraphs = jsonData.content.map((node: TyquillNode) => convertNodeToHtml(node));
-      console.log(`✅ Parsed ${paragraphs.length} paragraphs from Tyquill JSON`);
+      logger.debug(`✅ Parsed ${paragraphs.length} paragraphs from Tyquill JSON`);
     } else {
       // Single node
       paragraphs = [convertNodeToHtml(jsonData)];
@@ -675,21 +676,21 @@ function parseContentToParagraphs(content: string): string[] {
  * Performance: Batch DOM queries to minimize reflows
  */
 function findAllTextBlocks(): HTMLElement[] {
-  console.log('🔍 Searching for text-editable blocks...');
+  logger.debug('🔍 Searching for text-editable blocks...');
 
   // Performance: Batch all DOM queries together to minimize reflows
   const textEditBlocks = document.querySelectorAll('.text-edit');
   const iframeBlocks = document.querySelectorAll('iframe[src*="tinymce"], iframe[src*="editor"]');
 
-  console.log(`📝 Found ${textEditBlocks.length} .text-edit elements`);
-  console.log(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
+  logger.debug(`📝 Found ${textEditBlocks.length} .text-edit elements`);
+  logger.debug(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
 
   let allTextBlocks: HTMLElement[] = [];
   const processedElements = new Set<Element>();
 
   // Process .text-edit elements
   textEditBlocks.forEach((textEdit, index) => {
-    console.log(`🔍 Processing .text-edit element ${index + 1}:`, textEdit);
+    logger.debug(`🔍 Processing .text-edit element ${index + 1}:`, textEdit);
 
     // Try multiple approaches to find the clickable element
     let clickableElement: HTMLElement | null = null;
@@ -736,7 +737,7 @@ function findAllTextBlocks(): HTMLElement[] {
     if (clickableElement) {
       allTextBlocks.push(clickableElement);
       processedElements.add(clickableElement);
-      console.log(`✅ Added clickable element for .text-edit ${index + 1}:`, clickableElement);
+      logger.debug(`✅ Added clickable element for .text-edit ${index + 1}:`, clickableElement);
     } else {
       console.warn(`⚠️ Could not find clickable element for .text-edit ${index + 1}`);
     }
@@ -748,7 +749,7 @@ function findAllTextBlocks(): HTMLElement[] {
     if (parentElement && !processedElements.has(parentElement)) {
       allTextBlocks.push(parentElement as HTMLElement);
       processedElements.add(parentElement);
-      console.log(`✅ Added iframe parent element ${index + 1}:`, parentElement);
+      logger.debug(`✅ Added iframe parent element ${index + 1}:`, parentElement);
     }
   });
 
@@ -757,10 +758,10 @@ function findAllTextBlocks(): HTMLElement[] {
   allTextBlocks = allTextBlocks.filter((el) => !el.closest('.content-outer.col2'));
   const filteredCount = beforeFilterCount - allTextBlocks.length;
   if (filteredCount > 0) {
-    console.log(`⏭️ Skipped ${filteredCount} two-column (col2) text block(s)`);
+    logger.debug(`⏭️ Skipped ${filteredCount} two-column (col2) text block(s)`);
   }
 
-  console.log(`📝 Final result: Found ${allTextBlocks.length} text-editable blocks`);
+  logger.debug(`📝 Final result: Found ${allTextBlocks.length} text-editable blocks`);
   return allTextBlocks;
 }
 
@@ -788,7 +789,7 @@ async function activateBlock(block: HTMLElement): Promise<boolean> {
   // Check if activation succeeded
   if (document.querySelector('.text-edit:not(.notshow)')) {
     activated = true;
-    console.log(`✅ Block activated via direct click`);
+    logger.debug(`✅ Block activated via direct click`);
     return activated;
   }
 
@@ -818,7 +819,7 @@ async function activateBlock(block: HTMLElement): Promise<boolean> {
 
     if (document.querySelector('.text-edit:not(.notshow)')) {
       activated = true;
-      console.log(`✅ Block activated via mouse events`);
+      logger.debug(`✅ Block activated via mouse events`);
       return activated;
     }
   }
@@ -842,7 +843,7 @@ async function activateBlock(block: HTMLElement): Promise<boolean> {
 
     if (document.querySelector('.text-edit:not(.notshow)')) {
       activated = true;
-      console.log(`✅ Block activated via keyboard events`);
+      logger.debug(`✅ Block activated via keyboard events`);
     }
   }
 
@@ -923,7 +924,7 @@ function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: bool
       body.innerHTML = sanitizedHtml;
     }
     insertionSuccess = true;
-    console.log(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML (sanitized)`);
+    logger.debug(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML (sanitized)`);
   } catch (error) {
     console.warn(`⚠️ innerHTML ${isAppend ? 'append' : 'insertion'} failed:`, error);
   }
@@ -933,7 +934,7 @@ function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: bool
     try {
       body.textContent = html.replace(/<[^>]*>/g, '');
       insertionSuccess = true;
-      console.log(`✅ Content inserted as text`);
+      logger.debug(`✅ Content inserted as text`);
     } catch (error) {
       console.warn(`⚠️ Text insertion failed:`, error);
     }
@@ -957,7 +958,7 @@ function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: bool
       // Single DOM operation to append all elements at once
       body.appendChild(fragment);
       insertionSuccess = true;
-      console.log(`✅ Content inserted via DocumentFragment (sanitized)`);
+      logger.debug(`✅ Content inserted via DocumentFragment (sanitized)`);
     } catch (error) {
       console.warn(`⚠️ DocumentFragment insertion failed:`, error);
     }
@@ -1003,10 +1004,10 @@ function triggerSaveEvents(body: HTMLElement, activeTextBlock: Element | null): 
           (editor as any).fire('change');
           (editor as any).fire('input');
           (editor as any).fire('blur');
-          console.log(`✅ TinyMCE events triggered`);
+          logger.debug(`✅ TinyMCE events triggered`);
         }
       } catch (error) {
-        console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
+        logger.debug(`⚠️ TinyMCE API trigger failed, but content was inserted`);
       }
     }
 
@@ -1165,10 +1166,10 @@ function getPreviewHtml(html: string): string {
   if (!html) return `<span style="opacity:.7">${UI_TEXT.EMPTY_PREVIEW}</span>`;
 
   // Debug: log what we're processing
-  console.log('🔍 getPreviewHtml processing:', html);
+  logger.debug('🔍 getPreviewHtml processing:', html);
 
   if (isSkippableParagraph(html)) {
-    console.log('⏭️ getPreviewHtml: marking as skippable');
+    logger.debug('⏭️ getPreviewHtml: marking as skippable');
     return `<span style="opacity:.7">${UI_TEXT.SKIPPED_HR_EMPTY}</span>`;
   }
   

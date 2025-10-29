@@ -2,17 +2,18 @@
 import { scrapService } from '../services/scrapService';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
+import { logger } from '../utils/logger';
 
 // 사이드바 상태 (전역) - content-script 기반
 let isSidebarOpen = false;
 
 browser.runtime.onInstalled.addListener(() => {
-  // console.log('Tyquill Extension installed');
+  // logger.debug('Tyquill Extension installed');
 });
 
 // Handle extension icon click to toggle sidebar
 browser.action.onClicked.addListener(async (tab) => {
-  // console.log('Extension icon clicked');
+  // logger.debug('Extension icon clicked');
 
   try {
     if (tab.id) {
@@ -21,7 +22,7 @@ browser.action.onClicked.addListener(async (tab) => {
         await browser.tabs.sendMessage(tab.id, { type: 'PING' });
       } catch (pingError) {
         // Content script not loaded, inject it
-        // console.log('Content script not loaded, injecting...');
+        // logger.debug('Content script not loaded, injecting...');
         await browser.scripting.executeScript({
           target: { tabId: tab.id },
           files: ['content-scripts/content.js']
@@ -52,12 +53,12 @@ browser.action.onClicked.addListener(async (tab) => {
         // Close the sidebar
         await browser.tabs.sendMessage(tab.id, { action: 'closeSidebar' });
         isSidebarOpen = false;
-        // console.log('Sidebar closed');
+        // logger.debug('Sidebar closed');
       } else {
         // Open the sidebar
         await browser.tabs.sendMessage(tab.id, { action: 'openSidebar' });
         isSidebarOpen = true;
-        // console.log('Sidebar opened');
+        // logger.debug('Sidebar opened');
       }
     }
   } catch (error) {
@@ -67,7 +68,7 @@ browser.action.onClicked.addListener(async (tab) => {
 
 browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.MessageSender, sendResponse: (response?: any) => void) => {
   // Handle messages from content script or popup
-  // console.log('Message received:', request);
+  // logger.debug('Message received:', request);
   
 
   if (request.action === 'scrapExtracted') {
@@ -449,7 +450,7 @@ browser.storage.onChanged.addListener((changes) => {
     // Context Menu 업데이트
     createContextMenus();
     
-    // console.log('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
+    // logger.debug('Background: 플로팅 버튼 설정 변경됨:', isFloatingButtonVisible);
   }
 });
 
@@ -530,7 +531,7 @@ browser.contextMenus.onClicked.addListener(async (info, tab) => {
         // Context Menu 업데이트
         createContextMenus();
         
-        // console.log('플로팅 버튼 설정 변경됨:', newValue);
+        // logger.debug('플로팅 버튼 설정 변경됨:', newValue);
       } catch (error) {
         console.error('플로팅 버튼 설정 변경 실패:', error);
       }
@@ -553,7 +554,7 @@ browser.runtime.onInstalled.addListener(async () => {
   // Context Menu 생성
   createContextMenus();
   
-  // console.log('Tyquill Extension installed with context menus');
+  // logger.debug('Tyquill Extension installed with context menus');
 });
 
 browser.runtime.setUninstallURL('https://tally.so/r/nGZK7z');
