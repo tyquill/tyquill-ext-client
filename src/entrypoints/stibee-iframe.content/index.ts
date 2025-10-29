@@ -161,114 +161,15 @@ export default defineContentScript({
             console.log('📥 Processing export request in Stibee iframe');
             const { content } = request;
 
-            // Parse JSON content first
-            let paragraphs: string[] = [];
-            try {
-              const jsonData: TyquillNode = JSON.parse(content);
-              // Split content into paragraphs (top-level nodes in doc.content)
-              if (jsonData.type === 'doc' && jsonData.content) {
-                paragraphs = jsonData.content.map((node: TyquillNode) => convertNodeToHtml(node));
-                console.log(`✅ Parsed ${paragraphs.length} paragraphs from Tyquill JSON`);
-              } else {
-                // Single node
-                paragraphs = [convertNodeToHtml(jsonData)];
-              }
-            } catch (error) {
-              console.error('❌ Failed to parse JSON, treating as plain text:', error);
-              paragraphs = [content];
-            }
+            // Parse content into paragraphs
+            const paragraphs = parseContentToParagraphs(content);
 
             // Count non-skippable paragraphs for display
             const nonSkippableParagraphs = paragraphs.filter(p => !isSkippableParagraph(p));
             const totalNonSkippableCount = nonSkippableParagraphs.length;
 
-            // Find ALL text-editable blocks with multiple strategies
-            console.log('🔍 Searching for text-editable blocks...');
-            
-            // Strategy 1: Find .text-edit elements
-            const textEditBlocks = document.querySelectorAll('.text-edit');
-            console.log(`📝 Found ${textEditBlocks.length} .text-edit elements`);
-            
-            // Strategy 2: Find elements with TinyMCE iframes
-            const iframeBlocks = document.querySelectorAll('iframe[src*="tinymce"], iframe[src*="editor"]');
-            console.log(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
-            
-            // Strategy 3: Find clickable text content areas
-            const clickableBlocks = document.querySelectorAll('[class*="text"], [class*="content"], [class*="editor"]');
-            console.log(`📝 Found ${clickableBlocks.length} potential text content elements`);
-            
-            let allTextBlocks: HTMLElement[] = [];
-            const processedElements = new Set<Element>();
-
-            // Process .text-edit elements
-            textEditBlocks.forEach((textEdit, index) => {
-              console.log(`🔍 Processing .text-edit element ${index + 1}:`, textEdit);
-              
-              // Try multiple approaches to find the clickable element
-              let clickableElement: HTMLElement | null = null;
-              
-              // Approach 1: Look for .content-outer and navigate down
-              const contentOuter = textEdit.querySelector('.content-outer') || textEdit.closest('.content-outer');
-              if (contentOuter) {
-                let current: Element | null = contentOuter;
-                for (let i = 0; i < 5 && current; i++) {
-                  const child: Element | null = current.querySelector(':scope > div');
-                  if (child) {
-                    current = child;
-                  } else {
-                    current = null;
-                    break;
-                  }
-                }
-                if (current && !processedElements.has(current)) {
-                  clickableElement = current as HTMLElement;
-                }
-              }
-              
-              // Approach 2: Look for parent clickable elements
-              if (!clickableElement) {
-                const parentClickable = textEdit.closest('[onclick], [role="button"], .clickable, [class*="click"]');
-                if (parentClickable && !processedElements.has(parentClickable)) {
-                  clickableElement = parentClickable as HTMLElement;
-                }
-              }
-              
-              // Approach 3: Use the text-edit element itself if it's clickable
-              if (!clickableElement && textEdit instanceof HTMLElement) {
-                const computedStyle = window.getComputedStyle(textEdit);
-                if (computedStyle.cursor === 'pointer' || textEdit.onclick || textEdit.getAttribute('role') === 'button') {
-                  clickableElement = textEdit;
-                }
-              }
-              
-              if (clickableElement) {
-                allTextBlocks.push(clickableElement);
-                processedElements.add(clickableElement);
-                console.log(`✅ Added clickable element for .text-edit ${index + 1}:`, clickableElement);
-              } else {
-                console.warn(`⚠️ Could not find clickable element for .text-edit ${index + 1}`);
-              }
-            });
-
-            // Process iframe elements that weren't already processed
-            iframeBlocks.forEach((iframe, index) => {
-              const parentElement = iframe.closest('div, section, article');
-              if (parentElement && !processedElements.has(parentElement)) {
-                allTextBlocks.push(parentElement as HTMLElement);
-                processedElements.add(parentElement);
-                console.log(`✅ Added iframe parent element ${index + 1}:`, parentElement);
-              }
-            });
-
-            // Filter out two-column text layouts for now (skip col2 blocks)
-            const beforeFilterCount = allTextBlocks.length;
-            allTextBlocks = allTextBlocks.filter((el) => !el.closest('.content-outer.col2'));
-            const filteredCount = beforeFilterCount - allTextBlocks.length;
-            if (filteredCount > 0) {
-              console.log(`⏭️ Skipped ${filteredCount} two-column (col2) text block(s)`);
-            }
-
-            console.log(`📝 Final result: Found ${allTextBlocks.length} text-editable blocks`);
+            // Find all text-editable blocks
+            const allTextBlocks = findAllTextBlocks();
 
             if (allTextBlocks.length === 0) {
               console.error('❌ No text blocks found');
@@ -425,62 +326,8 @@ export default defineContentScript({
               // Wait for scroll to settle
               await new Promise(resolve => setTimeout(resolve, TIMING.SCROLL_SETTLE_MS));
 
-              // Activate block with multiple strategies
-              let activated = false;
-              
-              // Strategy 1: Direct click
-              try {
-                block.click();
-                await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
-                if (document.querySelector('.text-edit:not(.notshow)')) {
-                  activated = true;
-                  console.log(`✅ Block activated via direct click`);
-                }
-              } catch (error) {
-                console.warn(`⚠️ Direct click failed:`, error);
-              }
-
-              // Strategy 2: Mouse events if not activated
-              if (!activated) {
-                try {
-                  const mouseEvents = [
-                    new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
-                    new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
-                    new MouseEvent('click', { bubbles: true, cancelable: true })
-                  ];
-
-                  for (const event of mouseEvents) {
-                    block.dispatchEvent(event);
-                  }
-
-                  await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
-                  
-                  if (document.querySelector('.text-edit:not(.notshow)')) {
-                    activated = true;
-                    console.log(`✅ Block activated via mouse events`);
-                  }
-                } catch (error) {
-                  console.warn(`⚠️ Mouse events failed:`, error);
-                }
-              }
-
-              // Strategy 3: Focus and keyboard if still not activated
-              if (!activated) {
-                try {
-                  (block as HTMLElement).focus();
-                  block.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-                  block.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
-
-                  await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
-
-                  if (document.querySelector('.text-edit:not(.notshow)')) {
-                    activated = true;
-                    console.log(`✅ Block activated via keyboard events`);
-                  }
-                } catch (error) {
-                  console.warn(`⚠️ Keyboard events failed:`, error);
-                }
-              }
+              // Activate block
+              await activateBlock(block);
 
               // Wait for editor iframe to fully load
               await new Promise(resolve => setTimeout(resolve, TIMING.EDITOR_LOAD_MS));
@@ -566,48 +413,8 @@ export default defineContentScript({
               
               // action === 'append' or 'replace' - proceed with insertion
 
-              // Find active text block
-              let activeTextBlock = document.querySelector('.text-edit:not(.notshow)');
-              if (!activeTextBlock) {
-                activeTextBlock = document.querySelector('.text-edit.active') || 
-                                document.querySelector('.text-edit.selected') ||
-                                document.querySelector('.text-edit:focus') ||
-                                document.querySelector('.text-edit[style*="display: block"]');
-              }
-              
-              if (!activeTextBlock) {
-                console.warn(`⚠️ Could not find active text block, trying to use original block`);
-                activeTextBlock = block.querySelector('.text-edit') || block;
-              }
-
-              // Find TinyMCE iframe
-              let tinyIframe = activeTextBlock.querySelector('iframe') as HTMLIFrameElement;
-              if (!tinyIframe) {
-                const parentElement = activeTextBlock.closest('div, section, article');
-                if (parentElement) {
-                  tinyIframe = parentElement.querySelector('iframe') as HTMLIFrameElement;
-                }
-              }
-              
-              if (!tinyIframe) {
-                console.warn(`⚠️ TinyMCE iframe not found, trying to make element editable`);
-                if (activeTextBlock instanceof HTMLElement) {
-                  activeTextBlock.contentEditable = 'true';
-                  activeTextBlock.focus();
-                }
-              }
-
-              let iframeDoc: Document | null = null;
-              let iframeBody: HTMLElement | null = null;
-
-              if (tinyIframe) {
-                iframeDoc = tinyIframe.contentDocument || tinyIframe.contentWindow?.document || null;
-                if (iframeDoc) {
-                  iframeBody = iframeDoc.body;
-                }
-              } else if (activeTextBlock instanceof HTMLElement) {
-                iframeBody = activeTextBlock;
-              }
+              // Find active editor
+              const { body: iframeBody } = findActiveEditor(block);
 
               if (!iframeBody) {
                 console.error(`❌ Cannot access editor body`);
@@ -621,58 +428,12 @@ export default defineContentScript({
               const isAppend = action === 'append';
               console.log(`📝 ${isAppend ? 'Appending' : 'Inserting'} content into block ${blockIndex + 1}`);
               updateStatus(prompt, `블록 ${blockIndex + 1}에 콘텐츠 ${isAppend ? UI_TEXT.INSERTING_APPEND : UI_TEXT.INSERTING_REPLACE} 중...`);
-              try { 
-                iframeBody.focus(); 
-              } catch {}
-              
-              let insertionSuccess = false;
-              
-              // Strategy 1: Append or replace innerHTML (with sanitization)
               try {
-                // Sanitize HTML to prevent XSS attacks
-                const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+                iframeBody.focus();
+              } catch {}
 
-                if (isAppend) {
-                  // Append content to existing content
-                  const existingContent = (iframeBody as HTMLElement).innerHTML;
-                  (iframeBody as HTMLElement).innerHTML = existingContent + sanitizedHtml;
-                } else {
-                  // Replace content
-                  (iframeBody as HTMLElement).innerHTML = sanitizedHtml;
-                }
-                insertionSuccess = true;
-                console.log(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML (sanitized)`);
-              } catch (error) {
-                console.warn(`⚠️ innerHTML ${isAppend ? 'append' : 'insertion'} failed:`, error);
-              }
-              
-              // Strategy 2: Text content insertion
-              if (!insertionSuccess) {
-                try {
-                  (iframeBody as HTMLElement).textContent = html.replace(/<[^>]*>/g, '');
-                  insertionSuccess = true;
-                  console.log(`✅ Content inserted as text`);
-                } catch (error) {
-                  console.warn(`⚠️ Text insertion failed:`, error);
-                }
-              }
-              
-              // Strategy 3: Create and append elements (with sanitization)
-              if (!insertionSuccess) {
-                try {
-                  const tempDiv = document.createElement('div');
-                  // Sanitize HTML before setting innerHTML
-                  const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
-                  tempDiv.innerHTML = sanitizedHtml;
-                  while (tempDiv.firstChild) {
-                    (iframeBody as HTMLElement).appendChild(tempDiv.firstChild);
-                  }
-                  insertionSuccess = true;
-                  console.log(`✅ Content inserted via element creation (sanitized)`);
-                } catch (error) {
-                  console.warn(`⚠️ Element creation failed:`, error);
-                }
-              }
+              // Try to insert content
+              const insertionSuccess = insertContentIntoEditor(iframeBody, html, isAppend);
 
               if (!insertionSuccess) {
                 console.error(`❌ All insertion strategies failed`);
@@ -682,51 +443,14 @@ export default defineContentScript({
                 continue;
               }
 
-                // Trigger events
-                const events = [
-                  new Event('input', { bubbles: true }),
-                  new Event('change', { bubbles: true }),
-                  new KeyboardEvent('keyup', { bubbles: true }),
-                ];
-
-                for (const event of events) {
-                try {
-                  (iframeBody as HTMLElement).dispatchEvent(event);
-                } catch (error) {
-                  console.warn(`⚠️ Event dispatch failed for ${event.type}:`, error);
-                }
-              }
-
-              // Try TinyMCE API events
-              if (window.tinymce?.activeEditor) {
-                try {
-                  const editor = window.tinymce.activeEditor;
-                  if ('fire' in editor && typeof (editor as any).fire === 'function') {
-                    (editor as any).fire('change');
-                    (editor as any).fire('input');
-                    (editor as any).fire('blur');
-                    console.log(`✅ TinyMCE events triggered`);
-                  }
-                } catch (error) {
-                  console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
-                }
-              }
-
-              // Trigger events on parent text block
-              if (activeTextBlock instanceof HTMLElement) {
-                try {
-              activeTextBlock.dispatchEvent(new Event('change', { bubbles: true }));
-              activeTextBlock.dispatchEvent(new Event('input', { bubbles: true }));
-                  activeTextBlock.dispatchEvent(new Event('blur', { bubbles: true }));
-                } catch (error) {
-                  console.warn(`⚠️ Parent block event dispatch failed:`, error);
-                }
-              }
+              // Trigger save events
+              const activeTextBlock = document.querySelector('.text-edit:not(.notshow)');
+              triggerSaveEvents(iframeBody, activeTextBlock);
 
               // Wait for save trigger and blur
               await new Promise(resolve => setTimeout(resolve, TIMING.SAVE_TRIGGER_MS));
               try {
-                (iframeBody as HTMLElement).blur();
+                iframeBody.blur();
                 if (activeTextBlock instanceof HTMLElement) {
                   activeTextBlock.blur();
                 }
@@ -868,6 +592,335 @@ function isSkippableParagraph(html: string): boolean {
   const result = visible.length === 0;
   console.log('🔍 isSkippableParagraph result:', result, 'visible text:', visible);
   return result;
+}
+
+/**
+ * Parse Tyquill JSON content and convert to HTML paragraphs
+ */
+function parseContentToParagraphs(content: string): string[] {
+  let paragraphs: string[] = [];
+  try {
+    const jsonData: TyquillNode = JSON.parse(content);
+    // Split content into paragraphs (top-level nodes in doc.content)
+    if (jsonData.type === 'doc' && jsonData.content) {
+      paragraphs = jsonData.content.map((node: TyquillNode) => convertNodeToHtml(node));
+      console.log(`✅ Parsed ${paragraphs.length} paragraphs from Tyquill JSON`);
+    } else {
+      // Single node
+      paragraphs = [convertNodeToHtml(jsonData)];
+    }
+  } catch (error) {
+    console.error('❌ Failed to parse JSON, treating as plain text:', error);
+    paragraphs = [content];
+  }
+  return paragraphs;
+}
+
+/**
+ * Find all text-editable blocks in the Stibee editor using multiple strategies
+ */
+function findAllTextBlocks(): HTMLElement[] {
+  console.log('🔍 Searching for text-editable blocks...');
+
+  // Strategy 1: Find .text-edit elements
+  const textEditBlocks = document.querySelectorAll('.text-edit');
+  console.log(`📝 Found ${textEditBlocks.length} .text-edit elements`);
+
+  // Strategy 2: Find elements with TinyMCE iframes
+  const iframeBlocks = document.querySelectorAll('iframe[src*="tinymce"], iframe[src*="editor"]');
+  console.log(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
+
+  // Strategy 3: Find clickable text content areas
+  const clickableBlocks = document.querySelectorAll('[class*="text"], [class*="content"], [class*="editor"]');
+  console.log(`📝 Found ${clickableBlocks.length} potential text content elements`);
+
+  let allTextBlocks: HTMLElement[] = [];
+  const processedElements = new Set<Element>();
+
+  // Process .text-edit elements
+  textEditBlocks.forEach((textEdit, index) => {
+    console.log(`🔍 Processing .text-edit element ${index + 1}:`, textEdit);
+
+    // Try multiple approaches to find the clickable element
+    let clickableElement: HTMLElement | null = null;
+
+    // Approach 1: Look for .content-outer and navigate down
+    const contentOuter = textEdit.querySelector('.content-outer') || textEdit.closest('.content-outer');
+    if (contentOuter) {
+      let current: Element | null = contentOuter;
+      for (let i = 0; i < 5 && current; i++) {
+        const child: Element | null = current.querySelector(':scope > div');
+        if (child) {
+          current = child;
+        } else {
+          current = null;
+          break;
+        }
+      }
+      if (current && !processedElements.has(current)) {
+        clickableElement = current as HTMLElement;
+      }
+    }
+
+    // Approach 2: Look for parent clickable elements
+    if (!clickableElement) {
+      const parentClickable = textEdit.closest('[onclick], [role="button"], .clickable, [class*="click"]');
+      if (parentClickable && !processedElements.has(parentClickable)) {
+        clickableElement = parentClickable as HTMLElement;
+      }
+    }
+
+    // Approach 3: Use the text-edit element itself if it's clickable
+    if (!clickableElement && textEdit instanceof HTMLElement) {
+      const computedStyle = window.getComputedStyle(textEdit);
+      if (computedStyle.cursor === 'pointer' || textEdit.onclick || textEdit.getAttribute('role') === 'button') {
+        clickableElement = textEdit;
+      }
+    }
+
+    if (clickableElement) {
+      allTextBlocks.push(clickableElement);
+      processedElements.add(clickableElement);
+      console.log(`✅ Added clickable element for .text-edit ${index + 1}:`, clickableElement);
+    } else {
+      console.warn(`⚠️ Could not find clickable element for .text-edit ${index + 1}`);
+    }
+  });
+
+  // Process iframe elements that weren't already processed
+  iframeBlocks.forEach((iframe, index) => {
+    const parentElement = iframe.closest('div, section, article');
+    if (parentElement && !processedElements.has(parentElement)) {
+      allTextBlocks.push(parentElement as HTMLElement);
+      processedElements.add(parentElement);
+      console.log(`✅ Added iframe parent element ${index + 1}:`, parentElement);
+    }
+  });
+
+  // Filter out two-column text layouts for now (skip col2 blocks)
+  const beforeFilterCount = allTextBlocks.length;
+  allTextBlocks = allTextBlocks.filter((el) => !el.closest('.content-outer.col2'));
+  const filteredCount = beforeFilterCount - allTextBlocks.length;
+  if (filteredCount > 0) {
+    console.log(`⏭️ Skipped ${filteredCount} two-column (col2) text block(s)`);
+  }
+
+  console.log(`📝 Final result: Found ${allTextBlocks.length} text-editable blocks`);
+  return allTextBlocks;
+}
+
+/**
+ * Activate a block using multiple strategies (click, mouse events, keyboard)
+ */
+async function activateBlock(block: HTMLElement): Promise<boolean> {
+  let activated = false;
+
+  // Strategy 1: Direct click
+  try {
+    block.click();
+    await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+    if (document.querySelector('.text-edit:not(.notshow)')) {
+      activated = true;
+      console.log(`✅ Block activated via direct click`);
+    }
+  } catch (error) {
+    console.warn(`⚠️ Direct click failed:`, error);
+  }
+
+  // Strategy 2: Mouse events if not activated
+  if (!activated) {
+    try {
+      const mouseEvents = [
+        new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+        new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
+        new MouseEvent('click', { bubbles: true, cancelable: true })
+      ];
+
+      for (const event of mouseEvents) {
+        block.dispatchEvent(event);
+      }
+
+      await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+
+      if (document.querySelector('.text-edit:not(.notshow)')) {
+        activated = true;
+        console.log(`✅ Block activated via mouse events`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Mouse events failed:`, error);
+    }
+  }
+
+  // Strategy 3: Focus and keyboard if still not activated
+  if (!activated) {
+    try {
+      (block as HTMLElement).focus();
+      block.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      block.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+
+      await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+
+      if (document.querySelector('.text-edit:not(.notshow)')) {
+        activated = true;
+        console.log(`✅ Block activated via keyboard events`);
+      }
+    } catch (error) {
+      console.warn(`⚠️ Keyboard events failed:`, error);
+    }
+  }
+
+  return activated;
+}
+
+/**
+ * Find the active text editor and its iframe body
+ */
+function findActiveEditor(block: HTMLElement): { iframe: HTMLIFrameElement | null, body: HTMLElement | null } {
+  // Find active text block
+  let activeTextBlock = document.querySelector('.text-edit:not(.notshow)');
+  if (!activeTextBlock) {
+    activeTextBlock = document.querySelector('.text-edit.active') ||
+                    document.querySelector('.text-edit.selected') ||
+                    document.querySelector('.text-edit:focus') ||
+                    document.querySelector('.text-edit[style*="display: block"]');
+  }
+
+  if (!activeTextBlock) {
+    console.warn(`⚠️ Could not find active text block, trying to use original block`);
+    activeTextBlock = block.querySelector('.text-edit') || block;
+  }
+
+  // Find TinyMCE iframe
+  let tinyIframe = activeTextBlock.querySelector('iframe') as HTMLIFrameElement;
+  if (!tinyIframe) {
+    const parentElement = activeTextBlock.closest('div, section, article');
+    if (parentElement) {
+      tinyIframe = parentElement.querySelector('iframe') as HTMLIFrameElement;
+    }
+  }
+
+  if (!tinyIframe) {
+    console.warn(`⚠️ TinyMCE iframe not found, trying to make element editable`);
+    if (activeTextBlock instanceof HTMLElement) {
+      activeTextBlock.contentEditable = 'true';
+      activeTextBlock.focus();
+    }
+  }
+
+  let iframeBody: HTMLElement | null = null;
+
+  if (tinyIframe) {
+    const iframeDoc = tinyIframe.contentDocument || tinyIframe.contentWindow?.document || null;
+    if (iframeDoc) {
+      iframeBody = iframeDoc.body;
+    }
+  } else if (activeTextBlock instanceof HTMLElement) {
+    iframeBody = activeTextBlock;
+  }
+
+  return { iframe: tinyIframe, body: iframeBody };
+}
+
+/**
+ * Insert HTML content into editor body using multiple strategies
+ */
+function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: boolean): boolean {
+  let insertionSuccess = false;
+
+  // Strategy 1: Append or replace innerHTML (with sanitization)
+  try {
+    // Sanitize HTML to prevent XSS attacks
+    const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+
+    if (isAppend) {
+      // Append content to existing content
+      const existingContent = body.innerHTML;
+      body.innerHTML = existingContent + sanitizedHtml;
+    } else {
+      // Replace content
+      body.innerHTML = sanitizedHtml;
+    }
+    insertionSuccess = true;
+    console.log(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML (sanitized)`);
+  } catch (error) {
+    console.warn(`⚠️ innerHTML ${isAppend ? 'append' : 'insertion'} failed:`, error);
+  }
+
+  // Strategy 2: Text content insertion
+  if (!insertionSuccess) {
+    try {
+      body.textContent = html.replace(/<[^>]*>/g, '');
+      insertionSuccess = true;
+      console.log(`✅ Content inserted as text`);
+    } catch (error) {
+      console.warn(`⚠️ Text insertion failed:`, error);
+    }
+  }
+
+  // Strategy 3: Create and append elements (with sanitization)
+  if (!insertionSuccess) {
+    try {
+      const tempDiv = document.createElement('div');
+      // Sanitize HTML before setting innerHTML
+      const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+      tempDiv.innerHTML = sanitizedHtml;
+      while (tempDiv.firstChild) {
+        body.appendChild(tempDiv.firstChild);
+      }
+      insertionSuccess = true;
+      console.log(`✅ Content inserted via element creation (sanitized)`);
+    } catch (error) {
+      console.warn(`⚠️ Element creation failed:`, error);
+    }
+  }
+
+  return insertionSuccess;
+}
+
+/**
+ * Trigger save events on editor body and TinyMCE
+ */
+function triggerSaveEvents(body: HTMLElement, activeTextBlock: Element | null): void {
+  // Trigger basic DOM events
+  const events = [
+    new Event('input', { bubbles: true }),
+    new Event('change', { bubbles: true }),
+    new KeyboardEvent('keyup', { bubbles: true }),
+  ];
+
+  for (const event of events) {
+    try {
+      body.dispatchEvent(event);
+    } catch (error) {
+      console.warn(`⚠️ Event dispatch failed for ${event.type}:`, error);
+    }
+  }
+
+  // Try TinyMCE API events
+  if (window.tinymce?.activeEditor) {
+    try {
+      const editor = window.tinymce.activeEditor;
+      if ('fire' in editor && typeof (editor as any).fire === 'function') {
+        (editor as any).fire('change');
+        (editor as any).fire('input');
+        (editor as any).fire('blur');
+        console.log(`✅ TinyMCE events triggered`);
+      }
+    } catch (error) {
+      console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
+    }
+  }
+
+  // Trigger events on parent text block
+  if (activeTextBlock instanceof HTMLElement) {
+    try {
+      activeTextBlock.dispatchEvent(new Event('change', { bubbles: true }));
+      activeTextBlock.dispatchEvent(new Event('input', { bubbles: true }));
+      activeTextBlock.dispatchEvent(new Event('blur', { bubbles: true }));
+    } catch (error) {
+      console.warn(`⚠️ Parent block event dispatch failed:`, error);
+    }
+  }
 }
 
 /**
