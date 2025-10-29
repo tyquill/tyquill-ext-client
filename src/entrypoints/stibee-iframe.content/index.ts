@@ -1048,40 +1048,83 @@ function createInteractivePrompt(): HTMLElement {
   el.style.zIndex = '2147483647';
   el.style.top = '12px';
   el.style.right = '12px';
-  el.style.maxWidth = '480px';
-  el.style.background = 'rgba(32,32,32,0.92)';
-  el.style.color = '#fff';
-  el.style.padding = '12px 14px';
-  el.style.borderRadius = '10px';
-  el.style.boxShadow = '0 6px 18px rgba(0,0,0,0.3)';
+  el.style.width = '480px';
+  el.style.background = '#ffffff';
+  el.style.color = '#111827';
+  el.style.padding = '16px 18px';
+  el.style.borderRadius = '12px';
+  el.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.1), 0 4px 10px rgba(0, 0, 0, 0.05)';
+  el.style.border = '1px solid rgba(0, 0, 0, 0.08)';
   el.style.fontFamily = 'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
   el.style.fontSize = '12px';
   el.style.lineHeight = '1.45';
-  el.style.backdropFilter = 'saturate(140%) blur(4px)';
   el.style.pointerEvents = 'auto';
   el.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <div style="font-weight:700;">${UI_TEXT.EXPORT_TITLE}</div>
-      <button id="tyquill-stibee-close" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px; padding:0; width:20px; height:20px; display:flex; align-items:center; justify-content:center;">×</button>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <div style="font-weight:700; font-size:13px;">${UI_TEXT.EXPORT_TITLE}</div>
+      <button id="tyquill-stibee-close" style="background:none; border:none; color:#6b7280; cursor:pointer; font-size:18px; padding:0; width:24px; height:24px; display:flex; align-items:center; justify-content:center; transition:all 0.15s ease;">×</button>
     </div>
-    <div id="tyquill-stibee-preview" style="white-space:pre-wrap; word-break:break-word; max-height:120px; overflow:auto; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px; background:rgba(255,255,255,0.04);"></div>
-    <div id="tyquill-stibee-position" style="opacity:0.85; margin-top:6px; font-size:11px;">현재 선택된 블록: -번째 (총 -개)<br>현재 선택된 문단: -번째 (총 -개)</div>
-    <div id="tyquill-stibee-status" style="opacity:0.85; margin-top:6px;">${UI_TEXT.PREPARING}</div>
-    <div id="tyquill-stibee-start-controls" style="margin-top:8px;">
-      <button id="tyquill-stibee-start" style="background:#007bff; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;">${UI_TEXT.BTN_START}</button>
+    <div id="tyquill-stibee-preview" style="white-space:pre-wrap; word-break:break-word; min-height:120px; max-height:120px; overflow-y:auto; overflow-x:hidden; border:1px solid #e5e7eb; border-radius:8px; padding:12px; background:#fafbfc;"></div>
+    <div id="tyquill-stibee-position" style="color:#6b7280; margin-top:8px; font-size:11px; line-height:1.5;">현재 선택된 블록: -번째 (총 -개)<br>현재 선택된 문단: -번째 (총 -개)</div>
+    <div id="tyquill-stibee-status" style="color:#374151; margin-top:6px; font-weight:500;">${UI_TEXT.PREPARING}</div>
+    <div id="tyquill-stibee-start-controls" style="margin-top:12px;">
+      <button id="tyquill-stibee-start" style="background:#000000; color:#fff; border:none; padding:8px 16px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.15s ease;">${UI_TEXT.BTN_START}</button>
     </div>
-    <div id="tyquill-stibee-controls" style="margin-top:8px; display:none;">
+    <div id="tyquill-stibee-controls" style="margin-top:12px; display:none;">
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <button id="tyquill-stibee-append" style="background:#007bff; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단을 현재 블록에 이어붙입니다">${UI_TEXT.BTN_APPEND}</button>
-        <button id="tyquill-stibee-replace" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 블록의 내용을 현재 문단으로 대치합니다">${UI_TEXT.BTN_REPLACE}</button>
-        <button id="tyquill-stibee-next-block" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단은 유지하고 다음 블록으로 넘어갑니다">${UI_TEXT.BTN_SKIP_BLOCK}</button>
+        <button id="tyquill-stibee-append" style="background:#000000; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s ease;" title="현재 문단을 현재 블록에 이어붙입니다">${UI_TEXT.BTN_APPEND}</button>
+        <button id="tyquill-stibee-replace" style="background:#333333; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s ease;" title="현재 블록의 내용을 현재 문단으로 대치합니다">${UI_TEXT.BTN_REPLACE}</button>
+        <button id="tyquill-stibee-next-block" style="background:transparent; color:#6b7280; border:1px solid #e5e7eb; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s ease;" title="현재 문단은 유지하고 다음 블록으로 넘어갑니다">${UI_TEXT.BTN_SKIP_BLOCK}</button>
       </div>
     </div>
-    <div id="tyquill-stibee-final-controls" style="margin-top:8px; display:none;">
-      <button id="tyquill-stibee-done" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">${UI_TEXT.BTN_STOP}</button>
+    <div id="tyquill-stibee-final-controls" style="margin-top:12px; display:none;">
+      <button id="tyquill-stibee-done" style="background:#000000; color:#fff; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:11px; font-weight:600; transition:all 0.15s ease;">${UI_TEXT.BTN_STOP}</button>
     </div>
   `;
+
+  // Add hover effects for buttons
+  const addHoverEffect = (btn: HTMLElement, hoverBg: string, normalBg: string) => {
+    btn.addEventListener('mouseenter', () => { btn.style.background = hoverBg; });
+    btn.addEventListener('mouseleave', () => { btn.style.background = normalBg; });
+  };
+
   document.documentElement.appendChild(el);
+
+  // Apply hover effects after DOM insertion
+  const startBtn = el.querySelector('#tyquill-stibee-start') as HTMLElement;
+  const appendBtn = el.querySelector('#tyquill-stibee-append') as HTMLElement;
+  const replaceBtn = el.querySelector('#tyquill-stibee-replace') as HTMLElement;
+  const skipBtn = el.querySelector('#tyquill-stibee-next-block') as HTMLElement;
+  const doneBtn = el.querySelector('#tyquill-stibee-done') as HTMLElement;
+  const closeBtn = el.querySelector('#tyquill-stibee-close') as HTMLElement;
+
+  if (startBtn) addHoverEffect(startBtn, '#1f2937', '#000000');
+  if (appendBtn) addHoverEffect(appendBtn, '#1f2937', '#000000');
+  if (replaceBtn) addHoverEffect(replaceBtn, '#000000', '#333333');
+  if (doneBtn) addHoverEffect(doneBtn, '#1f2937', '#000000');
+
+  if (skipBtn) {
+    skipBtn.addEventListener('mouseenter', () => {
+      skipBtn.style.background = '#f9fafb';
+      skipBtn.style.color = '#111827';
+    });
+    skipBtn.addEventListener('mouseleave', () => {
+      skipBtn.style.background = 'transparent';
+      skipBtn.style.color = '#6b7280';
+    });
+  }
+
+  if (closeBtn) {
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.background = 'rgba(239, 68, 68, 0.08)';
+      closeBtn.style.color = '#dc2626';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.background = 'none';
+      closeBtn.style.color = '#6b7280';
+    });
+  }
+
   return el;
 }
 
