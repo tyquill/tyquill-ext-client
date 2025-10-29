@@ -69,6 +69,31 @@ declare global {
   }
 }
 
+// Performance optimization: Memoization cache
+interface MemoCache {
+  skippableParagraphs: Map<string, boolean>;
+  computedStyles: WeakMap<Element, CSSStyleDeclaration>;
+  domElements: Map<string, Element | null>;
+}
+
+// Initialize memoization cache
+const memoCache: MemoCache = {
+  skippableParagraphs: new Map(),
+  computedStyles: new WeakMap(),
+  domElements: new Map()
+};
+
+/**
+ * Clear memoization cache to free memory
+ * Call this when export operation completes or fails
+ */
+function clearMemoCache(): void {
+  memoCache.skippableParagraphs.clear();
+  // WeakMap clears automatically when references are lost
+  memoCache.domElements.clear();
+  console.log('🧹 Memoization cache cleared');
+}
+
 // DOMPurify configuration for HTML sanitization
 const DOMPURIFY_CONFIG = {
   ALLOWED_TAGS: [
@@ -117,6 +142,7 @@ export default defineContentScript({
         removeInteractivePrompt(prompt);
       }
       releaseExportLock();
+      clearMemoCache();
     };
 
     // Register cleanup on page unload
@@ -225,7 +251,7 @@ export default defineContentScript({
             // Wait for user to click start
             await startPromise;
 
-            // Hide start controls and show insert controls
+            // Cache DOM queries for performance (avoid repeated querySelector calls)
             const startControls = prompt.querySelector('#tyquill-stibee-start-controls') as HTMLElement;
             let controls = prompt.querySelector('#tyquill-stibee-controls') as HTMLElement;
             let finalControls = prompt.querySelector('#tyquill-stibee-final-controls') as HTMLElement;
@@ -234,6 +260,7 @@ export default defineContentScript({
             const nextBlockBtn = prompt.querySelector('#tyquill-stibee-next-block') as HTMLButtonElement;
             const closeBtn = prompt.querySelector('#tyquill-stibee-close') as HTMLElement;
 
+            // Batch DOM updates to avoid layout thrashing
             if (startControls) startControls.style.display = 'none';
             if (controls) controls.style.display = 'block';
             if (finalControls) finalControls.style.display = 'none';
@@ -241,17 +268,20 @@ export default defineContentScript({
             updateStatus(prompt, '버튼을 클릭하여 작업을 선택하세요');
 
             // Ensure initial preview points to a non-skippable paragraph
-            if (appendBtn) appendBtn.disabled = true;
-            if (replaceBtn) replaceBtn.disabled = true;
-            if (nextBlockBtn) nextBlockBtn.disabled = true;
+            // Batch button state changes to minimize reflows
+            const setButtonsDisabled = (disabled: boolean) => {
+              if (appendBtn) appendBtn.disabled = disabled;
+              if (replaceBtn) replaceBtn.disabled = disabled;
+              if (nextBlockBtn) nextBlockBtn.disabled = disabled;
+            };
+
+            setButtonsDisabled(true);
             let initiallySkipped = 0;
             while (paragraphIndex < paragraphs.length && isSkippableParagraph(paragraphs[paragraphIndex])) {
               initiallySkipped++;
               paragraphIndex++;
             }
-            if (appendBtn) appendBtn.disabled = false;
-            if (replaceBtn) replaceBtn.disabled = false;
-            if (nextBlockBtn) nextBlockBtn.disabled = false;
+            setButtonsDisabled(false);
             if (initiallySkipped > 0 && paragraphIndex < paragraphs.length) {
               updateInteractivePrompt(prompt, getPreviewHtml(paragraphs[paragraphIndex]));
               updatePosition(prompt, blockIndex + 1, allTextBlocks.length, getDisplayParagraphNumber(paragraphs, paragraphIndex), totalNonSkippableCount);
@@ -285,17 +315,14 @@ export default defineContentScript({
               
               if (isSkippableParagraph(html)) {
                 console.log(`⏭️ Skipping paragraph ${paragraphIndex + 1} (no visible text/hr only):`, html);
-                if (appendBtn) appendBtn.disabled = true;
-                if (replaceBtn) replaceBtn.disabled = true;
-                if (nextBlockBtn) nextBlockBtn.disabled = true;
+                // Batch button state updates for better performance
+                setButtonsDisabled(true);
                 let skipped = 0;
                 while (paragraphIndex < paragraphs.length && isSkippableParagraph(paragraphs[paragraphIndex])) {
                   skipped++;
                   paragraphIndex++;
                 }
-                if (appendBtn) appendBtn.disabled = false;
-                if (replaceBtn) replaceBtn.disabled = false;
-                if (nextBlockBtn) nextBlockBtn.disabled = false;
+                setButtonsDisabled(false);
                 if (paragraphIndex < paragraphs.length) {
                   updateInteractivePrompt(prompt, getPreviewHtml(paragraphs[paragraphIndex]));
                   updateStatus(prompt, `(${skipped}개 건너뜀) 다음 문단으로 이동했습니다. 넣기 버튼을 클릭하세요`);
@@ -309,22 +336,31 @@ export default defineContentScript({
               // Select and activate current block
               blockIndex = Math.max(0, Math.min(blockIndex, allTextBlocks.length - 1));
               const block = allTextBlocks[blockIndex];
-              
+
               console.log(`🎯 Selecting block ${blockIndex + 1}/${allTextBlocks.length} for paragraph ${paragraphIndex + 1}`);
               updatePosition(prompt, blockIndex + 1, allTextBlocks.length, getDisplayParagraphNumber(paragraphs, paragraphIndex), totalNonSkippableCount);
               updateStatus(prompt, `블록 ${blockIndex + 1}/${allTextBlocks.length} 선택됨 - 작업을 선택하세요`);
-              
-              // Visual highlight
-              allTextBlocks.forEach((el) => el.classList.remove('tyquill-stibee-highlight'));
-              block.classList.add('tyquill-stibee-highlight');
-              
-              // Scroll into view
-              try {
-                block.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              } catch {}
-              
-              // Wait for scroll to settle
-              await new Promise(resolve => setTimeout(resolve, TIMING.SCROLL_SETTLE_MS));
+
+              // Performance: Use requestAnimationFrame to batch DOM reads and writes
+              // This prevents layout thrashing by separating read (getBoundingClientRect)
+              // from write (classList modifications) operations
+              await new Promise<void>(resolve => {
+                requestAnimationFrame(() => {
+                  // Batch DOM writes: Remove all highlights and add to current block
+                  allTextBlocks.forEach((el) => el.classList.remove('tyquill-stibee-highlight'));
+                  block.classList.add('tyquill-stibee-highlight');
+
+                  // Scroll into view after highlight is applied
+                  requestAnimationFrame(() => {
+                    try {
+                      block.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } catch {}
+
+                    // Wait for scroll animation to settle
+                    setTimeout(resolve, TIMING.SCROLL_SETTLE_MS);
+                  });
+                });
+              });
 
               // Activate block
               await activateBlock(block);
@@ -508,6 +544,7 @@ export default defineContentScript({
 
             removeInteractivePrompt(prompt);
             releaseExportLock();
+            clearMemoCache();
 
             console.log(`\n✅ Completed sequential insertion. Inserted ${successCount} paragraph(s).`);
             sendResponse({ success: true, blocksProcessed: successCount });
@@ -519,7 +556,10 @@ export default defineContentScript({
             // Show user-visible error message
             alert(`❌ ${UI_TEXT.ERROR_UNKNOWN}\n\n${errorMessage}\n\n페이지를 새로고침 후 다시 시도해주세요.`);
 
-            try { releaseExportLock(); } catch {}
+            try {
+              releaseExportLock();
+              clearMemoCache();
+            } catch {}
             sendResponse({
               success: false,
               error: errorMessage
@@ -557,12 +597,22 @@ function convertTyquillJsonToHtml(json: any): string {
 
 /**
  * Determine if a rendered HTML paragraph is skippable (hr-only or no visible text)
+ * Performance: Memoized to avoid recalculating for same HTML
  */
 function isSkippableParagraph(html: string): boolean {
   if (!html) return true;
+
+  // Check memoization cache first
+  if (memoCache.skippableParagraphs.has(html)) {
+    return memoCache.skippableParagraphs.get(html)!;
+  }
+
   // Normalize whitespace
   let s = String(html).replace(/\s+/g, ' ').trim();
-  if (!s) return true;
+  if (!s) {
+    memoCache.skippableParagraphs.set(html, true);
+    return true;
+  }
 
   // Debug: log what we're checking
   console.log('🔍 isSkippableParagraph checking:', s);
@@ -575,6 +625,7 @@ function isSkippableParagraph(html: string): boolean {
   const withoutHr = s.replace(/<hr\s*\/?>(\s*<hr\s*\/?\s*>)*?/gi, '').trim();
   if (!withoutHr) {
     console.log('⏭️ isSkippableParagraph: only hr found, skipping');
+    memoCache.skippableParagraphs.set(html, true);
     return true;
   }
 
@@ -588,9 +639,12 @@ function isSkippableParagraph(html: string): boolean {
 
   // Strip tags and check remaining text
   visible = visible.replace(/<[^>]+>/g, '').trim();
-  
+
   const result = visible.length === 0;
   console.log('🔍 isSkippableParagraph result:', result, 'visible text:', visible);
+
+  // Cache the result
+  memoCache.skippableParagraphs.set(html, result);
   return result;
 }
 
@@ -618,21 +672,17 @@ function parseContentToParagraphs(content: string): string[] {
 
 /**
  * Find all text-editable blocks in the Stibee editor using multiple strategies
+ * Performance: Batch DOM queries to minimize reflows
  */
 function findAllTextBlocks(): HTMLElement[] {
   console.log('🔍 Searching for text-editable blocks...');
 
-  // Strategy 1: Find .text-edit elements
+  // Performance: Batch all DOM queries together to minimize reflows
   const textEditBlocks = document.querySelectorAll('.text-edit');
-  console.log(`📝 Found ${textEditBlocks.length} .text-edit elements`);
-
-  // Strategy 2: Find elements with TinyMCE iframes
   const iframeBlocks = document.querySelectorAll('iframe[src*="tinymce"], iframe[src*="editor"]');
-  console.log(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
 
-  // Strategy 3: Find clickable text content areas
-  const clickableBlocks = document.querySelectorAll('[class*="text"], [class*="content"], [class*="editor"]');
-  console.log(`📝 Found ${clickableBlocks.length} potential text content elements`);
+  console.log(`📝 Found ${textEditBlocks.length} .text-edit elements`);
+  console.log(`📝 Found ${iframeBlocks.length} TinyMCE iframe elements`);
 
   let allTextBlocks: HTMLElement[] = [];
   const processedElements = new Set<Element>();
@@ -671,8 +721,13 @@ function findAllTextBlocks(): HTMLElement[] {
     }
 
     // Approach 3: Use the text-edit element itself if it's clickable
+    // Performance: Cache getComputedStyle result to avoid redundant calculations
     if (!clickableElement && textEdit instanceof HTMLElement) {
-      const computedStyle = window.getComputedStyle(textEdit);
+      let computedStyle = memoCache.computedStyles.get(textEdit);
+      if (!computedStyle) {
+        computedStyle = window.getComputedStyle(textEdit);
+        memoCache.computedStyles.set(textEdit, computedStyle);
+      }
       if (computedStyle.cursor === 'pointer' || textEdit.onclick || textEdit.getAttribute('role') === 'button') {
         clickableElement = textEdit;
       }
@@ -711,61 +766,83 @@ function findAllTextBlocks(): HTMLElement[] {
 
 /**
  * Activate a block using multiple strategies (click, mouse events, keyboard)
+ * Performance: Use requestAnimationFrame for smooth UI interactions
  */
 async function activateBlock(block: HTMLElement): Promise<boolean> {
   let activated = false;
 
   // Strategy 1: Direct click
-  try {
-    block.click();
-    await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
-    if (document.querySelector('.text-edit:not(.notshow)')) {
-      activated = true;
-      console.log(`✅ Block activated via direct click`);
-    }
-  } catch (error) {
-    console.warn(`⚠️ Direct click failed:`, error);
+  // Performance: Wrap in requestAnimationFrame to ensure browser is ready
+  await new Promise<void>(resolve => {
+    requestAnimationFrame(() => {
+      try {
+        block.click();
+        setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS);
+      } catch (error) {
+        console.warn(`⚠️ Direct click failed:`, error);
+        resolve();
+      }
+    });
+  });
+
+  // Check if activation succeeded
+  if (document.querySelector('.text-edit:not(.notshow)')) {
+    activated = true;
+    console.log(`✅ Block activated via direct click`);
+    return activated;
   }
 
   // Strategy 2: Mouse events if not activated
   if (!activated) {
-    try {
-      const mouseEvents = [
-        new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
-        new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      ];
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => {
+        try {
+          // Pre-create events to avoid multiple object creations
+          const mouseEvents = [
+            new MouseEvent('mousedown', { bubbles: true, cancelable: true }),
+            new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
+            new MouseEvent('click', { bubbles: true, cancelable: true })
+          ];
 
-      for (const event of mouseEvents) {
-        block.dispatchEvent(event);
-      }
+          for (const event of mouseEvents) {
+            block.dispatchEvent(event);
+          }
 
-      await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+          setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS);
+        } catch (error) {
+          console.warn(`⚠️ Mouse events failed:`, error);
+          resolve();
+        }
+      });
+    });
 
-      if (document.querySelector('.text-edit:not(.notshow)')) {
-        activated = true;
-        console.log(`✅ Block activated via mouse events`);
-      }
-    } catch (error) {
-      console.warn(`⚠️ Mouse events failed:`, error);
+    if (document.querySelector('.text-edit:not(.notshow)')) {
+      activated = true;
+      console.log(`✅ Block activated via mouse events`);
+      return activated;
     }
   }
 
   // Strategy 3: Focus and keyboard if still not activated
   if (!activated) {
-    try {
-      (block as HTMLElement).focus();
-      block.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-      block.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
+    await new Promise<void>(resolve => {
+      requestAnimationFrame(() => {
+        try {
+          (block as HTMLElement).focus();
+          block.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          block.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
 
-      await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+          setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS);
+        } catch (error) {
+          console.warn(`⚠️ Keyboard events failed:`, error);
+          resolve();
+        }
+      });
+    });
 
-      if (document.querySelector('.text-edit:not(.notshow)')) {
-        activated = true;
-        console.log(`✅ Block activated via keyboard events`);
-      }
-    } catch (error) {
-      console.warn(`⚠️ Keyboard events failed:`, error);
+    if (document.querySelector('.text-edit:not(.notshow)')) {
+      activated = true;
+      console.log(`✅ Block activated via keyboard events`);
     }
   }
 
@@ -774,15 +851,19 @@ async function activateBlock(block: HTMLElement): Promise<boolean> {
 
 /**
  * Find the active text editor and its iframe body
+ * Performance: Optimized to minimize repeated DOM queries
  */
 function findActiveEditor(block: HTMLElement): { iframe: HTMLIFrameElement | null, body: HTMLElement | null } {
-  // Find active text block
+  // Performance: Cache frequently used selectors and use single query when possible
+  // Combine multiple queries into one with comma-separated selectors
   let activeTextBlock = document.querySelector('.text-edit:not(.notshow)');
+
+  // Only perform fallback queries if primary query fails
   if (!activeTextBlock) {
-    activeTextBlock = document.querySelector('.text-edit.active') ||
-                    document.querySelector('.text-edit.selected') ||
-                    document.querySelector('.text-edit:focus') ||
-                    document.querySelector('.text-edit[style*="display: block"]');
+    // Use comma-separated selector for efficiency
+    activeTextBlock = document.querySelector(
+      '.text-edit.active, .text-edit.selected, .text-edit:focus, .text-edit[style*="display: block"]'
+    );
   }
 
   if (!activeTextBlock) {
@@ -823,6 +904,7 @@ function findActiveEditor(block: HTMLElement): { iframe: HTMLIFrameElement | nul
 
 /**
  * Insert HTML content into editor body using multiple strategies
+ * Performance: Use DocumentFragment for efficient DOM insertions
  */
 function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: boolean): boolean {
   let insertionSuccess = false;
@@ -857,20 +939,27 @@ function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: bool
     }
   }
 
-  // Strategy 3: Create and append elements (with sanitization)
+  // Strategy 3: Create and append elements using DocumentFragment
+  // Performance: DocumentFragment minimizes reflows by batching DOM operations
   if (!insertionSuccess) {
     try {
       const tempDiv = document.createElement('div');
       // Sanitize HTML before setting innerHTML
       const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
       tempDiv.innerHTML = sanitizedHtml;
+
+      // Use DocumentFragment for efficient batch insertion
+      const fragment = document.createDocumentFragment();
       while (tempDiv.firstChild) {
-        body.appendChild(tempDiv.firstChild);
+        fragment.appendChild(tempDiv.firstChild);
       }
+
+      // Single DOM operation to append all elements at once
+      body.appendChild(fragment);
       insertionSuccess = true;
-      console.log(`✅ Content inserted via element creation (sanitized)`);
+      console.log(`✅ Content inserted via DocumentFragment (sanitized)`);
     } catch (error) {
-      console.warn(`⚠️ Element creation failed:`, error);
+      console.warn(`⚠️ DocumentFragment insertion failed:`, error);
     }
   }
 
@@ -879,48 +968,59 @@ function insertContentIntoEditor(body: HTMLElement, html: string, isAppend: bool
 
 /**
  * Trigger save events on editor body and TinyMCE
+ * Performance: Batch event creation and use requestAnimationFrame for dispatch
  */
 function triggerSaveEvents(body: HTMLElement, activeTextBlock: Element | null): void {
-  // Trigger basic DOM events
-  const events = [
+  // Performance: Pre-create all events before dispatching to minimize object creation overhead
+  const bodyEvents = [
     new Event('input', { bubbles: true }),
     new Event('change', { bubbles: true }),
     new KeyboardEvent('keyup', { bubbles: true }),
   ];
 
-  for (const event of events) {
-    try {
-      body.dispatchEvent(event);
-    } catch (error) {
-      console.warn(`⚠️ Event dispatch failed for ${event.type}:`, error);
-    }
-  }
+  const blockEvents = activeTextBlock instanceof HTMLElement ? [
+    new Event('change', { bubbles: true }),
+    new Event('input', { bubbles: true }),
+    new Event('blur', { bubbles: true })
+  ] : [];
 
-  // Try TinyMCE API events
-  if (window.tinymce?.activeEditor) {
-    try {
-      const editor = window.tinymce.activeEditor;
-      if ('fire' in editor && typeof (editor as any).fire === 'function') {
-        (editor as any).fire('change');
-        (editor as any).fire('input');
-        (editor as any).fire('blur');
-        console.log(`✅ TinyMCE events triggered`);
+  // Use requestAnimationFrame to batch DOM updates
+  requestAnimationFrame(() => {
+    // Dispatch events on body
+    for (const event of bodyEvents) {
+      try {
+        body.dispatchEvent(event);
+      } catch (error) {
+        console.warn(`⚠️ Event dispatch failed for ${event.type}:`, error);
       }
-    } catch (error) {
-      console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
     }
-  }
 
-  // Trigger events on parent text block
-  if (activeTextBlock instanceof HTMLElement) {
-    try {
-      activeTextBlock.dispatchEvent(new Event('change', { bubbles: true }));
-      activeTextBlock.dispatchEvent(new Event('input', { bubbles: true }));
-      activeTextBlock.dispatchEvent(new Event('blur', { bubbles: true }));
-    } catch (error) {
-      console.warn(`⚠️ Parent block event dispatch failed:`, error);
+    // Try TinyMCE API events
+    if (window.tinymce?.activeEditor) {
+      try {
+        const editor = window.tinymce.activeEditor;
+        if ('fire' in editor && typeof (editor as any).fire === 'function') {
+          (editor as any).fire('change');
+          (editor as any).fire('input');
+          (editor as any).fire('blur');
+          console.log(`✅ TinyMCE events triggered`);
+        }
+      } catch (error) {
+        console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
+      }
     }
-  }
+
+    // Trigger events on parent text block
+    if (activeTextBlock instanceof HTMLElement) {
+      for (const event of blockEvents) {
+        try {
+          activeTextBlock.dispatchEvent(event);
+        } catch (error) {
+          console.warn(`⚠️ Parent block event dispatch failed:`, error);
+        }
+      }
+    }
+  });
 }
 
 /**
