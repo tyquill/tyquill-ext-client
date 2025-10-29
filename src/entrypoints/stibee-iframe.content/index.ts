@@ -24,6 +24,10 @@ const UI_TEXT = {
   BTN_STOP: '중지',
   SKIPPED_HR_EMPTY: '(건너뜀: 구분선/빈 문단)',
   EMPTY_PREVIEW: '(비어 있음)',
+  ERROR_NO_TEXT_BLOCKS: '편집 가능한 텍스트 블록을 찾을 수 없습니다',
+  ERROR_EDITOR_ACCESS: '에디터에 접근할 수 없습니다',
+  ERROR_CONTENT_INSERT: '콘텐츠 삽입에 실패했습니다',
+  ERROR_UNKNOWN: '알 수 없는 오류가 발생했습니다',
 } as const;
 
 // Type definitions for message passing
@@ -253,8 +257,10 @@ export default defineContentScript({
             console.log(`📝 Final result: Found ${allTextBlocks.length} text-editable blocks`);
 
             if (allTextBlocks.length === 0) {
+              console.error('❌ No text blocks found');
+              alert(`❌ ${UI_TEXT.ERROR_NO_TEXT_BLOCKS}\n\nStibee 에디터에 텍스트 블록을 먼저 추가해주세요.`);
               releaseExportLock();
-              sendResponse({ success: false, error: 'No text blocks found in Stibee editor' });
+              sendResponse({ success: false, error: UI_TEXT.ERROR_NO_TEXT_BLOCKS });
               return;
             }
 
@@ -582,7 +588,9 @@ export default defineContentScript({
               }
 
               if (!iframeBody) {
-                console.warn(`⚠️ Cannot access editor body, skipping this block`);
+                console.error(`❌ Cannot access editor body`);
+                updateStatus(prompt, `❌ ${UI_TEXT.ERROR_EDITOR_ACCESS}`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Show error for 2 seconds
                 blockIndex++;
                 continue;
               }
@@ -645,7 +653,9 @@ export default defineContentScript({
               }
 
               if (!insertionSuccess) {
-                console.warn(`⚠️ All insertion strategies failed, skipping this block`);
+                console.error(`❌ All insertion strategies failed`);
+                updateStatus(prompt, `❌ ${UI_TEXT.ERROR_CONTENT_INSERT}`);
+                await new Promise(resolve => setTimeout(resolve, 2000)); // Show error for 2 seconds
                 blockIndex++;
                 continue;
               }
@@ -753,10 +763,16 @@ export default defineContentScript({
             sendResponse({ success: true, blocksProcessed: successCount });
           } catch (error) {
             console.error('❌ Stibee iframe export error:', error);
+            const errorMessage = error instanceof Error ? error.message : UI_TEXT.ERROR_UNKNOWN;
+            console.error('Error details:', errorMessage);
+
+            // Show user-visible error message
+            alert(`❌ ${UI_TEXT.ERROR_UNKNOWN}\n\n${errorMessage}\n\n페이지를 새로고침 후 다시 시도해주세요.`);
+
             try { releaseExportLock(); } catch {}
             sendResponse({
               success: false,
-              error: error instanceof Error ? error.message : 'Unknown error'
+              error: errorMessage
             });
           }
         })();
