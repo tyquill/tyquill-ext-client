@@ -144,8 +144,7 @@ const EditorApp: React.FC = () => {
 
         } catch (error) {
           console.error('Failed to load editor data:', error);
-          console.error('Session key:', sessionKey);
-          alert('Failed to load editor data. Please check the console.');
+          alert('Failed to load editor data. Please try again.');
           window.close();
         }
       } else {
