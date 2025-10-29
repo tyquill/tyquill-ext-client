@@ -10,12 +10,14 @@ interface SourcesSectionProps {
   selectedScrapIds: number[];
   onSelectionChange: (scrapIds: number[]) => void;
   disabled?: boolean;
+  initialScraps?: ScrapResponse[]; // Article's scraps for ensuring they're always available
 }
 
 const SourcesSection: React.FC<SourcesSectionProps> = ({
   selectedScrapIds,
   onSelectionChange,
   disabled,
+  initialScraps = [],
 }) => {
   const { t } = useI18n();
   const [allScraps, setAllScraps] = useState<ScrapResponse[]>([]);
@@ -23,8 +25,10 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Fetch all scraps on mount (including PDFs)
+  // Fetch all scraps on mount (including PDFs) with pagination
   useEffect(() => {
     const fetchScraps = async () => {
       setIsLoadingScraps(true);
@@ -33,10 +37,20 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
       try {
         // Use v3 API without type filter to get both webclips and uploads (PDFs)
         const response = await scrapService.getScrapsV3({
+          page: currentPage,
+          limit: 50,
           sortBy: 'updated_at',
           sortOrder: 'DESC',
         });
-        setAllScraps(response.scraps);
+
+        // Merge with existing scraps (avoid duplicates)
+        setAllScraps(prev => {
+          const existingIds = new Set(prev.map(s => s.scrapId));
+          const newScraps = response.scraps.filter(s => !existingIds.has(s.scrapId));
+          return [...prev, ...newScraps];
+        });
+
+        setHasMore(response.hasMore);
         setRetryCount(0); // Reset retry count on success
       } catch (err) {
         const errorMessage = err instanceof Error
@@ -50,7 +64,18 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
     };
 
     fetchScraps();
-  }, [t, retryCount]);
+  }, [t, retryCount, currentPage]);
+
+  // Initialize with article's scraps to ensure they're always available for pills
+  useEffect(() => {
+    if (initialScraps.length > 0) {
+      setAllScraps(prev => {
+        const existingIds = new Set(prev.map(s => s.scrapId));
+        const uniqueInitialScraps = initialScraps.filter(s => !existingIds.has(s.scrapId));
+        return [...uniqueInitialScraps, ...prev];
+      });
+    }
+  }, [initialScraps]);
 
   // Get selected scraps for display
   const selectedScraps = allScraps.filter((scrap) =>
@@ -89,6 +114,12 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   const handleRetry = () => {
     setRetryCount((prev) => prev + 1);
   };
+
+  const handleLoadMore = useCallback(() => {
+    if (!isLoadingScraps && hasMore) {
+      setCurrentPage(prev => prev + 1);
+    }
+  }, [isLoadingScraps, hasMore]);
 
   if (error) {
     return (
@@ -138,6 +169,9 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
           onToggleSource={handleToggleSource}
           onClose={handleClosePanel}
           disabled={disabled}
+          onLoadMore={handleLoadMore}
+          hasMore={hasMore}
+          isLoading={isLoadingScraps}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { IoClose, IoSearch } from 'react-icons/io5';
 import { ScrapResponse } from '../../../../services/scrapService';
 import { useI18n } from '../../../../hooks/useI18n';
@@ -12,6 +12,9 @@ interface AddSourcePanelProps {
   onToggleSource: (scrapId: number) => void;
   onClose: () => void;
   disabled?: boolean;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  isLoading: boolean;
 }
 
 const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
@@ -20,10 +23,14 @@ const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
   onToggleSource,
   onClose,
   disabled,
+  onLoadMore,
+  hasMore,
+  isLoading,
 }) => {
   const { t } = useI18n();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const loadMoreTriggerRef = useRef<HTMLDivElement>(null);
 
   // Optimized search with debounced query
   const filteredScraps = useMemo(() => {
@@ -52,6 +59,24 @@ const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
   const handleClearSearch = () => {
     setSearchQuery('');
   };
+
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current;
+    if (!trigger || !hasMore || isLoading) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+
+    observer.observe(trigger);
+    return () => observer.disconnect();
+  }, [hasMore, isLoading, onLoadMore]);
 
   return (
     <div className={styles.addSourcePanel} role="region" aria-label="Add source panel">
@@ -106,15 +131,28 @@ const AddSourcePanel: React.FC<AddSourcePanelProps> = ({
               : t('regenerateModal_noAvailableSources')}
           </div>
         ) : (
-          filteredScraps.map((scrap) => (
-            <SourceListItem
-              key={scrap.scrapId}
-              scrap={scrap}
-              isSelected={selectedScrapIds.includes(scrap.scrapId)}
-              onToggle={onToggleSource}
-              disabled={disabled}
-            />
-          ))
+          <>
+            {filteredScraps.map((scrap) => (
+              <SourceListItem
+                key={scrap.scrapId}
+                scrap={scrap}
+                isSelected={selectedScrapIds.includes(scrap.scrapId)}
+                onToggle={onToggleSource}
+                disabled={disabled}
+              />
+            ))}
+
+            {/* Infinite scroll trigger */}
+            {hasMore && !searchQuery && (
+              <div ref={loadMoreTriggerRef} className={styles.loadMoreTrigger}>
+                {isLoading && (
+                  <div className={styles.loadingIndicator}>
+                    {t('common_loading')}...
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
