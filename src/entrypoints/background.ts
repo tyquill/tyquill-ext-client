@@ -277,11 +277,11 @@ export default defineBackground(() => {
 
       // Get active tab
       const tabInfo = await handleGetActiveTabInfo();
-      console.log(`📍 Background: Active tab ID: ${tabInfo.id}, URL: ${tabInfo.url}`);
+      // console.log(`📍 Background: Active tab ID: ${tabInfo.id}, URL: ${tabInfo.url}`);
 
       // For Stibee, we need to send message to all frames (including cross-origin iframe)
       if (platform === 'stibee') {
-        console.log('🎨 Background: Stibee export - sending to all frames');
+        // console.log('🎨 Background: Stibee export - sending to all frames');
 
         // The stibee-iframe content script is automatically loaded by manifest
         // Just wait a moment to ensure it's ready
@@ -290,13 +290,13 @@ export default defineBackground(() => {
         // Get all frames in the tab
         try {
           const frames = await browser.webNavigation.getAllFrames({ tabId: tabInfo.id });
-          console.log(`📍 Background: Found ${frames?.length || 0} frames in tab`);
+          // console.log(`📍 Background: Found ${frames?.length || 0} frames in tab`);
 
           // Try sending message to each frame
           let successResponse = null;
           for (const frame of frames || []) {
             try {
-              console.log(`📤 Background: Trying frame ${frame.frameId} (${frame.url})`);
+              // console.log(`📤 Background: Trying frame ${frame.frameId} (${frame.url})`);
               const response = await browser.tabs.sendMessage(
                 tabInfo.id,
                 {
@@ -307,12 +307,12 @@ export default defineBackground(() => {
               );
 
               if (response?.success) {
-                console.log(`✅ Background: Stibee export successful in frame ${frame.frameId}`);
+                // console.log(`✅ Background: Stibee export successful in frame ${frame.frameId}`);
                 successResponse = response;
                 break; // Stop after first successful response
               }
             } catch (frameError) {
-              console.log(`⚠️ Background: Frame ${frame.frameId} didn't respond or failed:`, frameError);
+              // console.log(`⚠️ Background: Frame ${frame.frameId} didn't respond or failed:`, frameError);
               // Continue to next frame
             }
           }

@@ -628,14 +628,14 @@ export const exportToLinkedIn = (title: string, content: string): ExportResult =
  */
 export const exportToStibee = async (title: string, content: string): Promise<ExportResult> => {
   try {
-    console.log('🔍 Stibee export: Starting...');
+    // console.log('🔍 Stibee export: Starting...');
 
     // Clean content
     const cleanedContent = content.replace(/\n{3,}/g, '\n\n').trim();
 
     // The stibee-iframe.content.ts script running inside the iframe will handle this
     // We just need to make sure it receives the message
-    console.log('📤 Sending export request to Stibee iframe content script');
+    // console.log('📤 Sending export request to Stibee iframe content script');
 
     // Wait a bit for the content script to be ready
     await new Promise(resolve => setTimeout(resolve, 100));
