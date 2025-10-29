@@ -58,6 +58,22 @@ const DOMPURIFY_CONFIG = {
   ALLOWED_ATTR: ['href', 'style', 'class']
 };
 
+// Timing constants for UI interactions and animations
+const TIMING = {
+  // DOM 조작 후 렌더링 완료 대기 시간
+  SCROLL_SETTLE_MS: 150,
+  // 에디터 iframe 로딩 대기 시간
+  EDITOR_LOAD_MS: 200,
+  // 블록 활성화 후 안정화 대기 시간
+  BLOCK_ACTIVATION_MS: 200,
+  // 콘텐츠 저장 트리거 대기 시간
+  SAVE_TRIGGER_MS: 150,
+  // 사용자 액션 타임아웃 (2분)
+  USER_ACTION_TIMEOUT_MS: 120000,
+  // Lock 만료 시간 (1분)
+  LOCK_EXPIRY_MS: 60000
+} as const;
+
 export default defineContentScript({
   // Limit to editor frames only to avoid main frame UI
   matches: ['*://editor.stibee.com/*'],
@@ -359,8 +375,8 @@ export default defineContentScript({
                 block.scrollIntoView({ behavior: 'smooth', block: 'center' });
               } catch {}
               
-              // Wait a bit for scroll
-              await new Promise(resolve => setTimeout(resolve, 150));
+              // Wait for scroll to settle
+              await new Promise(resolve => setTimeout(resolve, TIMING.SCROLL_SETTLE_MS));
 
               // Activate block with multiple strategies
               let activated = false;
@@ -368,7 +384,7 @@ export default defineContentScript({
               // Strategy 1: Direct click
               try {
                 block.click();
-                await new Promise(resolve => setTimeout(resolve, 200));
+                await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
                 if (document.querySelector('.text-edit:not(.notshow)')) {
                   activated = true;
                   console.log(`✅ Block activated via direct click`);
@@ -376,7 +392,7 @@ export default defineContentScript({
               } catch (error) {
                 console.warn(`⚠️ Direct click failed:`, error);
               }
-              
+
               // Strategy 2: Mouse events if not activated
               if (!activated) {
                 try {
@@ -385,12 +401,12 @@ export default defineContentScript({
                     new MouseEvent('mouseup', { bubbles: true, cancelable: true }),
                     new MouseEvent('click', { bubbles: true, cancelable: true })
                   ];
-                  
+
                   for (const event of mouseEvents) {
                     block.dispatchEvent(event);
                   }
-                  
-                  await new Promise(resolve => setTimeout(resolve, 200));
+
+                  await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
                   
                   if (document.querySelector('.text-edit:not(.notshow)')) {
                     activated = true;
@@ -407,9 +423,9 @@ export default defineContentScript({
                   (block as HTMLElement).focus();
                   block.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
                   block.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', bubbles: true }));
-                  
-                  await new Promise(resolve => setTimeout(resolve, 200));
-                  
+
+                  await new Promise(resolve => setTimeout(resolve, TIMING.BLOCK_ACTIVATION_MS));
+
                   if (document.querySelector('.text-edit:not(.notshow)')) {
                     activated = true;
                     console.log(`✅ Block activated via keyboard events`);
@@ -419,8 +435,8 @@ export default defineContentScript({
                 }
               }
 
-              // Wait for editor to fully load
-              await new Promise(resolve => setTimeout(resolve, 200));
+              // Wait for editor iframe to fully load
+              await new Promise(resolve => setTimeout(resolve, TIMING.EDITOR_LOAD_MS));
 
               // Wait for user action (append, replace, or next-block)
               const actionPromise = new Promise<'append' | 'replace' | 'next-block' | 'none'>((resolve) => {
@@ -465,7 +481,7 @@ export default defineContentScript({
                   };
                 }
                 
-                // Fallback timeout
+                // User action timeout (2 minutes)
                 setTimeout(() => {
                   if (!resolved) {
                     resolved = true;
@@ -474,7 +490,7 @@ export default defineContentScript({
                     cleanup();
                     resolve('none');
                   }
-                }, 120000); // 2 minute timeout
+                }, TIMING.USER_ACTION_TIMEOUT_MS);
               });
 
               const action = await actionPromise;
@@ -656,8 +672,8 @@ export default defineContentScript({
                 }
               }
 
-              // Wait and blur to save
-              await new Promise(resolve => setTimeout(resolve, 150));
+              // Wait for save trigger and blur
+              await new Promise(resolve => setTimeout(resolve, TIMING.SAVE_TRIGGER_MS));
               try {
                 (iframeBody as HTMLElement).blur();
                 if (activeTextBlock instanceof HTMLElement) {
@@ -862,8 +878,8 @@ function tryAcquireExportLock(): boolean {
     const existing = localStorage.getItem(key);
     if (existing) {
       const { ts } = JSON.parse(existing);
-      // expire after 60s
-      if (typeof ts === 'number' && now - ts < 60000) {
+      // Check if lock has expired
+      if (typeof ts === 'number' && now - ts < TIMING.LOCK_EXPIRY_MS) {
         return false;
       }
     }
