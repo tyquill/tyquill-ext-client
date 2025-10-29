@@ -153,7 +153,7 @@ export default defineContentScript({
     // Listen for export requests from parent window
     browser.runtime.onMessage.addListener((
       request: StibeeExportMessage,
-      sender: browser.Runtime.MessageSender,
+      sender,
       sendResponse: (response: ExportResponse) => void
     ) => {
       // Validate sender - must be from our own extension
@@ -234,9 +234,30 @@ export default defineContentScript({
             const prompt = createInteractivePrompt();
             updateInteractivePrompt(prompt, getPreviewHtml(paragraphs[paragraphIndex]));
 
+            // Global cleanup function to ensure proper state reset
+            let cleanupCalled = false;
+            const performCleanup = () => {
+              if (cleanupCalled) return;
+              cleanupCalled = true;
+              logger.debug('🧹 Performing export cleanup');
+              removeInteractivePrompt(prompt);
+              releaseExportLock();
+              clearMemoCache();
+            };
+
+            // Setup close button handler EARLY (before any user interaction)
+            const closeBtn = prompt.querySelector('#tyquill-stibee-close') as HTMLElement;
+            if (closeBtn) {
+              (closeBtn as HTMLButtonElement).onclick = (e) => {
+                try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
+                logger.debug('❌ User closed export overlay');
+                performCleanup();
+              };
+            }
+
             // Setup start button handler
             const startBtn = prompt.querySelector('#tyquill-stibee-start') as HTMLElement;
-            const startPromise = new Promise<void>((resolve) => {
+            const startPromise = new Promise<void>((resolve, _reject) => {
               if (startBtn) {
                 (startBtn as HTMLButtonElement).onclick = (e) => {
                   try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
@@ -249,8 +270,21 @@ export default defineContentScript({
               }
             });
 
-            // Wait for user to click start
-            await startPromise;
+            // Wait for user to click start (or close)
+            try {
+              await startPromise;
+            } catch {
+              // If promise rejected or interrupted, cleanup and exit
+              performCleanup();
+              sendResponse({ success: false, skipped: true, reason: 'user-cancelled' });
+              return;
+            }
+
+            // Check if cleanup was already called (user clicked close)
+            if (cleanupCalled) {
+              sendResponse({ success: false, skipped: true, reason: 'user-cancelled' });
+              return;
+            }
 
             // Cache DOM queries for performance (avoid repeated querySelector calls)
             const startControls = prompt.querySelector('#tyquill-stibee-start-controls') as HTMLElement;
@@ -259,7 +293,7 @@ export default defineContentScript({
             const appendBtn = prompt.querySelector('#tyquill-stibee-append') as HTMLButtonElement;
             const replaceBtn = prompt.querySelector('#tyquill-stibee-replace') as HTMLButtonElement;
             const nextBlockBtn = prompt.querySelector('#tyquill-stibee-next-block') as HTMLButtonElement;
-            const closeBtn = prompt.querySelector('#tyquill-stibee-close') as HTMLElement;
+            // closeBtn already declared above at line 249
 
             // Batch DOM updates to avoid layout thrashing
             if (startControls) startControls.style.display = 'none';
@@ -295,23 +329,7 @@ export default defineContentScript({
             let stopped = false;
             let endedByTimeout = false;
 
-            // Setup close button handler
-            const closeHandler = (e: Event) => {
-              try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
-              stopped = true;
-              // Clean up close button handler
-              if (closeBtn) {
-                (closeBtn as HTMLButtonElement).onclick = null;
-              }
-              removeInteractivePrompt(prompt);
-              releaseExportLock();
-            };
-
-            if (closeBtn) {
-              (closeBtn as HTMLButtonElement).onclick = closeHandler;
-            }
-
-            while (!stopped && paragraphIndex < paragraphs.length && blockIndex < allTextBlocks.length) {
+            while (!stopped && !cleanupCalled && paragraphIndex < paragraphs.length && blockIndex < allTextBlocks.length) {
               const html = paragraphs[paragraphIndex];
               
               if (isSkippableParagraph(html)) {
@@ -543,9 +561,7 @@ export default defineContentScript({
               }
             });
 
-            removeInteractivePrompt(prompt);
-            releaseExportLock();
-            clearMemoCache();
+            performCleanup();
 
             logger.debug(`\n✅ Completed sequential insertion. Inserted ${successCount} paragraph(s).`);
             sendResponse({ success: true, blocksProcessed: successCount });
@@ -576,25 +592,6 @@ export default defineContentScript({
     });
   }
 });
-
-/**
- * Convert Tyquill JSON structure to HTML for TinyMCE
- * Tyquill uses an internal JSON format to store document structure.
- * This function converts it to HTML that TinyMCE can render.
- */
-function convertTyquillJsonToHtml(json: any): string {
-  if (!json || typeof json !== 'object') {
-    return '';
-  }
-
-  // Handle root document
-  if (json.type === 'doc' && json.content) {
-    return json.content.map((node: any) => convertNodeToHtml(node)).join('');
-  }
-
-  // Handle single node
-  return convertNodeToHtml(json);
-}
 
 /**
  * Determine if a rendered HTML paragraph is skippable (hr-only or no visible text)
@@ -1342,135 +1339,3 @@ function escapeHtml(text: string): string {
   };
   return text.replace(/[&<>"']/g, (m) => map[m]);
 }
-
-/**
- * OLD: Convert markdown to simple HTML (for Stibee TinyMCE editor)
- */
-function convertMarkdownToSimpleHtml_OLD(markdown: string): string {
-  const lines = markdown.split('\n');
-  const htmlParts: string[] = [];
-
-  for (let i = 0; i < lines.length; i++) {
-    let line = lines[i];
-
-    // Skip empty lines
-    if (!line.trim()) {
-      continue;
-    }
-
-    // Headings
-    if (line.startsWith('### ')) {
-      const text = line.substring(4);
-      htmlParts.push(`<h3>${processInlineMarkdown(text)}</h3>`);
-    } else if (line.startsWith('## ')) {
-      const text = line.substring(3);
-      htmlParts.push(`<h2>${processInlineMarkdown(text)}</h2>`);
-    } else if (line.startsWith('# ')) {
-      const text = line.substring(2);
-      htmlParts.push(`<h1>${processInlineMarkdown(text)}</h1>`);
-    }
-    // Bullet points
-    else if (line.startsWith('- ') || line.startsWith('* ')) {
-      const text = line.substring(2);
-      htmlParts.push(`<p>• ${processInlineMarkdown(text)}</p>`);
-    }
-    // Horizontal rule
-    else if (line.trim() === '---') {
-      htmlParts.push(`<hr>`);
-    }
-    // Regular paragraph
-    else {
-      htmlParts.push(`<p>${processInlineMarkdown(line)}</p>`);
-    }
-  }
-
-  return htmlParts.join('');
-}
-
-function processInlineMarkdown(text: string): string {
-  // Bold
-  text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  // Italic
-  text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-  // Links
-  text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
-
-  return text;
-}
-
-/**
- * OLD: Convert markdown to Stibee-compatible HTML (complex version - not used)
- */
-function convertMarkdownToStibeeHtml_OLD(markdown: string): string {
-  const lines = markdown.split('\n');
-  const htmlElements: string[] = [];
-  let i = 0;
-
-  const processInlineFormatting = (text: string): string => {
-    return text
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>')
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
-  };
-
-  while (i < lines.length) {
-    const trimmedLine = lines[i].trim();
-
-    if (!trimmedLine) {
-      htmlElements.push('<p><br></p>');
-      i++;
-      continue;
-    }
-
-    if (trimmedLine.match(/^#{1,6}\s+/)) {
-      const level = trimmedLine.match(/^(#{1,6})\s+/)![1].length;
-      const headerContent = trimmedLine.substring(level + 1);
-      htmlElements.push(`<p class="p1"><span style="font-size: ${20 - level * 2}px; font-weight: bold;">${processInlineFormatting(headerContent)}</span></p>`);
-    } else if (trimmedLine === '---' || trimmedLine === '***' || trimmedLine === '___') {
-      htmlElements.push('<hr style="border-top: 1px solid #999999;">');
-    } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
-      const listItems: string[] = [];
-      while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
-        const item = lines[i].trim().substring(2);
-        listItems.push(`<li>${processInlineFormatting(item)}</li>`);
-        i++;
-      }
-      htmlElements.push(`<ul>${listItems.join('')}</ul>`);
-      i--;
-    } else if (trimmedLine.match(/^\d+\.\s/)) {
-      const listItems: string[] = [];
-      while (i < lines.length && lines[i].trim().match(/^\d+\.\s/)) {
-        const item = lines[i].trim().replace(/^\d+\.\s/, '');
-        listItems.push(`<li>${processInlineFormatting(item)}</li>`);
-        i++;
-      }
-      htmlElements.push(`<ol>${listItems.join('')}</ol>`);
-      i--;
-    } else if (trimmedLine.startsWith('> ')) {
-      htmlElements.push(`<blockquote style="border-left: 3px solid #ccc; padding-left: 15px; margin: 10px 0;">${processInlineFormatting(trimmedLine.substring(2))}</blockquote>`);
-    } else if (trimmedLine.startsWith('```')) {
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].trim().startsWith('```')) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      if (codeLines.length > 0) {
-        const escapedCode = codeLines.join('\n')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;');
-        htmlElements.push(`<pre style="background: #f4f4f4; padding: 10px; border-radius: 5px;"><code>${escapedCode}</code></pre>`);
-      }
-    } else {
-      htmlElements.push(`<p class="p1">${processInlineFormatting(trimmedLine)}</p>`);
-    }
-
-    i++;
-  }
-
-  return htmlElements.join('\n');
-}
-
