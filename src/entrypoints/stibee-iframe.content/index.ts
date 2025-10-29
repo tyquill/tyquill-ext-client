@@ -6,6 +6,26 @@ import DOMPurify from 'dompurify';
  * This runs inside the Stibee editor iframe (editor.stibee.com)
  */
 
+// UI Text constants (centralized for easy i18n later)
+const UI_TEXT = {
+  EXPORT_TITLE: 'Tyquill → Stibee 내보내기',
+  PREPARING: '준비 중...',
+  TIMEOUT: '시간이 지나 내보내기가 종료되었습니다',
+  ALL_SKIPPED: '모든 문단이 건너뛰어졌습니다',
+  MOVED_TO_NEXT_BLOCK: '다음 블록으로 이동했습니다',
+  NO_MORE_BLOCKS: '더 이상 사용할 블록이 없습니다',
+  ALL_PROCESSED: '모든 문단이 처리되었습니다',
+  INSERTING_APPEND: '이어붙이는',
+  INSERTING_REPLACE: '삽입',
+  BTN_APPEND: '이어붙이기',
+  BTN_REPLACE: '대치하기',
+  BTN_SKIP_BLOCK: '블록 건너뛰기',
+  BTN_START: '시작하기',
+  BTN_STOP: '중지',
+  SKIPPED_HR_EMPTY: '(건너뜀: 구분선/빈 문단)',
+  EMPTY_PREVIEW: '(비어 있음)',
+} as const;
+
 // Type definitions for message passing
 interface StibeeExportMessage {
   type: 'STIBEE_IFRAME_EXPORT';
@@ -265,7 +285,7 @@ export default defineContentScript({
             // Create interactive prompt UI (singleton per document)
             const prompt = createInteractivePrompt();
             updateInteractivePrompt(prompt, getPreviewHtml(paragraphs[paragraphIndex]));
-            
+
             // Setup start button handler
             const startBtn = prompt.querySelector('#tyquill-stibee-start') as HTMLElement;
             const startPromise = new Promise<void>((resolve) => {
@@ -281,7 +301,7 @@ export default defineContentScript({
 
             // Wait for user to click start
             await startPromise;
-            
+
             // Hide start controls and show insert controls
             const startControls = prompt.querySelector('#tyquill-stibee-start-controls') as HTMLElement;
             let controls = prompt.querySelector('#tyquill-stibee-controls') as HTMLElement;
@@ -289,9 +309,8 @@ export default defineContentScript({
             const appendBtn = prompt.querySelector('#tyquill-stibee-append') as HTMLButtonElement;
             const replaceBtn = prompt.querySelector('#tyquill-stibee-replace') as HTMLButtonElement;
             const nextBlockBtn = prompt.querySelector('#tyquill-stibee-next-block') as HTMLButtonElement;
-            let doneBtn = prompt.querySelector('#tyquill-stibee-done') as HTMLButtonElement;
             const closeBtn = prompt.querySelector('#tyquill-stibee-close') as HTMLElement;
-            
+
             if (startControls) startControls.style.display = 'none';
             if (controls) controls.style.display = 'block';
             if (finalControls) finalControls.style.display = 'none';
@@ -315,7 +334,7 @@ export default defineContentScript({
               updatePosition(prompt, blockIndex + 1, allTextBlocks.length, getDisplayParagraphNumber(paragraphs, paragraphIndex), totalNonSkippableCount);
               updateStatus(prompt, `(${initiallySkipped}개 건너뜀) 버튼을 클릭하여 작업을 선택하세요`);
             } else if (paragraphIndex >= paragraphs.length) {
-              updateStatus(prompt, '모든 문단이 건너뛰어졌습니다');
+              updateStatus(prompt, UI_TEXT.ALL_SKIPPED);
             }
 
             // Interactive insertion with manual control
@@ -486,7 +505,7 @@ export default defineContentScript({
                   if (!resolved) {
                     resolved = true;
                     endedByTimeout = true;
-                    updateStatus(prompt, '시간이 지나 내보내기가 종료되었습니다');
+                    updateStatus(prompt, UI_TEXT.TIMEOUT);
                     cleanup();
                     resolve('none');
                   }
@@ -498,16 +517,16 @@ export default defineContentScript({
               if (action === 'next-block') {
                 console.log(`⏭️ User moved to next block from ${blockIndex + 1}`);
                 blockIndex++;
-                
+
                 // Update preview for current paragraph in next block
                 if (paragraphIndex < paragraphs.length && blockIndex < allTextBlocks.length) {
                   updateInteractivePrompt(prompt, getPreviewHtml(paragraphs[paragraphIndex]));
                   updatePosition(prompt, blockIndex + 1, allTextBlocks.length, getDisplayParagraphNumber(paragraphs, paragraphIndex), totalNonSkippableCount);
-                  updateStatus(prompt, `다음 블록으로 이동했습니다<br>다음: 블록 ${blockIndex + 1}에 문단 ${paragraphIndex + 1}`);
+                  updateStatus(prompt, `${UI_TEXT.MOVED_TO_NEXT_BLOCK}<br>다음: 블록 ${blockIndex + 1}에 문단 ${paragraphIndex + 1}`);
                 } else if (paragraphIndex < paragraphs.length) {
-                  updateStatus(prompt, `다음 블록으로 이동했습니다<br>더 이상 사용할 블록이 없습니다`);
+                  updateStatus(prompt, `${UI_TEXT.MOVED_TO_NEXT_BLOCK}<br>${UI_TEXT.NO_MORE_BLOCKS}`);
                 } else {
-                  updateStatus(prompt, `다음 블록으로 이동했습니다<br>모든 문단이 처리되었습니다`);
+                  updateStatus(prompt, `${UI_TEXT.MOVED_TO_NEXT_BLOCK}<br>${UI_TEXT.ALL_PROCESSED}`);
                 }
                 continue;
               }
@@ -571,7 +590,7 @@ export default defineContentScript({
               // Insert content
               const isAppend = action === 'append';
               console.log(`📝 ${isAppend ? 'Appending' : 'Inserting'} content into block ${blockIndex + 1}`);
-              updateStatus(prompt, `블록 ${blockIndex + 1}에 콘텐츠 ${isAppend ? '이어붙이는' : '삽입'} 중...`);
+              updateStatus(prompt, `블록 ${blockIndex + 1}에 콘텐츠 ${isAppend ? UI_TEXT.INSERTING_APPEND : UI_TEXT.INSERTING_REPLACE} 중...`);
               try { 
                 iframeBody.focus(); 
               } catch {}
@@ -821,7 +840,7 @@ function createInteractivePrompt(): HTMLElement {
     const startControls = el.querySelector('#tyquill-stibee-start-controls') as HTMLElement | null;
     const controls = el.querySelector('#tyquill-stibee-controls') as HTMLElement | null;
     if (preview) preview.innerHTML = '';
-    if (status) status.textContent = '준비 중...';
+    if (status) status.textContent = UI_TEXT.PREPARING;
     if (startControls) startControls.style.display = '';
     if (controls) controls.style.display = 'none';
     return el;
@@ -846,24 +865,24 @@ function createInteractivePrompt(): HTMLElement {
   el.style.pointerEvents = 'auto';
   el.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-      <div style="font-weight:700;">Tyquill → Stibee 내보내기</div>
+      <div style="font-weight:700;">${UI_TEXT.EXPORT_TITLE}</div>
       <button id="tyquill-stibee-close" style="background:none; border:none; color:#fff; cursor:pointer; font-size:16px; padding:0; width:20px; height:20px; display:flex; align-items:center; justify-content:center;">×</button>
     </div>
     <div id="tyquill-stibee-preview" style="white-space:pre-wrap; word-break:break-word; max-height:120px; overflow:auto; border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:8px; background:rgba(255,255,255,0.04);"></div>
     <div id="tyquill-stibee-position" style="opacity:0.85; margin-top:6px; font-size:11px;">현재 선택된 블록: -번째 (총 -개)<br>현재 선택된 문단: -번째 (총 -개)</div>
-    <div id="tyquill-stibee-status" style="opacity:0.85; margin-top:6px;">준비 중...</div>
+    <div id="tyquill-stibee-status" style="opacity:0.85; margin-top:6px;">${UI_TEXT.PREPARING}</div>
     <div id="tyquill-stibee-start-controls" style="margin-top:8px;">
-      <button id="tyquill-stibee-start" style="background:#007bff; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;">내보내기 시작</button>
+      <button id="tyquill-stibee-start" style="background:#007bff; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:600;">${UI_TEXT.BTN_START}</button>
     </div>
     <div id="tyquill-stibee-controls" style="margin-top:8px; display:none;">
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
-        <button id="tyquill-stibee-append" style="background:#007bff; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단을 현재 블록에 이어붙입니다">이어붙이기</button>
-        <button id="tyquill-stibee-replace" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 블록의 내용을 현재 문단으로 대치합니다">대치하기</button>
-        <button id="tyquill-stibee-next-block" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단은 유지하고 다음 블록으로 넘어갑니다">블록 건너뛰기</button>
+        <button id="tyquill-stibee-append" style="background:#007bff; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단을 현재 블록에 이어붙입니다">${UI_TEXT.BTN_APPEND}</button>
+        <button id="tyquill-stibee-replace" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 블록의 내용을 현재 문단으로 대치합니다">${UI_TEXT.BTN_REPLACE}</button>
+        <button id="tyquill-stibee-next-block" style="background:#6c757d; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;" title="현재 문단은 유지하고 다음 블록으로 넘어갑니다">${UI_TEXT.BTN_SKIP_BLOCK}</button>
       </div>
     </div>
     <div id="tyquill-stibee-final-controls" style="margin-top:8px; display:none;">
-      <button id="tyquill-stibee-done" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">완료</button>
+      <button id="tyquill-stibee-done" style="background:#28a745; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:11px; font-weight:600;">${UI_TEXT.BTN_STOP}</button>
     </div>
   `;
   document.documentElement.appendChild(el);
@@ -909,7 +928,7 @@ function updateInteractivePrompt(promptEl: HTMLElement, previewHtml: string) {
     // Sanitize HTML before setting innerHTML
     const safeHtml = previewHtml
       ? DOMPurify.sanitize(previewHtml, DOMPURIFY_CONFIG)
-      : '<span style="opacity:.7">(비어 있음)</span>';
+      : `<span style="opacity:.7">${UI_TEXT.EMPTY_PREVIEW}</span>`;
     preview.innerHTML = safeHtml;
   }
 }
@@ -948,14 +967,14 @@ function removeInteractivePrompt(promptEl: HTMLElement) {
 }
 
 function getPreviewHtml(html: string): string {
-  if (!html) return '<span style="opacity:.7">(비어 있음)</span>';
-  
+  if (!html) return `<span style="opacity:.7">${UI_TEXT.EMPTY_PREVIEW}</span>`;
+
   // Debug: log what we're processing
   console.log('🔍 getPreviewHtml processing:', html);
-  
+
   if (isSkippableParagraph(html)) {
     console.log('⏭️ getPreviewHtml: marking as skippable');
-    return '<span style="opacity:.7">(건너뜀: 구분선/빈 문단)</span>';
+    return `<span style="opacity:.7">${UI_TEXT.SKIPPED_HR_EMPTY}</span>`;
   }
   
   let safe = String(html);
