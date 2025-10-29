@@ -1,9 +1,62 @@
 import { browser } from 'wxt/browser';
+import DOMPurify from 'dompurify';
 
 /**
  * Content script for Stibee iframe editor
  * This runs inside the Stibee editor iframe (editor.stibee.com)
  */
+
+// Type definitions for message passing
+interface StibeeExportMessage {
+  type: 'STIBEE_IFRAME_EXPORT';
+  content: string;
+}
+
+interface ExportResponse {
+  success: boolean;
+  blocksProcessed?: number;
+  skipped?: boolean;
+  reason?: string;
+  error?: string;
+}
+
+interface TyquillNode {
+  type: string;
+  content?: TyquillNode[];
+  text?: string;
+  marks?: Mark[];
+  attrs?: Record<string, unknown>;
+}
+
+interface Mark {
+  type: string;
+  attrs?: Record<string, unknown>;
+}
+
+// Extend Window interface for lock mechanism
+declare global {
+  interface Window {
+    __tyquillStibeeLock?: boolean;
+    tinymce?: {
+      activeEditor?: {
+        setContent: (content: string) => void;
+      };
+    };
+  }
+}
+
+// DOMPurify configuration for HTML sanitization
+const DOMPURIFY_CONFIG = {
+  ALLOWED_TAGS: [
+    'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li',
+    'strong', 'em', 'u', 's', 'code',
+    'a', 'br', 'hr',
+    'blockquote', 'pre',
+    'span', 'div'
+  ],
+  ALLOWED_ATTR: ['href', 'style', 'class']
+};
 
 export default defineContentScript({
   // Limit to editor frames only to avoid main frame UI
@@ -17,16 +70,29 @@ export default defineContentScript({
     console.log('📍 Frame ID:', window.name);
 
     // Listen for export requests from parent window
-    browser.runtime.onMessage.addListener((request: any, _sender: any, sendResponse: any) => {
-      console.log('📨 Message received in Stibee iframe:', JSON.stringify(request));
+    browser.runtime.onMessage.addListener((
+      request: StibeeExportMessage,
+      sender: browser.Runtime.MessageSender,
+      sendResponse: (response: ExportResponse) => void
+    ) => {
+      // Validate sender - must be from our own extension
+      if (!sender.id || sender.id !== browser.runtime.id) {
+        console.warn('⚠️ Rejected message from unauthorized sender');
+        sendResponse({ success: false, error: 'Unauthorized sender' });
+        return false;
+      }
+
+      // Log message type only (not sensitive content)
+      console.log('📨 Message received in Stibee iframe:', request.type);
 
       if (request.type === 'STIBEE_IFRAME_EXPORT') {
-        console.log('📥 ✅ Matched STIBEE_IFRAME_EXPORT - processing...');
+        console.log('📥 Processing STIBEE_IFRAME_EXPORT');
 
         (async () => {
           try {
             // Only run inside the editor iframe (avoid main stibee.com page)
-            const isEditorFrame = location.hostname.includes('editor.stibee.com');
+            // Use exact match to prevent malicious domain spoofing
+            const isEditorFrame = location.hostname === 'editor.stibee.com';
             if (!isEditorFrame) {
               console.log('⏭️ Skipping export in non-editor frame:', location.hostname);
               sendResponse({ success: false, skipped: true, reason: 'non-editor-frame' });
@@ -44,10 +110,10 @@ export default defineContentScript({
             // Parse JSON content first
             let paragraphs: string[] = [];
             try {
-              const jsonData = JSON.parse(content);
+              const jsonData: TyquillNode = JSON.parse(content);
               // Split content into paragraphs (top-level nodes in doc.content)
               if (jsonData.type === 'doc' && jsonData.content) {
-                paragraphs = jsonData.content.map((node: any) => convertNodeToHtml(node));
+                paragraphs = jsonData.content.map((node: TyquillNode) => convertNodeToHtml(node));
                 console.log(`✅ Parsed ${paragraphs.length} paragraphs from Tyquill JSON`);
               } else {
                 // Single node
@@ -496,18 +562,21 @@ export default defineContentScript({
               
               let insertionSuccess = false;
               
-              // Strategy 1: Append or replace innerHTML
+              // Strategy 1: Append or replace innerHTML (with sanitization)
               try {
+                // Sanitize HTML to prevent XSS attacks
+                const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+
                 if (isAppend) {
                   // Append content to existing content
                   const existingContent = (iframeBody as HTMLElement).innerHTML;
-                  (iframeBody as HTMLElement).innerHTML = existingContent + html;
+                  (iframeBody as HTMLElement).innerHTML = existingContent + sanitizedHtml;
                 } else {
                   // Replace content
-                  (iframeBody as HTMLElement).innerHTML = html;
+                  (iframeBody as HTMLElement).innerHTML = sanitizedHtml;
                 }
                 insertionSuccess = true;
-                console.log(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML`);
+                console.log(`✅ Content ${isAppend ? 'appended' : 'inserted'} via innerHTML (sanitized)`);
               } catch (error) {
                 console.warn(`⚠️ innerHTML ${isAppend ? 'append' : 'insertion'} failed:`, error);
               }
@@ -523,16 +592,18 @@ export default defineContentScript({
                 }
               }
               
-              // Strategy 3: Create and append elements
+              // Strategy 3: Create and append elements (with sanitization)
               if (!insertionSuccess) {
                 try {
                   const tempDiv = document.createElement('div');
-                  tempDiv.innerHTML = html;
+                  // Sanitize HTML before setting innerHTML
+                  const sanitizedHtml = DOMPurify.sanitize(html, DOMPURIFY_CONFIG);
+                  tempDiv.innerHTML = sanitizedHtml;
                   while (tempDiv.firstChild) {
                     (iframeBody as HTMLElement).appendChild(tempDiv.firstChild);
                   }
                   insertionSuccess = true;
-                  console.log(`✅ Content inserted via element creation`);
+                  console.log(`✅ Content inserted via element creation (sanitized)`);
                 } catch (error) {
                   console.warn(`⚠️ Element creation failed:`, error);
                 }
@@ -560,14 +631,15 @@ export default defineContentScript({
               }
 
               // Try TinyMCE API events
-              const win = window as any;
-              if (win.tinymce && win.tinymce.activeEditor) {
+              if (window.tinymce?.activeEditor) {
                 try {
-                  const editor = win.tinymce.activeEditor;
-                  editor.fire('change');
-                  editor.fire('input');
-                  editor.fire('blur');
-                  console.log(`✅ TinyMCE events triggered`);
+                  const editor = window.tinymce.activeEditor;
+                  if ('fire' in editor && typeof (editor as any).fire === 'function') {
+                    (editor as any).fire('change');
+                    (editor as any).fire('input');
+                    (editor as any).fire('blur');
+                    console.log(`✅ TinyMCE events triggered`);
+                  }
                 } catch (error) {
                   console.log(`⚠️ TinyMCE API trigger failed, but content was inserted`);
                 }
@@ -597,11 +669,6 @@ export default defineContentScript({
 
               successCount++;
               paragraphIndex++;
-              
-              // Move to next block only if action was 'next-block'
-              if (action === 'next-block' as any) {
-                blockIndex++;
-              }
 
               // Update prompt for next paragraph or finish if last block used
               if (paragraphIndex < paragraphs.length && blockIndex < allTextBlocks.length) {
@@ -804,9 +871,9 @@ function tryAcquireExportLock(): boolean {
     return true;
   } catch {
     // Fallback to in-memory flag per frame
-    (window as any).__tyquillStibeeLock = (window as any).__tyquillStibeeLock || false;
-    if ((window as any).__tyquillStibeeLock) return false;
-    (window as any).__tyquillStibeeLock = true;
+    window.__tyquillStibeeLock = window.__tyquillStibeeLock || false;
+    if (window.__tyquillStibeeLock) return false;
+    window.__tyquillStibeeLock = true;
     return true;
   }
 }
@@ -815,7 +882,7 @@ function releaseExportLock() {
   try {
     localStorage.removeItem('tyquill-stibee-export-lock');
   } catch {
-    (window as any).__tyquillStibeeLock = false;
+    window.__tyquillStibeeLock = false;
   }
 }
 
@@ -823,7 +890,11 @@ function releaseExportLock() {
 function updateInteractivePrompt(promptEl: HTMLElement, previewHtml: string) {
   const preview = promptEl.querySelector('#tyquill-stibee-preview') as HTMLElement | null;
   if (preview) {
-    preview.innerHTML = previewHtml || '<span style="opacity:.7">(비어 있음)</span>';
+    // Sanitize HTML before setting innerHTML
+    const safeHtml = previewHtml
+      ? DOMPurify.sanitize(previewHtml, DOMPURIFY_CONFIG)
+      : '<span style="opacity:.7">(비어 있음)</span>';
+    preview.innerHTML = safeHtml;
   }
 }
 
@@ -837,7 +908,12 @@ function updatePosition(promptEl: HTMLElement, currentBlock: number, totalBlocks
 function updateStatus(promptEl: HTMLElement, status: string) {
   const statusEl = promptEl.querySelector('#tyquill-stibee-status') as HTMLElement | null;
   if (statusEl) {
-    statusEl.innerHTML = status; // Use innerHTML to support <br> tags
+    // Sanitize status HTML (allow only <br> tags for line breaks)
+    const safeStatus = DOMPurify.sanitize(status, {
+      ALLOWED_TAGS: ['br'],
+      ALLOWED_ATTR: []
+    });
+    statusEl.innerHTML = safeStatus;
   }
 }
 
@@ -889,7 +965,7 @@ function getPreviewHtml(html: string): string {
 /**
  * Convert a single Tyquill JSON node to HTML
  */
-function convertNodeToHtml(node: any): string {
+function convertNodeToHtml(node: TyquillNode): string {
   if (!node || !node.type) {
     return '';
   }
@@ -935,17 +1011,17 @@ function convertNodeToHtml(node: any): string {
 /**
  * Convert content array to HTML
  */
-function convertContentArray(content: any): string {
+function convertContentArray(content: TyquillNode[] | undefined): string {
   if (!content || !Array.isArray(content)) {
     return '';
   }
-  return content.map((node: any) => convertNodeToHtml(node)).join('');
+  return content.map((node: TyquillNode) => convertNodeToHtml(node)).join('');
 }
 
 /**
  * Apply text marks (bold, italic, etc.)
  */
-function applyMarks(text: string, marks: any[]): string {
+function applyMarks(text: string, marks: Mark[] | undefined): string {
   if (!marks || marks.length === 0) {
     return escapeHtml(text);
   }
@@ -970,7 +1046,7 @@ function applyMarks(text: string, marks: any[]): string {
         result = `<code>${result}</code>`;
         break;
       case 'link':
-        const href = mark.attrs?.href || '#';
+        const href = typeof mark.attrs?.href === 'string' ? mark.attrs.href : '#';
         result = `<a href="${escapeHtml(href)}">${result}</a>`;
         break;
     }
