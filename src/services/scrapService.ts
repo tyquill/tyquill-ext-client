@@ -8,6 +8,7 @@
 import { ScrapResult } from '../utils/webClipper';
 import { globalApiClient } from './globalApiClient';
 import { trackScrapCreatedBridge, trackTagAddedBridge, trackTagRemovedBridge } from '../analytics/bridge';
+import { logger } from '../utils/logger';
 
 /**
  * 웹페이지 사이트 정보
@@ -152,7 +153,7 @@ export class ScrapService {
    */
   async createScrap(scrapData: CreateScrapDto): Promise<ScrapResponse> {
     try {
-      // console.log('📝 Creating scrap:', {
+      // logger.debug('📝 Creating scrap:', {
       //   url: scrapData.url,
       //   title: scrapData.title,
       //   contentLength: scrapData.content.length,
@@ -173,7 +174,7 @@ export class ScrapService {
         body: JSON.stringify(scrapData),
       }, 'v2');
 
-      // console.log('✅ Scrap created successfully:', {
+      // logger.debug('✅ Scrap created successfully:', {
       //   scrapId: response.scrapId,
       //   title: response.title,
       // });
@@ -256,14 +257,14 @@ export class ScrapService {
    */
   async getScraps(): Promise<ScrapResponse[]> {
     try {
-      // console.log('📋 Fetching scraps list');
+      // logger.debug('📋 Fetching scraps list');
 
       // Use Version 2 API to get enhanced metadata
       const response = await this.apiRequest<ScrapResponse[]>('/scraps', {
         method: 'GET',
       }, 'v2');
 
-      // console.log('✅ Scraps fetched successfully:', {
+      // logger.debug('✅ Scraps fetched successfully:', {
       //   count: response.length,
       // });
 
@@ -336,13 +337,13 @@ export class ScrapService {
    */
   async deleteScrap(scrapId: number): Promise<void> {
     try {
-      // console.log('🗑️ Deleting scrap:', scrapId);
+      // logger.debug('🗑️ Deleting scrap:', scrapId);
 
       await this.apiRequest<void>(`/scraps/${scrapId}`, {
         method: 'DELETE',
       }, 'v1');
 
-      // console.log('✅ Scrap deleted successfully:', scrapId);
+      // logger.debug('✅ Scrap deleted successfully:', scrapId);
     } catch (error) {
       // console.error('❌ Failed to delete scrap:', error);
       throw error;
@@ -366,7 +367,7 @@ export class ScrapService {
    */
   async addTagToScrap(scrapId: number, tagName: string): Promise<TagResponse> {
     try {
-      // console.log('🏷️ Adding tag to scrap:', { scrapId, tagName });
+      // logger.debug('🏷️ Adding tag to scrap:', { scrapId, tagName });
 
       const response = await this.apiRequest<TagResponse>(`/scraps/${scrapId}/tags`, {
         method: 'POST',
@@ -383,7 +384,7 @@ export class ScrapService {
         }
       } catch {}
 
-      // console.log('✅ Tag added successfully:', {
+      // logger.debug('✅ Tag added successfully:', {
       //   tagId: response.tagId,
       //   name: response.name,
       //   scrapId,
@@ -401,13 +402,13 @@ export class ScrapService {
    */
   async getScrapTags(scrapId: number): Promise<TagResponse[]> {
     try {
-      // console.log('🏷️ Fetching scrap tags:', scrapId);
+      // logger.debug('🏷️ Fetching scrap tags:', scrapId);
 
       const response = await this.apiRequest<TagResponse[]>(`/scraps/${scrapId}/tags`, {
         method: 'GET',
       }, 'v1');
 
-      // console.log('✅ Scrap tags fetched successfully:', {
+      // logger.debug('✅ Scrap tags fetched successfully:', {
       //   scrapId,
       //   count: response.length,
       // });
@@ -424,7 +425,7 @@ export class ScrapService {
    */
   async removeTagFromScrap(scrapId: number, tagId: number): Promise<void> {
     try {
-      // console.log('🗑️ Removing tag from scrap:', { scrapId, tagId });
+      // logger.debug('🗑️ Removing tag from scrap:', { scrapId, tagId });
 
       await this.apiRequest<void>(`/scraps/${scrapId}/tags/${tagId}`, {
         method: 'DELETE',
@@ -440,7 +441,7 @@ export class ScrapService {
         }
       } catch {}
 
-      // console.log('✅ Tag removed successfully from scrap:', { scrapId, tagId });
+      // logger.debug('✅ Tag removed successfully from scrap:', { scrapId, tagId });
     } catch (error) {
       // console.error('❌ Failed to remove tag from scrap:', error);
       throw error;

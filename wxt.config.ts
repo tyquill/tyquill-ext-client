@@ -12,7 +12,8 @@ export default defineConfig({
     version: '1.4.4',
     description: '__MSG_extDescription__',
     default_locale: 'en',
-    permissions: ['storage', 'tabs', 'activeTab', 'scripting', 'contextMenus', 'sidePanel'],
+    // webNavigation: Stibee cross-origin iframe 통신을 위한 getAllFrames() 호출에 필요
+    permissions: ['storage', 'tabs', 'activeTab', 'scripting', 'contextMenus', 'sidePanel', 'webNavigation'],
     host_permissions: ['https://maily.so/*', '<all_urls>'],
     icons: {
       16: '/icon16.png',
