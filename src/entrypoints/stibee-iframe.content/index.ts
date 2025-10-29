@@ -109,6 +109,20 @@ export default defineContentScript({
     console.log('📍 Is top frame?', window === window.top);
     console.log('📍 Frame ID:', window.name);
 
+    // Cleanup function to remove event listeners and UI elements
+    const cleanup = () => {
+      console.log('🧹 Cleaning up Stibee export listeners and UI');
+      const prompt = document.getElementById('tyquill-stibee-prompt');
+      if (prompt) {
+        removeInteractivePrompt(prompt);
+      }
+      releaseExportLock();
+    };
+
+    // Register cleanup on page unload
+    window.addEventListener('beforeunload', cleanup);
+    window.addEventListener('pagehide', cleanup);
+
     // Listen for export requests from parent window
     browser.runtime.onMessage.addListener((
       request: StibeeExportMessage,
@@ -298,6 +312,8 @@ export default defineContentScript({
               if (startBtn) {
                 (startBtn as HTMLButtonElement).onclick = (e) => {
                   try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
+                  // Clean up onclick handler after use
+                  (startBtn as HTMLButtonElement).onclick = null;
                   resolve();
                 };
               } else {
@@ -346,15 +362,21 @@ export default defineContentScript({
             // Interactive insertion with manual control
             let stopped = false;
             let endedByTimeout = false;
-            
+
             // Setup close button handler
+            const closeHandler = (e: Event) => {
+              try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
+              stopped = true;
+              // Clean up close button handler
+              if (closeBtn) {
+                (closeBtn as HTMLButtonElement).onclick = null;
+              }
+              removeInteractivePrompt(prompt);
+              releaseExportLock();
+            };
+
             if (closeBtn) {
-              (closeBtn as HTMLButtonElement).onclick = (e) => {
-                try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
-                stopped = true;
-                removeInteractivePrompt(prompt);
-                releaseExportLock();
-              };
+              (closeBtn as HTMLButtonElement).onclick = closeHandler;
             }
 
             while (!stopped && paragraphIndex < paragraphs.length && blockIndex < allTextBlocks.length) {
@@ -750,7 +772,11 @@ export default defineContentScript({
             if (finalControls2) finalControls2.style.display = 'block';
             await new Promise<void>((resolve) => {
               if (doneBtn2) {
-                doneBtn2.onclick = () => resolve();
+                doneBtn2.onclick = () => {
+                  // Clean up onclick handler
+                  doneBtn2.onclick = null;
+                  resolve();
+                };
               } else {
                 resolve();
               }
