@@ -24,15 +24,19 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
 
-  // Fetch all scraps on mount
+  // Fetch all scraps on mount (including PDFs)
   useEffect(() => {
     const fetchScraps = async () => {
       setIsLoadingScraps(true);
       setError(null);
 
       try {
-        const scraps = await scrapService.getScraps();
-        setAllScraps(scraps);
+        // Use v3 API without type filter to get both webclips and uploads (PDFs)
+        const response = await scrapService.getScrapsV3({
+          sortBy: 'updated_at',
+          sortOrder: 'DESC',
+        });
+        setAllScraps(response.scraps);
         setRetryCount(0); // Reset retry count on success
       } catch (err) {
         const errorMessage = err instanceof Error
