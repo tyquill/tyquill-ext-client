@@ -7,6 +7,7 @@ import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
 import { detectPlatform, ExportPlatform, PlatformInfo, isSupportedPlatform, getPlatformDisplayName } from '../../../utils/platformDetection';
 import { browser } from 'wxt/browser';
+import StibeeLogoSvg from '../../../assets/logos/sitbee.svg';
 
 // Ghost icon component
 function SimpleIconsGhost(props: SVGProps<SVGSVGElement>) {
@@ -20,9 +21,7 @@ function SimpleIconsGhost(props: SVGProps<SVGSVGElement>) {
 // Stibee icon component
 function StibeeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
-      <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-    </svg>
+    <img src={StibeeLogoSvg} alt="Stibee" style={{ width: '16px', height: '16px', ...props.style }} />
   );
 }
 
@@ -190,11 +189,9 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         disabled={isLoading}
       >
         {/* Button icon */}
-        {isLoading ? (
-          <IoArrowUpCircle size={16} className={styles.spinning} />
-        ) : (
-          getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)
-        )}
+        <div className={isLoading ? styles.spinning : ''}>
+          {getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)}
+        </div>
       </button>
       <div className={styles.tooltip}>
         {getTooltipText()}
