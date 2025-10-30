@@ -290,6 +290,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
                 selectedScrapIds={selectedScrapIds}
                 onSelectionChange={handleSelectionChange}
                 disabled={isRegenerating}
+                initialScraps={article.scraps}
               />
             </div>
 
