@@ -2,6 +2,7 @@ import React, { useState, useEffect, SVGProps } from 'react';
 import { IoArrowUpCircle, IoDocument } from 'react-icons/io5';
 import { SiSubstack, SiLinkedin } from 'react-icons/si';
 import { MdEmail } from 'react-icons/md';
+import { Loader2 } from 'lucide-react';
 import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
@@ -189,9 +190,11 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         disabled={isLoading}
       >
         {/* Button icon */}
-        <div className={isLoading ? styles.spinning : ''}>
-          {getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)}
-        </div>
+        {isLoading ? (
+          <Loader2 className={styles.spinning} size={16} />
+        ) : (
+          getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)
+        )}
       </button>
       <div className={styles.tooltip}>
         {getTooltipText()}
