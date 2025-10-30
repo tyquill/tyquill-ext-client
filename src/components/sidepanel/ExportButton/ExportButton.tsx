@@ -39,6 +39,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
   const [platformInfo, setPlatformInfo] = useState<PlatformInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessState, setShowSuccessState] = useState(false);
+  const exportTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Platform detection - get active tab URL from background script for side panel
   useEffect(() => {
@@ -68,6 +69,34 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
     return () => {
       clearInterval(intervalId);
+    };
+  }, []);
+
+  // Listen for export cancellation messages
+  useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.type === 'STIBEE_EXPORT_CANCELLED') {
+        console.log('Export cancelled:', message.reason);
+        setIsLoading(false);
+
+        // Clear timeout if it exists
+        if (exportTimeoutRef.current) {
+          clearTimeout(exportTimeoutRef.current);
+          exportTimeoutRef.current = null;
+        }
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      browser.runtime.onMessage.removeListener(handleMessage);
+
+      // Clear timeout on unmount
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -109,6 +138,15 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
     setIsLoading(true);
 
+    // Set timeout as safety net (3 minutes for Stibee interactive modal)
+    const timeoutDuration = currentPlatformInfo.platform === 'stibee' ? 180000 : 30000; // 3 min for Stibee, 30s for others
+    exportTimeoutRef.current = setTimeout(() => {
+      console.warn('Export operation timed out');
+      setIsLoading(false);
+      showError(t('export_failed'), 'Export operation timed out. Please try again.');
+      exportTimeoutRef.current = null;
+    }, timeoutDuration);
+
     try {
       // Send export request to background script, which will forward to content script
       const response = await browser.runtime.sendMessage({
@@ -117,6 +155,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         content: content,
         platform: currentPlatformInfo.platform
       });
+
+      // Clear timeout on successful response
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
 
       if (response?.success) {
         setShowSuccessState(true);
@@ -129,6 +173,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
     } catch (error) {
       console.error('Export failed:', error);
       showError(t('export_failed'), error instanceof Error ? error.message : t('export_failed'));
+
+      // Clear timeout on error
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
     } finally {
       setIsLoading(false);
     }
