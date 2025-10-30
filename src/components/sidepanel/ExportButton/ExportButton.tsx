@@ -2,11 +2,13 @@ import React, { useState, useEffect, SVGProps } from 'react';
 import { IoArrowUpCircle, IoDocument } from 'react-icons/io5';
 import { SiSubstack, SiLinkedin } from 'react-icons/si';
 import { MdEmail } from 'react-icons/md';
+import { Loader2 } from 'lucide-react';
 import styles from './ExportButton.module.css';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
 import { detectPlatform, ExportPlatform, PlatformInfo, isSupportedPlatform, getPlatformDisplayName } from '../../../utils/platformDetection';
 import { browser } from 'wxt/browser';
+import StibeeLogoSvg from '../../../assets/logos/sitbee.svg';
 
 // Ghost icon component
 function SimpleIconsGhost(props: SVGProps<SVGSVGElement>) {
@@ -20,9 +22,7 @@ function SimpleIconsGhost(props: SVGProps<SVGSVGElement>) {
 // Stibee icon component
 function StibeeIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24" {...props}>
-      <path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-    </svg>
+    <img src={StibeeLogoSvg} alt="Stibee" style={{ width: '16px', height: '16px', ...props.style }} />
   );
 }
 
@@ -39,6 +39,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
   const [platformInfo, setPlatformInfo] = useState<PlatformInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccessState, setShowSuccessState] = useState(false);
+  const exportTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Platform detection - get active tab URL from background script for side panel
   useEffect(() => {
@@ -68,6 +69,34 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
     return () => {
       clearInterval(intervalId);
+    };
+  }, []);
+
+  // Listen for export cancellation messages
+  useEffect(() => {
+    const handleMessage = (message: any) => {
+      if (message.type === 'STIBEE_EXPORT_CANCELLED') {
+        console.log('Export cancelled:', message.reason);
+        setIsLoading(false);
+
+        // Clear timeout if it exists
+        if (exportTimeoutRef.current) {
+          clearTimeout(exportTimeoutRef.current);
+          exportTimeoutRef.current = null;
+        }
+      }
+    };
+
+    browser.runtime.onMessage.addListener(handleMessage);
+
+    return () => {
+      browser.runtime.onMessage.removeListener(handleMessage);
+
+      // Clear timeout on unmount
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -109,6 +138,15 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
 
     setIsLoading(true);
 
+    // Set timeout as safety net (3 minutes for Stibee interactive modal)
+    const timeoutDuration = currentPlatformInfo.platform === 'stibee' ? 180000 : 30000; // 3 min for Stibee, 30s for others
+    exportTimeoutRef.current = setTimeout(() => {
+      console.warn('Export operation timed out');
+      setIsLoading(false);
+      showError(t('export_failed'), 'Export operation timed out. Please try again.');
+      exportTimeoutRef.current = null;
+    }, timeoutDuration);
+
     try {
       // Send export request to background script, which will forward to content script
       const response = await browser.runtime.sendMessage({
@@ -117,6 +155,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
         content: content,
         platform: currentPlatformInfo.platform
       });
+
+      // Clear timeout on successful response
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
 
       if (response?.success) {
         setShowSuccessState(true);
@@ -129,6 +173,12 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
     } catch (error) {
       console.error('Export failed:', error);
       showError(t('export_failed'), error instanceof Error ? error.message : t('export_failed'));
+
+      // Clear timeout on error
+      if (exportTimeoutRef.current) {
+        clearTimeout(exportTimeoutRef.current);
+        exportTimeoutRef.current = null;
+      }
     } finally {
       setIsLoading(false);
     }
@@ -191,7 +241,7 @@ const ExportButton: React.FC<ExportButtonProps> = ({ title, content, onExportSuc
       >
         {/* Button icon */}
         {isLoading ? (
-          <IoArrowUpCircle size={16} className={styles.spinning} />
+          <Loader2 className={styles.spinning} size={16} />
         ) : (
           getPlatformIcon(platformInfo?.platform || ExportPlatform.UNKNOWN)
         )}

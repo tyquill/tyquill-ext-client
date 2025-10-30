@@ -252,6 +252,16 @@ export default defineContentScript({
                 try { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation?.(); } catch {}
                 logger.debug('❌ User closed export overlay');
                 performCleanup();
+
+                // Notify that export was cancelled
+                try {
+                  browser.runtime.sendMessage({
+                    type: 'STIBEE_EXPORT_CANCELLED',
+                    reason: 'user-closed-modal'
+                  });
+                } catch (error) {
+                  console.warn('⚠️ Failed to send cancellation message:', error);
+                }
               };
             }
 
