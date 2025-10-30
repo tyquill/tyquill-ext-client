@@ -91,7 +91,8 @@ export const useContentStore = create<ContentState>((set, get) => ({
   sortOrder: 'DESC',
 
   // Initial state - UI
-  isFolderSidebarCollapsed: false,
+  // Start collapsed if viewport is narrow (< 700px)
+  isFolderSidebarCollapsed: typeof window !== 'undefined' ? window.innerWidth < 700 : false,
   isCreateFolderModalOpen: false,
   isMoveFolderModalOpen: false,
   selectedItemsForMove: [],
