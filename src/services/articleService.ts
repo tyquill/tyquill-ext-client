@@ -80,9 +80,9 @@ export interface RegenerateArticleV3Dto {
     topic?: string;
     keyInsight?: string;
     // 추가된 scraps (기존 article에 없던 것들)
-    addedScrapIds?: number[];
+    addedScrapIds?: string[]; // UUID strings
     // 제거된 scraps (기존 article에서 제거할 것들)
-    removedScrapIds?: number[];
+    removedScrapIds?: string[]; // UUID strings
     writingStyleId?: number | null;
     generationParams?: string;
 }

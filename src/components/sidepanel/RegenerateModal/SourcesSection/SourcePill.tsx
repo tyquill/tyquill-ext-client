@@ -6,7 +6,7 @@ import styles from './SourcesSection.module.css';
 
 interface SourcePillProps {
   scrap: ScrapResponse;
-  onRemove: (scrapId: number) => void;
+  onRemove: (scrapId: string) => void; // UUID
   disabled?: boolean;
 }
 

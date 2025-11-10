@@ -8,7 +8,7 @@ import styles from './SourcesSection.module.css';
 interface SourceListItemProps {
   scrap: ScrapResponse;
   isSelected: boolean;
-  onToggle: (scrapId: number) => void;
+  onToggle: (scrapId: string) => void; // UUID
   disabled?: boolean;
 }
 

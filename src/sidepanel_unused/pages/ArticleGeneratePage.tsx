@@ -301,11 +301,11 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     }
   };
 
-  const handleOpinionChange = (id: number, opinion: string) => {
+  const handleOpinionChange = (id: string, opinion: string) => { // UUID
     updateScrapOpinion(id, opinion);
   };
 
-  const handleRemoveScrap = async (id: number) => {
+  const handleRemoveScrap = async (id: string) => { // UUID
     removeScrap(id);
     try {
       await trackArticleReferenceRemovedBridge({

@@ -20,7 +20,7 @@ interface RegenerateModalProps {
 export interface RegenerateParams {
   topic: string;
   keyInsight: string;
-  selectedScrapIds: number[];
+  selectedScrapIds: string[]; // UUID strings
   writingStyleId?: number;
   additionalInstructions?: string;
 }
@@ -41,7 +41,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
   // Form state
   const [topic, setTopic] = useState(article.topic || '');
   const [keyInsight, setKeyInsight] = useState(article.keyInsight || '');
-  const [selectedScrapIds, setSelectedScrapIds] = useState<number[]>(
+  const [selectedScrapIds, setSelectedScrapIds] = useState<string[]>( // UUID strings
     article.scraps?.map(s => s.scrapId) || []
   );
   const [writingStyleId, setWritingStyleId] = useState<number | undefined>(
@@ -114,7 +114,7 @@ const RegenerateModal: React.FC<RegenerateModalProps> = ({
     return () => clearTimeout(timeoutId);
   }, [isOpen, article.articleId, topic, keyInsight, selectedScrapIds, writingStyleId, additionalInstructions]);
 
-  const handleSelectionChange = useCallback((scrapIds: number[]) => {
+  const handleSelectionChange = useCallback((scrapIds: string[]) => { // UUID strings
     setSelectedScrapIds(scrapIds);
   }, []);
 

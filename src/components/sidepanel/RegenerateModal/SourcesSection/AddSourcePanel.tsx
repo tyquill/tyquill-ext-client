@@ -8,8 +8,8 @@ import styles from './SourcesSection.module.css';
 
 interface AddSourcePanelProps {
   allScraps: ScrapResponse[];
-  selectedScrapIds: number[];
-  onToggleSource: (scrapId: number) => void;
+  selectedScrapIds: string[]; // UUID strings
+  onToggleSource: (scrapId: string) => void; // UUID
   onClose: () => void;
   disabled?: boolean;
   onLoadMore: () => void;

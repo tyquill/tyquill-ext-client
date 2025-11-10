@@ -14,7 +14,7 @@ import Tooltip from '../../common/Tooltip';
  */
 interface DragData {
   type: 'SCRAP' | 'ARTICLE';
-  id: number;
+  id: string; // UUID
 }
 
 function isDragData(data: unknown): data is DragData {
@@ -24,7 +24,7 @@ function isDragData(data: unknown): data is DragData {
     'type' in data &&
     'id' in data &&
     (data.type === 'SCRAP' || data.type === 'ARTICLE') &&
-    typeof data.id === 'number'
+    typeof data.id === 'string'
   );
 }
 

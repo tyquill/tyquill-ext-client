@@ -19,7 +19,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
   const [articles, setArticles] = useState<ArticleResponse[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null); // UUID
   const [deleteTimeoutId, setDeleteTimeoutId] = useState<NodeJS.Timeout | null>(null);
   const [deletedArticle, setDeletedArticle] = useState<ArticleResponse | null>(null);
   const { t } = useI18n();
@@ -56,7 +56,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     };
   }, [deleteTimeoutId]);
 
-  const handleDelete = (id: number) => {
+  const handleDelete = (id: string) => { // UUID
     // If there's already a pending delete, complete it immediately
     if (pendingDeleteId !== null && deleteTimeoutId) {
       clearTimeout(deleteTimeoutId);
@@ -106,7 +106,7 @@ const ArchivePage = forwardRef<ArchivePageRef, ArchivePageProps>(({ onDraftClick
     }
   };
 
-  const executeDelete = async (id: number) => {
+  const executeDelete = async (id: string) => { // UUID
     try {
       await articleService.deleteArticle(id);
       setPendingDeleteId(null);
