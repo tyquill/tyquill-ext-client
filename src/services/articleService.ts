@@ -150,7 +150,7 @@ export interface GenerateArticleResponse {
     title: string;
     content: string;
     createdAt: string;
-    userId: number;
+    userId: string;
 }
 
 /**

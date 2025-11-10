@@ -5,7 +5,7 @@ interface UploadResponse {
   url: string;
   name: string;
   size: number;
-  uploadedBy: number;
+  uploadedBy: string;
   title?: string;
   description?: string;
 }
@@ -36,7 +36,7 @@ class UploadService {
         url: response.filePath,
         name: response.fileName,
         size: response.fileSize,
-        uploadedBy: response.user?.userId || 0,
+        uploadedBy: response.user?.userId || '',
         title: response.title,
         description: response.description,
       };

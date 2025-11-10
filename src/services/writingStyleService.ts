@@ -17,7 +17,7 @@ export interface WritingStyle {
   id: number;
   name: string;
   user: {
-    id: number;
+    id: string;
   };
   examples: WritingStyleExample[];
   createdAt: string;

@@ -14,7 +14,7 @@ export interface FolderResponse {
   name: string;
   color?: string;
   parentId?: number;
-  userId: number;
+  userId: string;
   createdAt: string;
   updatedAt: string;
   itemCount?: number;
