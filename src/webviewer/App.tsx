@@ -5,7 +5,7 @@ import { useI18n } from '../hooks/useI18n';
 const ScrapView = React.lazy(() => import('./ScrapView'));
 const UploadView = React.lazy(() => import('./UploadView'));
 
-type ViewTarget = { kind: 'SCRAP' | 'UPLOAD'; id: number } | null;
+type ViewTarget = { kind: 'SCRAP' | 'UPLOAD'; id: string } | null;
 
 const parseViewTarget = (): ViewTarget => {
   const hash = window.location.hash?.replace(/^#/, '') || '';
@@ -14,8 +14,9 @@ const parseViewTarget = (): ViewTarget => {
 
   const type = (h.get('type') || s.get('type') || '').toUpperCase();
   const idStr = h.get('id') || s.get('id');
-  if ((type === 'SCRAP' || type === 'UPLOAD') && idStr && /^\d+$/.test(idStr)) {
-    return { kind: type as 'SCRAP' | 'UPLOAD', id: parseInt(idStr, 10) };
+  // Support both UUID (string) and legacy numeric IDs
+  if ((type === 'SCRAP' || type === 'UPLOAD') && idStr && idStr.trim() !== '') {
+    return { kind: type as 'SCRAP' | 'UPLOAD', id: idStr };
   }
   return null;
 };

@@ -119,10 +119,15 @@ export class UnifiedContentService {
       const transformedItems: UnifiedContentItem[] = apiResponse.items
         .map((item: RawApiContentItem): UnifiedContentItem | null => {
           if (item.type === 'scrap') {
+            // ID is now UUID (string), no need to parse
+            if (!item.id) {
+              console.error('❌ Missing scrap ID from API:', 'Full item:', item);
+              return null; // Skip this item
+            }
             return {
               type: 'SCRAP' as const,
               data: {
-                scrapId: parseInt(item.id, 10),
+                scrapId: item.id,
                 title: item.title,
                 content: item.contentPreview || '',
                 htmlContent: '', // Not provided in unified API response
@@ -152,10 +157,15 @@ export class UnifiedContentService {
               },
             };
           } else if (item.type === 'article') {
+            // ID is now UUID (string), no need to parse
+            if (!item.id) {
+              console.error('❌ Missing article ID from API:', 'Full item:', item);
+              return null; // Skip this item
+            }
             return {
               type: 'ARTICLE' as const,
               data: {
-                articleId: parseInt(item.id, 10),
+                articleId: item.id,
                 title: item.title || '',
                 content: item.contentPreview || '',
                 topic: item.topic || '',

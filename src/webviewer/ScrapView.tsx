@@ -5,7 +5,7 @@ import { useI18n } from '../hooks/useI18n';
 import styles from './ScrapView.module.css';
 import { IoLinkOutline, IoTimeOutline } from 'react-icons/io5';
 
-interface Props { id: number }
+interface Props { id: string }
 
 interface ScrapData {
   title: string;

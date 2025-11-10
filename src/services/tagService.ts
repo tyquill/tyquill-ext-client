@@ -51,7 +51,7 @@ export class TagService {
      * 태그 생성
      * POST /api/v1/tags
      */
-    async createTag(tagData: CreateTagDto, scrapId?: number): Promise<TagResponse> {
+    async createTag(tagData: CreateTagDto, scrapId?: string): Promise<TagResponse> {
         const endpoint = scrapId ? `/v1/tags?scrapId=${scrapId}` : '/v1/tags';
         return this.apiRequest(endpoint, {
             method: 'POST',
@@ -66,12 +66,12 @@ export class TagService {
      * 현재 사용자의 태그 목록 조회
      * GET /api/v1/tags
      */
-    async getTags(name?: string, scrapId?: number): Promise<TagResponse[]> {
+    async getTags(name?: string, scrapId?: string): Promise<TagResponse[]> {
         let endpoint = '/v1/tags';
         const params = new URLSearchParams();
-        
+
         if (name) params.append('name', name);
-        if (scrapId) params.append('scrapId', scrapId.toString());
+        if (scrapId) params.append('scrapId', scrapId);
         
         if (params.toString()) {
             endpoint += `?${params.toString()}`;
@@ -133,7 +133,7 @@ export class TagService {
      * 특정 스크랩의 태그 목록
      * GET /api/v1/tags/scrap/:scrapId
      */
-    async getScrapTags(scrapId: number): Promise<TagResponse[]> {
+    async getScrapTags(scrapId: string): Promise<TagResponse[]> {
         return this.apiRequest(`/v1/tags/scrap/${scrapId}`, {
             method: 'GET',
         });

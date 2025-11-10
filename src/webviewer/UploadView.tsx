@@ -11,7 +11,7 @@ import { trackPDFDownloadBridge } from '../analytics/bridge';
 pdfjs.GlobalWorkerOptions.workerSrc = (globalThis as any).chrome?.runtime?.getURL('pdf.worker.min.js') || '/pdf.worker.min.js';
 
 
-interface Props { id: number }
+interface Props { id: string }
 
 interface UploadData {
   title: string;
