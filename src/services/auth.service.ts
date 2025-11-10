@@ -671,6 +671,32 @@ class AuthService {
   }
 
   /**
+   * 사용자 언어 설정 업데이트
+   */
+  async updateLanguage(language: string): Promise<void> {
+    try {
+      const headers = await this.getAuthHeaders();
+      const response = await fetch(`${this.API_URL}/auth/profile/language`, {
+        method: 'PATCH',
+        headers: {
+          ...headers,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ language }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update language preference');
+      }
+
+      // logger.debug('✅ Language preference updated:', language);
+    } catch (error) {
+      // console.error('❌ Failed to update language:', error);
+      throw error;
+    }
+  }
+
+  /**
    * 상태 변경 리스너들
    */
   private listeners: Array<(state: AuthState) => void> = [];
