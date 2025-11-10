@@ -39,6 +39,7 @@ import {
   trackArchiveFullscreenEditorOpenedBridge,
   trackArchiveVersionChangedBridge
 } from '../../analytics/bridge';
+import { getWebClientUrl } from '../../config/environment';
 
 interface ArchiveDetailPageProps {
   draftId: string;
@@ -349,38 +350,29 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   }, [countEditor, currentArchive?.content, article?.content, editContent, isEditing]);
 
   const handleEdit = async () => {
-    // 편집기 페이지가 열려있으면 편집 모드 진입 방지
-    if (isEditorPageOpen) {
-      alert(t('archiveDetailPage_editingInPageEditorAlert'));
-      return;
-    }
+    if (!article) return;
 
     try {
       await trackArchiveEditStartedBridge({
-        article_id: article?.articleId,
+        article_id: article.articleId,
         version_number: selectedVersionNumber,
-        has_versions: (article?.archives?.length || 0) > 0,
+        has_versions: (article.archives?.length || 0) > 0,
         character_count: characterCount.characters,
         word_count: characterCount.words
       });
     } catch {}
 
-    // Content format 확인 및 설정
-    const archive = currentArchive || article?.archives?.[0];
-    const format = (archive as any)?.contentFormat || 'markdown';
-    setEditContentFormat(format);
+    try {
+      // 웹 클라이언트로 리다이렉트
+      const webClientUrl = getWebClientUrl();
+      const editUrl = `${webClientUrl}/workspace/articles/${article.articleId}`;
 
-    // JSON 형식이면 파싱
-    if (format === 'tiptap-json' && typeof editContent === 'string') {
-      try {
-        setEditContent(JSON.parse(editContent));
-      } catch {
-        // 파싱 실패 시 마크다운으로 처리
-        setEditContentFormat('markdown');
-      }
+      // Chrome tabs API를 사용하여 새 탭 열기
+      await browser.tabs.create({ url: editUrl });
+    } catch (error) {
+      console.error('Failed to open web client for editing:', error);
+      alert(t('archiveDetailPage_openWebClientError') || 'Failed to open web editor. Please try again.');
     }
-
-    setIsEditing(true);
   };
 
   const handleSave = async () => {
@@ -480,55 +472,15 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     } catch {}
 
     try {
-      // 편집기로 전달할 데이터 준비
-      const archive = currentArchive || article.archives?.[0];
-      const contentFormat = (archive as any)?.contentFormat || 'markdown';
+      // 웹 클라이언트로 리다이렉트
+      const webClientUrl = getWebClientUrl();
+      const editUrl = `${webClientUrl}/workspace/articles/${article.articleId}`;
 
-      // Content를 문자열로 변환 (JSON 형식이면 stringify)
-      const contentToPass = typeof editContent === 'object'
-        ? JSON.stringify(editContent)
-        : editContent;
-
-      const originalContent = currentArchive?.content || article.content;
-      const originalContentToPass = typeof originalContent === 'object'
-        ? JSON.stringify(originalContent)
-        : originalContent;
-
-      // originalContentFormat은 originalContent와 동일한 소스에서 파생
-      const originalContentFormat = currentArchive
-        ? ((currentArchive as any)?.contentFormat || 'markdown')
-        : ((article as any)?.contentFormat || 'markdown');
-
-      const editorData = {
-        articleId: article.articleId,
-        title: editTitle,
-        content: contentToPass,
-        contentFormat: contentFormat,
-        originalTitle: currentArchive?.title || article.title,
-        originalContent: originalContentToPass,
-        originalContentFormat: originalContentFormat
-      };
-
-      // browser.storage.local을 사용하여 안전하게 데이터 전달 (anchor 링크나 특수 문자 처리)
-      const sessionKey = `tyquill-editor-data-${Date.now()}-${Math.random()}`;
-      await browser.storage.local.set({
-        [sessionKey]: editorData
-      });
-      const editorUrl = `${browser.runtime.getURL('/editor.html')}?sessionKey=${sessionKey}`;
-
-      // 새 탭에서 편집기 열기 - background script를 통해 처리
-      const response = await browser.runtime.sendMessage({
-        action: 'openFullscreenEditor',
-        editorUrl
-      });
-
-      if (!response?.success) {
-        throw new Error(response?.error || 'Failed to open fullscreen editor');
-      }
+      // Chrome tabs API를 사용하여 새 탭 열기
+      await browser.tabs.create({ url: editUrl });
     } catch (error) {
-      console.error('Failed to open fullscreen editor:', error);
-      // 사용자에게 에러 알림
-      alert('Failed to open fullscreen editor. Please try again.');
+      console.error('Failed to open web client for fullscreen editing:', error);
+      alert(t('archiveDetailPage_openWebClientError') || 'Failed to open web editor. Please try again.');
     }
   };
 

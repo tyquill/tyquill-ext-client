@@ -8,18 +8,21 @@ export interface Environment {
   serverUrl: string;
   apiUrl: string;
   oauthCallbackPath: string;
+  webClientUrl: string;
 }
 
 const development: Environment = {
   serverUrl: 'https://api.tyquill.ai',
   apiUrl: 'http://localhost:3001/api',
   oauthCallbackPath: '/api/auth/callback',
+  webClientUrl: 'http://localhost:5173',
 };
 
 const production: Environment = {
   serverUrl: 'https://api.tyquill.ai',
   apiUrl: 'https://api.tyquill.ai/api',
   oauthCallbackPath: '/api/auth/callback',
+  webClientUrl: 'https://app.tyquill.ai',
 };
 
 // 빌드 환경 확인 (webpack에서 주입)
@@ -61,6 +64,13 @@ export const API_BASE_URL = environment.apiUrl;
  */
 export const getOAuthCallbackUrl = (): string => {
   return `${environment.serverUrl}${environment.oauthCallbackPath}`;
+};
+
+/**
+ * 웹 클라이언트 URL 반환
+ */
+export const getWebClientUrl = (): string => {
+  return environment.webClientUrl;
 };
 
 /**

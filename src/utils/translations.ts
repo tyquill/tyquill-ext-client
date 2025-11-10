@@ -133,6 +133,7 @@ const koTranslations = {
   archiveDetailPage_backToCurrent: "현재 버전으로",
   archiveDetailPage_characters: "자",
   archiveDetailPage_regenerate: "다시 생성",
+  archiveDetailPage_openWebClientError: "웹 에디터를 여는 중 오류가 발생했습니다. 다시 시도해주세요.",
 
   // Regenerate Modal
   regenerateModal_title: "아티클 다시 생성",
@@ -709,6 +710,7 @@ const enTranslations = {
   archiveDetailPage_backToCurrent: "Back to current",
   archiveDetailPage_characters: " characters",
   archiveDetailPage_regenerate: "Regenerate",
+  archiveDetailPage_openWebClientError: "Failed to open web editor. Please try again.",
 
   // Regenerate Modal
   regenerateModal_title: "Regenerate Article",
