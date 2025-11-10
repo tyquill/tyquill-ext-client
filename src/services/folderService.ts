@@ -14,7 +14,7 @@ export interface FolderResponse {
   name: string;
   color?: string;
   parentId?: number;
-  userId: number;
+  userId: string;
   createdAt: string;
   updatedAt: string;
   itemCount?: number;
@@ -57,8 +57,8 @@ export interface FolderContentsResponse {
  * Add items to folder DTO - matches backend MoveFolderItemsDto
  */
 export interface AddItemsToFolderDto {
-  scrapIds?: number[];
-  articleIds?: number[];
+  scrapIds?: string[]; // UUID strings
+  articleIds?: string[]; // UUID strings
   targetFolderId?: string | null;
 }
 
@@ -190,7 +190,7 @@ export class FolderService {
   async removeItemFromFolder(
     folderId: number,
     contentType: 'SCRAP' | 'ARTICLE',
-    contentId: number
+    contentId: string // UUID
   ): Promise<void> {
     try {
       const payload: AddItemsToFolderDto = {

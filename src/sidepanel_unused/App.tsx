@@ -36,8 +36,8 @@ const App: React.FC = () => {
     setCurrentPage({ type: menu as PageType });
   };
 
-  const handleNavigateToDetail = (articleId: number) => {
-    setCurrentPage({ type: 'archive-detail', draftId: articleId.toString() });
+  const handleNavigateToDetail = (articleId: string) => { // UUID
+    setCurrentPage({ type: 'archive-detail', draftId: articleId });
   };
 
   const handleArchiveBack = () => {

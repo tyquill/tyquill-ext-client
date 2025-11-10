@@ -23,7 +23,7 @@ export interface CreateArticleDto {
  * 스크랩별 코멘트 인터페이스
  */
 export interface ScrapWithOptionalComment {
-    scrapId: number;
+    scrapId: string; // UUID
     userComment?: string;
 }
 
@@ -80,9 +80,9 @@ export interface RegenerateArticleV3Dto {
     topic?: string;
     keyInsight?: string;
     // 추가된 scraps (기존 article에 없던 것들)
-    addedScrapIds?: number[];
+    addedScrapIds?: string[]; // UUID strings
     // 제거된 scraps (기존 article에서 제거할 것들)
-    removedScrapIds?: number[];
+    removedScrapIds?: string[]; // UUID strings
     writingStyleId?: number | null;
     generationParams?: string;
 }
@@ -144,20 +144,21 @@ export interface AnalyzeContentResponse {
 
 /**
  * 아티클 생성 응답 타입 (generate API 전용)
+ * @deprecated Use GenerateArticleV2Response or ArticleResponse instead
  */
 export interface GenerateArticleResponse {
-    id: number;
+    id: string; // UUID - Updated for consistency
     title: string;
     content: string;
     createdAt: string;
-    userId: number;
+    userId: string;
 }
 
 /**
  * V2 API 비동기 생성 응답
  */
 export interface GenerateArticleV2Response {
-    articleId: number;
+    articleId: string; // UUID
     status: 'processing' | 'completed' | 'failed';
     message: string;
     createdAt: string;
@@ -167,7 +168,7 @@ export interface GenerateArticleV2Response {
  * V2 API 상태 확인 응답
  */
 export interface ArticleStatusV2Response {
-    articleId: number;
+    articleId: string; // UUID
     status: 'processing' | 'completed' | 'failed';
     title?: string;
     content?: string;
@@ -200,7 +201,7 @@ export interface ArchiveResponse {
  * 스크랩 응답 타입 (아티클 상세에서 사용)
  */
 export interface ScrapResponse {
-    scrapId: number;
+    scrapId: string; // UUID
     title: string;
     url: string;
     content: string;
@@ -224,7 +225,7 @@ export interface VersionHistoryItem {
  * 아티클 응답 타입
  */
 export interface ArticleResponse {
-    articleId: number;
+    articleId: string; // UUID
     title: string;
     content: string;
     contentFormat?: 'markdown' | 'tiptap-json';
@@ -290,7 +291,7 @@ export class ArticleService {
      * 특정 아티클 조회
      * GET /api/v1/articles/:id
      */
-    async getArticle(articleId: number): Promise<ArticleResponse> {
+    async getArticle(articleId: string): Promise<ArticleResponse> {
         return this.apiRequest(`/v1/articles/${articleId}`, {
             method: 'GET',
         });
@@ -310,7 +311,7 @@ export class ArticleService {
      * 아티클 업데이트
      * PATCH /api/v1/articles/:id
      */
-    async updateArticle(articleId: number, updateData: UpdateArticleDto): Promise<ArticleResponse> {
+    async updateArticle(articleId: string, updateData: UpdateArticleDto): Promise<ArticleResponse> {
         return this.apiRequest(`/v1/articles/${articleId}`, {
             method: 'PATCH',
             body: JSON.stringify(updateData),
@@ -321,7 +322,7 @@ export class ArticleService {
      * 아티클 삭제
      * DELETE /api/v1/articles/:id
      */
-    async deleteArticle(articleId: number): Promise<void> {
+    async deleteArticle(articleId: string): Promise<void> {
         return this.apiRequest(`/v1/articles/${articleId}`, {
             method: 'DELETE',
         });
@@ -331,7 +332,7 @@ export class ArticleService {
      * 아티클 아카이브
      * POST /api/v1/articles/:id/archive
      */
-    async archiveArticle(articleId: number): Promise<void> {
+    async archiveArticle(articleId: string): Promise<void> {
         return this.apiRequest(`/v1/articles/${articleId}/archive`, {
             method: 'POST',
         });
@@ -341,7 +342,7 @@ export class ArticleService {
      * 아티클 버전 히스토리 조회
      * GET /v1/articles/:id/versions
      */
-    async getArticleVersions(articleId: number): Promise<VersionHistoryItem[]> {
+    async getArticleVersions(articleId: string): Promise<VersionHistoryItem[]> {
         return this.apiRequest(`/v1/articles/${articleId}/versions`, {
             method: 'GET',
         });
@@ -351,7 +352,7 @@ export class ArticleService {
      * 특정 버전으로 복원
      * POST /v1/articles/:id/restore/:versionNumber
      */
-    async restoreVersion(articleId: number, versionNumber: number): Promise<ArticleResponse> {
+    async restoreVersion(articleId: string, versionNumber: number): Promise<ArticleResponse> {
         return this.apiRequest(`/v1/articles/${articleId}/restore/${versionNumber}`, {
             method: 'POST',
         });
@@ -398,7 +399,7 @@ export class ArticleService {
      * V2: 아티클 생성 상태 확인
      * GET /api/v2/articles/:id/status
      */
-    async getArticleStatusV2(articleId: number): Promise<ArticleStatusV2Response> {
+    async getArticleStatusV2(articleId: string): Promise<ArticleStatusV2Response> {
         return this.apiRequest(`/v2/articles/${articleId}/status`, {
             method: 'GET',
         });
@@ -422,8 +423,8 @@ export class ArticleService {
      * @returns 완성된 아티클 정보 또는 타임아웃/에러
      */
   async waitForArticleCompletion(
-        articleId: number, 
-        maxAttempts: number = 60, 
+        articleId: string,
+        maxAttempts: number = 60,
         interval: number = 5000
     ): Promise<ArticleStatusV2Response> {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -472,7 +473,7 @@ export class ArticleService {
      * V3: 아티클 생성 상태 확인
      * GET /api/v3/articles/:id/status
      */
-    async getArticleStatusV3(articleId: number): Promise<ArticleStatusV3Response> {
+    async getArticleStatusV3(articleId: string): Promise<ArticleStatusV3Response> {
         return this.apiRequest(`/v3/articles/${articleId}/status`, {
             method: 'GET',
         });
@@ -496,7 +497,7 @@ export class ArticleService {
      * @returns 완성된 아티클 정보 또는 타임아웃/에러
      */
     async waitForArticleCompletionV3(
-        articleId: number,
+        articleId: string,
         maxAttempts: number = 50,
         interval: number = 5000
     ): Promise<ArticleStatusV3Response> {
@@ -633,7 +634,7 @@ export class ArticleService {
      * @returns Promise<ArticleResponse>
      */
     async regenerateArticleV3(
-        articleId: number,
+        articleId: string,
         dto: RegenerateArticleV3Dto
     ): Promise<ArticleResponse> {
         const response = await globalApiClient.post<ArticleResponse>(
@@ -651,7 +652,7 @@ export class ArticleService {
      * @returns Promise<void>
      */
     async regenerateArticleV3Stream(
-        articleId: number,
+        articleId: string,
         dto: RegenerateArticleV3Dto,
         onEvent: (event: StreamEvent) => void
     ): Promise<void> {

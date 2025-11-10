@@ -7,8 +7,8 @@ import AddSourcePanel from './AddSourcePanel';
 import styles from './SourcesSection.module.css';
 
 interface SourcesSectionProps {
-  selectedScrapIds: number[];
-  onSelectionChange: (scrapIds: number[]) => void;
+  selectedScrapIds: string[]; // UUID strings
+  onSelectionChange: (scrapIds: string[]) => void; // UUID strings
   disabled?: boolean;
   initialScraps?: ScrapResponse[]; // Article's scraps for ensuring they're always available
 }
@@ -83,7 +83,7 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   );
 
   const handleRemoveSource = useCallback(
-    (scrapId: number) => {
+    (scrapId: string) => { // UUID
       const newSelection = selectedScrapIds.filter((id) => id !== scrapId);
       onSelectionChange(newSelection);
     },
@@ -91,7 +91,7 @@ const SourcesSection: React.FC<SourcesSectionProps> = ({
   );
 
   const handleToggleSource = useCallback(
-    (scrapId: number) => {
+    (scrapId: string) => { // UUID
       const isSelected = selectedScrapIds.includes(scrapId);
       const newSelection = isSelected
         ? selectedScrapIds.filter((id) => id !== scrapId)

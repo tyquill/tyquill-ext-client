@@ -282,9 +282,9 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
     try {
       setIsAddingTag(true);
       // console.log('🏷️ Adding tag:', tag, 'to scrap:', scrapId);
-      
+
       // 서버 API 호출하여 태그 추가
-      await scrapService.addTagToScrap(parseInt(scrapId), tag.trim());
+      await scrapService.addTagToScrap(scrapId, tag.trim()); // scrapId is UUID string
       
       // console.log('✅ Tag added successfully');
       
@@ -320,15 +320,15 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
       }
 
       // 실제 태그 객체에서 tagId를 찾기 위해 서버에서 태그 정보 조회
-      const scrapTags = await scrapService.getScrapTags(parseInt(scrapId));
+      const scrapTags = await scrapService.getScrapTags(scrapId); // scrapId is UUID string
       const tagToRemove = scrapTags.find(tag => tag.name === tagName);
-      
+
       if (!tagToRemove) {
         throw new Error(t('scrapPage_tagNotFound'));
       }
-      
+
       // 서버 API 호출하여 태그 삭제
-      await scrapService.removeTagFromScrap(parseInt(scrapId), tagToRemove.tagId);
+      await scrapService.removeTagFromScrap(scrapId, tagToRemove.tagId); // scrapId is UUID string
       
       // console.log('✅ Tag removed successfully');
       
@@ -403,9 +403,9 @@ const ScrapPage = forwardRef<ScrapPageRef, {}>((_, ref) => {
     }
   };
 
-  const executeDeleteScrap = async (scrapId: string) => {
+  const executeDeleteScrap = async (scrapId: string) => { // UUID
     try {
-      await scrapService.deleteScrap(parseInt(scrapId));
+      await scrapService.deleteScrap(scrapId); // scrapId is UUID string
       setPendingDeleteId(null);
       setDeletedScrap(null);
       setDeleteTimeoutId(null);

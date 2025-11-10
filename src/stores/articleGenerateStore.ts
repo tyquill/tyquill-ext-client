@@ -66,8 +66,8 @@ interface ArticleGenerateActions {
   
   // 스크랩 관련 액션
   addScrap: (scrap: ScrapResponse) => void;
-  removeScrap: (scrapId: number) => void;
-  updateScrapOpinion: (scrapId: number, opinion: string) => void;
+  removeScrap: (scrapId: string) => void; // UUID
+  updateScrapOpinion: (scrapId: string, opinion: string) => void; // UUID
   clearScraps: () => void;
   
   // 태그 관련 액션
@@ -224,11 +224,11 @@ export const useArticleGenerateStore = create<ArticleGenerateStore>()(
           }
         }),
 
-        removeScrap: (scrapId: number) => set((state) => {
+        removeScrap: (scrapId: string) => set((state) => { // UUID
           state.selectedScraps = state.selectedScraps.filter(scrap => scrap.scrapId !== scrapId);
         }),
 
-        updateScrapOpinion: (scrapId: number, opinion: string) => set((state) => {
+        updateScrapOpinion: (scrapId: string, opinion: string) => set((state) => { // UUID
           const scrap = state.selectedScraps.find(s => s.scrapId === scrapId);
           if (scrap) {
             scrap.opinion = opinion;

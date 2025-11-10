@@ -77,7 +77,7 @@ export interface CreateScrapDto {
  * 스크랩 응답 DTO
  */
 export interface ScrapResponse {
-  scrapId: number;
+  scrapId: string; // UUID
   url: string;
   title: string;
   content: string;
@@ -320,7 +320,7 @@ export class ScrapService {
   /**
    * 스크랩 단건 조회
    */
-  async getScrapById(scrapId: number): Promise<ScrapResponse> {
+  async getScrapById(scrapId: string): Promise<ScrapResponse> {
     try {
       // Use Version 2 API for enhanced metadata
       const response = await this.apiRequest<ScrapResponse>(`/scraps/${scrapId}`, {
@@ -335,7 +335,7 @@ export class ScrapService {
   /**
    * 스크랩 삭제
    */
-  async deleteScrap(scrapId: number): Promise<void> {
+  async deleteScrap(scrapId: string): Promise<void> {
     try {
       // logger.debug('🗑️ Deleting scrap:', scrapId);
 
@@ -365,7 +365,7 @@ export class ScrapService {
   /**
    * 스크랩에 태그 추가
    */
-  async addTagToScrap(scrapId: number, tagName: string): Promise<TagResponse> {
+  async addTagToScrap(scrapId: string, tagName: string): Promise<TagResponse> {
     try {
       // logger.debug('🏷️ Adding tag to scrap:', { scrapId, tagName });
 
@@ -400,7 +400,7 @@ export class ScrapService {
   /**
    * 스크랩의 태그 목록 조회
    */
-  async getScrapTags(scrapId: number): Promise<TagResponse[]> {
+  async getScrapTags(scrapId: string): Promise<TagResponse[]> {
     try {
       // logger.debug('🏷️ Fetching scrap tags:', scrapId);
 
@@ -423,7 +423,7 @@ export class ScrapService {
   /**
    * 스크랩에서 태그 제거
    */
-  async removeTagFromScrap(scrapId: number, tagId: number): Promise<void> {
+  async removeTagFromScrap(scrapId: string, tagId: number): Promise<void> {
     try {
       // logger.debug('🗑️ Removing tag from scrap:', { scrapId, tagId });
 

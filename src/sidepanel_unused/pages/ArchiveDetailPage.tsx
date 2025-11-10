@@ -48,7 +48,7 @@ interface ArchiveDetailPageProps {
 // Scraps Section Component with collapsible functionality
 interface ScrapsSectionProps {
   scraps: Array<{
-    scrapId: number;
+    scrapId: string; // UUID
     title: string;
     url: string;
     userComment?: string;
@@ -198,7 +198,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
   // 아티클 데이터 새로고침 함수 (전체 페이지 리로드 없이)
   const refreshArticleData = useCallback(async () => {
     try {
-      const articleData = await articleService.getArticle(parseInt(draftId));
+      const articleData = await articleService.getArticle(draftId);
       
       // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
       const normalizeContent = (content: string) => {
@@ -244,7 +244,7 @@ const ArchiveDetailPage: React.FC<ArchiveDetailPageProps> = ({ draftId, onBack }
     const fetchArticle = async () => {
       try {
         setLoading(true);
-        const articleData = await articleService.getArticle(parseInt(draftId));
+        const articleData = await articleService.getArticle(draftId);
 
         // 연속된 개행 정리 - 저장 시마다 개행이 늘어나는 문제 해결
         const normalizeContent = (content: string) => {

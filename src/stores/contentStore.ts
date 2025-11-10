@@ -39,7 +39,7 @@ interface ContentState {
   isFolderSidebarCollapsed: boolean;
   isCreateFolderModalOpen: boolean;
   isMoveFolderModalOpen: boolean;
-  selectedItemsForMove: Array<{ type: 'SCRAP' | 'ARTICLE'; id: number }>;
+  selectedItemsForMove: Array<{ type: 'SCRAP' | 'ARTICLE'; id: string }>; // UUID strings
 
   // Actions - Folders
   loadFolders: () => Promise<void>;
@@ -63,7 +63,7 @@ interface ContentState {
   toggleFolderSidebar: () => void;
   openCreateFolderModal: () => void;
   closeCreateFolderModal: () => void;
-  openMoveFolderModal: (items: Array<{ type: 'SCRAP' | 'ARTICLE'; id: number }>) => void;
+  openMoveFolderModal: (items: Array<{ type: 'SCRAP' | 'ARTICLE'; id: string }>) => void; // UUID strings
   closeMoveFolderModal: () => void;
   moveItemsToFolder: (folderId: number) => Promise<void>;
 }

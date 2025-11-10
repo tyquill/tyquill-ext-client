@@ -14,7 +14,7 @@ import styles from './EditorApp.module.css';
 import '../sidepanel/Editor/NotionEditor.module.css';
 
 interface EditorData {
-  articleId: number;
+  articleId: string; // UUID
   title: string;
   content: string;
   contentFormat?: 'markdown' | 'tiptap-json';

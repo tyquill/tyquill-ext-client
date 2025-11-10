@@ -20,7 +20,7 @@ import { PDFUploadModal } from '../../components/sidepanel/PDFUploadModal/PDFUpl
 import { trackPDFUploadModalOpenedBridge } from '../../analytics/bridge';
 
 interface UnifiedContentPageProps {
-  onNavigateToDetail: (articleId: number) => void;
+  onNavigateToDetail: (articleId: string) => void;
 }
 
 export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNavigateToDetail }) => {
@@ -137,7 +137,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     };
   }, [items.length]);
 
-  const handleDeleteScrap = async (scrapId: number) => {
+  const handleDeleteScrap = async (scrapId: string) => {
     if (!confirm(t('scrapPage_confirmDelete'))) return;
 
     try {
@@ -149,7 +149,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     }
   };
 
-  const handleDeleteArticle = async (articleId: number) => {
+  const handleDeleteArticle = async (articleId: string) => {
     if (!confirm(t('archivePage_confirmDelete'))) return;
 
     try {
@@ -190,7 +190,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     showSuccess(t('common_success'), t('pdfUpload_uploadSuccess'));
   }, [refreshContent, showSuccess, t]);
 
-  const openScrapInNewTab = useCallback(async (scrapId: number, scrapType?: string) => {
+  const openScrapInNewTab = useCallback(async (scrapId: string, scrapType?: string) => {
     try {
       const viewerType = scrapType === 'webclip' ? 'SCRAP' : 'UPLOAD';
       const url = browser.runtime.getURL(`/webviewer.html#type=${viewerType}&id=${scrapId}`);
@@ -200,11 +200,11 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     }
   }, [showError, t]);
 
-  const openArticleInEditor = useCallback((articleId: number) => {
+  const openArticleInEditor = useCallback((articleId: string) => {
     onNavigateToDetail(articleId);
   }, [onNavigateToDetail]);
 
-  const handleRemoveTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: number, tagName: string) => {
+  const handleRemoveTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: string, tagName: string) => {
     try {
       if (itemType === 'SCRAP') {
         const tags = await scrapService.getScrapTags(itemId);
@@ -229,7 +229,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     }
   };
 
-  const handleAddTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: number, tagName: string) => {
+  const handleAddTag = async (itemType: 'SCRAP' | 'ARTICLE', itemId: string, tagName: string) => {
     try {
       if (itemType === 'SCRAP') {
         // Find current item and check for duplicate tags
@@ -266,7 +266,7 @@ export const UnifiedContentPage: React.FC<UnifiedContentPageProps> = ({ onNaviga
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, itemType: 'SCRAP' | 'ARTICLE', itemId: number) => {
+  const handleDragStart = (e: React.DragEvent, itemType: 'SCRAP' | 'ARTICLE', itemId: string) => {
     e.stopPropagation();
     e.dataTransfer.effectAllowed = 'move';
 
