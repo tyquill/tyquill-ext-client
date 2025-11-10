@@ -6,7 +6,7 @@ export default defineConfig({
   modules: ['@wxt-dev/analytics/module'],
   manifest: {
     name: 'Tyquill',
-    version: '1.4.5',
+    version: '1.4.6',
     description: '__MSG_extDescription__',
     default_locale: 'en',
     // webNavigation: Stibee cross-origin iframe 통신을 위한 getAllFrames() 호출에 필요
