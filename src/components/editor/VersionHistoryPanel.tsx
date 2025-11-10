@@ -6,7 +6,7 @@ import { useI18n } from '../../hooks/useI18n';
 import styles from './EditorApp.module.css';
 
 interface VersionHistoryPanelProps {
-    articleId: number;
+    articleId: string; // UUID
     currentVersionNumber?: number;
     onClose: () => void;
     onVersionSelect: (version: VersionHistoryItem) => void;

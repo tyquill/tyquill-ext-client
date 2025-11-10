@@ -36,7 +36,7 @@ import {
 } from '../../analytics/bridge';
 
 interface ArticleGeneratePageProps {
-  onNavigateToDetail: (articleId: number) => void;
+  onNavigateToDetail: (articleId: string) => void; // UUID
   onNavigate: (page: PageType) => void;
   currentPage?: string;
   onRefreshArchiveList?: () => void;
@@ -618,10 +618,10 @@ const ArticleGeneratePage: React.FC<ArticleGeneratePageProps> = ({
     usagePrompt: string; // 해당 자료를 어떻게 쓸지 지시문
   }>>([]);
   // 막힘 애니메이션 상태 (75자 도달 시 순간 흔들기)
-  const [blockedAnimIds, setBlockedAnimIds] = useState<Set<number>>(new Set());
+  const [blockedAnimIds, setBlockedAnimIds] = useState<Set<string | number>>(new Set());
 
 
-  const triggerBlockedAnim = (id: number) => {
+  const triggerBlockedAnim = (id: string | number) => { // UUID string or number
     setBlockedAnimIds(prev => new Set(prev).add(id));
     setTimeout(() => {
       setBlockedAnimIds(prev => {
