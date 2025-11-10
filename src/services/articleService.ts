@@ -144,9 +144,10 @@ export interface AnalyzeContentResponse {
 
 /**
  * 아티클 생성 응답 타입 (generate API 전용)
+ * @deprecated Use GenerateArticleV2Response or ArticleResponse instead
  */
 export interface GenerateArticleResponse {
-    id: number;
+    id: string; // UUID - Updated for consistency
     title: string;
     content: string;
     createdAt: string;
