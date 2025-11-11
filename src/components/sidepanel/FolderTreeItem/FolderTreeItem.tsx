@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { IoChevronDown, IoChevronForward, IoFolder, IoTrash, IoCreate } from 'react-icons/io5';
-import { FaRegFolderOpen } from 'react-icons/fa6';
+import { IoChevronDown, IoChevronForward, IoTrash, IoCreate } from 'react-icons/io5';
 import { FolderResponse, folderService } from '../../../services/folderService';
+import { getFolderIcon } from '../../../lib/folder-icons';
 import { useContentStore } from '../../../stores/contentStore';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { useI18n } from '../../../hooks/useI18n';
@@ -34,6 +34,7 @@ interface FolderTreeItemProps {
   onSelect: (folderId: number) => void;
   onDelete: (folderId: number) => void;
   onRename: (folderId: number, newName: string) => void;
+  onEdit?: (folder: FolderResponse) => void;
   level?: number;
 }
 
@@ -43,6 +44,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
   onSelect,
   onDelete,
   onRename,
+  onEdit,
   level = 0,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -76,8 +78,11 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
 
   const handleStartEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsEditing(true);
-    setEditName(folder.name);
+    // Open edit modal instead of inline editing
+    // This will be handled by parent component
+    if (onEdit) {
+      onEdit(folder);
+    }
   };
 
   const handleSaveEdit = () => {
@@ -206,11 +211,10 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
             <div className={styles.chevronPlaceholder} />
           )}
 
-          {isSelected || (isExpanded && hasChildren) ? (
-            <FaRegFolderOpen size={16} style={{ color: folder.color || '#888' }} />
-          ) : (
-            <IoFolder size={16} style={{ color: folder.color || '#888' }} />
-          )}
+          {(() => {
+            const IconComponent = getFolderIcon(folder.icon);
+            return <IconComponent size={16} style={{ color: folder.color || '#888' }} />;
+          })()}
 
           {isEditing ? (
             <input
@@ -263,6 +267,7 @@ export const FolderTreeItem: React.FC<FolderTreeItemProps> = ({
               onSelect={onSelect}
               onDelete={onDelete}
               onRename={onRename}
+              onEdit={onEdit}
               level={level + 1}
             />
           ))}

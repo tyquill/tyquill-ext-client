@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { IoAdd, IoChevronBack, IoChevronForward, IoFolder, IoFileTray } from 'react-icons/io5';
-import { FaRegFolderOpen } from 'react-icons/fa6';
+import { IoAdd, IoChevronBack, IoChevronForward, IoFileTray } from 'react-icons/io5';
 import { useContentStore } from '../../../stores/contentStore';
 import { FolderTreeItem } from '../FolderTreeItem/FolderTreeItem';
-import { folderService } from '../../../services/folderService';
+import { EditFolderModal } from '../EditFolderModal/EditFolderModal';
+import { folderService, FolderResponse } from '../../../services/folderService';
+import { getFolderIcon } from '../../../lib/folder-icons';
 import { useI18n } from '../../../hooks/useI18n';
 import { useToastHelpers } from '../../../hooks/useToast';
 import { logger } from '../../../utils/logger';
@@ -34,6 +35,8 @@ export const FolderSidebar: React.FC = () => {
   const { showSuccess, showError } = useToastHelpers();
   const [isAllItemsDragOver, setIsAllItemsDragOver] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<number | null>(null);
+  const [isEditFolderModalOpen, setIsEditFolderModalOpen] = useState(false);
+  const [folderToEdit, setFolderToEdit] = useState<FolderResponse | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   const {
@@ -79,6 +82,21 @@ export const FolderSidebar: React.FC = () => {
       showSuccess(t('folder_renamed'), t('folder_renamed_success'));
     } catch (error: any) {
       showError(t('common_error'), error.message || t('folder_rename_failed'));
+    }
+  };
+
+  const handleEditFolder = (folder: FolderResponse) => {
+    setFolderToEdit(folder);
+    setIsEditFolderModalOpen(true);
+  };
+
+  const handleUpdateFolder = async (folderId: number, name: string, color: string, icon: string) => {
+    try {
+      await updateFolder(folderId, name, color, icon);
+      setIsEditFolderModalOpen(false);
+      setFolderToEdit(null);
+    } catch (error: any) {
+      throw error;
     }
   };
 
@@ -280,25 +298,24 @@ export const FolderSidebar: React.FC = () => {
         </Tooltip>
 
         <div className={styles.collapsedFolderScroll}>
-          {folders.map((folder) => (
-            <Tooltip key={folder.folderId} content={folder.name} side="right">
-              <div
-                className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''} ${dragOverFolderId === folder.folderId ? styles.dragOver : ''}`}
-                onClick={() => handleSelectFolder(folder.folderId)}
-                onDragOver={(e) => handleFolderDragOver(e, folder.folderId)}
-                onDragLeave={handleFolderDragLeave}
-                onDrop={(e) => handleFolderDrop(e, folder.folderId)}
-                role="button"
-                aria-label={folder.name}
-              >
-                {selectedFolderId === folder.folderId ? (
-                  <FaRegFolderOpen size={18} style={{ color: folder.color || '#888' }} />
-                ) : (
-                  <IoFolder size={18} style={{ color: folder.color || '#888' }} />
-                )}
-              </div>
-            </Tooltip>
-          ))}
+          {folders.map((folder) => {
+            const IconComponent = getFolderIcon(folder.icon);
+            return (
+              <Tooltip key={folder.folderId} content={folder.name} side="right">
+                <div
+                  className={`${styles.collapsedFolderIcon} ${selectedFolderId === folder.folderId ? styles.selected : ''} ${dragOverFolderId === folder.folderId ? styles.dragOver : ''}`}
+                  onClick={() => handleSelectFolder(folder.folderId)}
+                  onDragOver={(e) => handleFolderDragOver(e, folder.folderId)}
+                  onDragLeave={handleFolderDragLeave}
+                  onDrop={(e) => handleFolderDrop(e, folder.folderId)}
+                  role="button"
+                  aria-label={folder.name}
+                >
+                  <IconComponent size={18} style={{ color: folder.color || '#888' }} />
+                </div>
+              </Tooltip>
+            );
+          })}
         </div>
       </div>
     );
@@ -359,6 +376,7 @@ export const FolderSidebar: React.FC = () => {
                   onSelect={handleSelectFolder}
                   onDelete={handleDeleteFolder}
                   onRename={handleRenameFolder}
+                  onEdit={handleEditFolder}
                 />
               ))}
             </div>
@@ -374,6 +392,17 @@ export const FolderSidebar: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Edit Folder Modal */}
+      <EditFolderModal
+        isOpen={isEditFolderModalOpen}
+        folder={folderToEdit}
+        onClose={() => {
+          setIsEditFolderModalOpen(false);
+          setFolderToEdit(null);
+        }}
+        onSubmit={handleUpdateFolder}
+      />
     </div>
   );
 };

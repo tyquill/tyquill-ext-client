@@ -44,8 +44,8 @@ interface ContentState {
   // Actions - Folders
   loadFolders: () => Promise<void>;
   selectFolder: (folderId: number | null) => void;
-  createFolder: (name: string, color?: string, parentId?: number) => Promise<void>;
-  updateFolder: (folderId: number, name?: string, color?: string) => Promise<void>;
+  createFolder: (name: string, color?: string, icon?: string, parentId?: number) => Promise<void>;
+  updateFolder: (folderId: number, name?: string, color?: string, icon?: string) => Promise<void>;
   deleteFolder: (folderId: number) => Promise<void>;
 
   // Actions - Content
@@ -117,9 +117,9 @@ export const useContentStore = create<ContentState>((set, get) => ({
     get().loadContent();
   },
 
-  createFolder: async (name, color, parentId) => {
+  createFolder: async (name, color, icon, parentId) => {
     try {
-      await folderService.createFolder({ name, color, parentId });
+      await folderService.createFolder({ name, color, icon, parentId });
       // Reload folders
       await get().loadFolders();
     } catch (error) {
@@ -129,9 +129,9 @@ export const useContentStore = create<ContentState>((set, get) => ({
     }
   },
 
-  updateFolder: async (folderId, name, color) => {
+  updateFolder: async (folderId, name, color, icon) => {
     try {
-      await folderService.updateFolder(folderId, { name, color });
+      await folderService.updateFolder(folderId, { name, color, icon });
       // Reload folders
       await get().loadFolders();
     } catch (error) {

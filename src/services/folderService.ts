@@ -12,7 +12,9 @@ import { globalApiClient } from './globalApiClient';
 export interface FolderResponse {
   folderId: number;
   name: string;
+  description?: string;
   color?: string;
+  icon?: string;
   parentId?: number;
   userId: string;
   createdAt: string;
@@ -26,7 +28,9 @@ export interface FolderResponse {
  */
 export interface CreateFolderDto {
   name: string;
+  description?: string;
   color?: string;
+  icon?: string;
   parentId?: number;
 }
 
@@ -35,7 +39,9 @@ export interface CreateFolderDto {
  */
 export interface UpdateFolderDto {
   name?: string;
+  description?: string;
   color?: string;
+  icon?: string;
   parentId?: number;
 }
 

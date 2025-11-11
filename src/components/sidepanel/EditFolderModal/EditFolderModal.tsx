@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
-import { useContentStore } from '../../../stores/contentStore';
+import { FolderResponse } from '../../../services/folderService';
 import { FOLDER_ICON_OPTIONS, type FolderIconOption } from '../../../lib/folder-icons';
 import { useI18n } from '../../../hooks/useI18n';
 import { useToastHelpers } from '../../../hooks/useToast';
-import styles from './CreateFolderModal.module.css';
+import styles from './EditFolderModal.module.css';
 
 const PRESET_COLORS = [
   '#ef4444', // red
@@ -19,7 +19,7 @@ const PRESET_COLORS = [
 
 // Validation constants
 const MAX_FOLDER_NAME_LENGTH = 100;
-const INVALID_CHARS_REGEX = /[<>:"/\\|?*\x00-\x1F]/g; // Filesystem unsafe characters
+const INVALID_CHARS_REGEX = /[<>:"/\\|?*\x00-\x1F]/g;
 
 /**
  * Validates folder name
@@ -43,24 +43,49 @@ function validateFolderName(name: string): string | null {
   return null;
 }
 
-export const CreateFolderModal: React.FC = () => {
+interface EditFolderModalProps {
+  isOpen: boolean;
+  folder: FolderResponse | null;
+  onClose: () => void;
+  onSubmit: (folderId: number, name: string, color: string, icon: string) => Promise<void>;
+}
+
+export const EditFolderModal: React.FC<EditFolderModalProps> = ({
+  isOpen,
+  folder,
+  onClose,
+  onSubmit,
+}) => {
   const { t } = useI18n();
   const { showSuccess, showError } = useToastHelpers();
-  const { isCreateFolderModalOpen, closeCreateFolderModal, createFolder } = useContentStore();
 
   const [name, setName] = useState('');
   const [color, setColor] = useState(PRESET_COLORS[4]); // Default to blue
   const [selectedIcon, setSelectedIcon] = useState<FolderIconOption>(FOLDER_ICON_OPTIONS[0]);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // Update form when folder changes
+  useEffect(() => {
+    if (folder) {
+      setName(folder.name);
+      setColor(folder.color || PRESET_COLORS[4]);
+
+      const iconOption = FOLDER_ICON_OPTIONS.find((opt) => opt.id === folder.icon);
+      if (iconOption) {
+        setSelectedIcon(iconOption);
+      } else {
+        setSelectedIcon(FOLDER_ICON_OPTIONS[0]);
+      }
+    }
+  }, [folder]);
 
   const handleClose = () => {
-    setName('');
-    setColor(PRESET_COLORS[4]);
-    setSelectedIcon(FOLDER_ICON_OPTIONS[0]);
-    closeCreateFolderModal();
+    onClose();
   };
 
-  const handleCreate = async () => {
+  const handleUpdate = async () => {
+    if (!folder) return;
+
     // Validate folder name
     const validationError = validateFolderName(name);
     if (validationError) {
@@ -68,41 +93,41 @@ export const CreateFolderModal: React.FC = () => {
       return;
     }
 
-    setIsCreating(true);
+    setIsUpdating(true);
     try {
-      await createFolder(name.trim(), color, selectedIcon.id);
-      showSuccess(t('folder_created'), t('folder_created_success'));
+      await onSubmit(folder.folderId, name.trim(), color, selectedIcon.id);
+      showSuccess(t('folder_updated'), t('folder_updated_success'));
       handleClose();
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : t('folder_create_failed');
+      const errorMessage = error instanceof Error ? error.message : t('folder_update_failed');
       showError(t('common_error'), errorMessage);
     } finally {
-      setIsCreating(false);
+      setIsUpdating(false);
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !isCreating) {
-      handleCreate();
+    if (e.key === 'Enter' && !isUpdating) {
+      handleUpdate();
     } else if (e.key === 'Escape') {
       handleClose();
     }
   };
 
-  if (!isCreateFolderModalOpen) return null;
+  if (!isOpen || !folder) return null;
 
   return (
     <div className={styles.overlay} onClick={handleClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
         <div className={styles.header}>
-          <h2 className={styles.title}>{t('folder_create')}</h2>
+          <h2 className={styles.title}>{t('folder_edit')}</h2>
           <button className={styles.closeButton} onClick={handleClose} aria-label={t('common_close')}>
             <IoClose size={24} />
           </button>
         </div>
 
         <div className={styles.content}>
-          {/* Name Input */}
+          {/* Folder Name */}
           <div className={styles.formGroup}>
             <label className={styles.label}>{t('folder_name')}</label>
             <input
@@ -177,15 +202,15 @@ export const CreateFolderModal: React.FC = () => {
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.cancelButton} onClick={handleClose} disabled={isCreating}>
+          <button className={styles.cancelButton} onClick={handleClose} disabled={isUpdating}>
             {t('common_cancel')}
           </button>
           <button
-            className={styles.createButton}
-            onClick={handleCreate}
-            disabled={isCreating || !name.trim()}
+            className={styles.updateButton}
+            onClick={handleUpdate}
+            disabled={isUpdating || !name.trim()}
           >
-            {isCreating ? t('folder_creating') : t('folder_create')}
+            {isUpdating ? t('folder_updating') : t('folder_update')}
           </button>
         </div>
       </div>
