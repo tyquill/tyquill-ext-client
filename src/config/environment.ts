@@ -12,15 +12,15 @@ export interface Environment {
 }
 
 const development: Environment = {
-  serverUrl: 'https://api.tyquill.ai',
+  serverUrl: 'https://tyquill-server-production.up.railway.app',
   apiUrl: 'http://localhost:3001/api',
   oauthCallbackPath: '/api/auth/callback',
   webClientUrl: 'http://localhost:5173',
 };
 
 const production: Environment = {
-  serverUrl: 'https://api.tyquill.ai',
-  apiUrl: 'https://api.tyquill.ai/api',
+  serverUrl: 'https://tyquill-server-production.up.railway.app',
+  apiUrl: 'https://tyquill-server-production.up.railway.app/api',
   oauthCallbackPath: '/api/auth/callback',
   webClientUrl: 'https://app.tyquill.ai',
 };

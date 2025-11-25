@@ -20,7 +20,7 @@ export default defineConfig({
     },
     content_security_policy: {
       extension_pages:
-        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.amazonaws.com",
+        "script-src 'self'; object-src 'self'; base-uri 'self'; connect-src 'self' https://tyquill-server-production.up.railway.app https://api.tyquill.ai http://localhost:* ws://localhost:* https://www.google-analytics.com https://analytics.google.com https://*.amazonaws.com",
     },
     web_accessible_resources: [
       {
