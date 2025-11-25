@@ -1,5 +1,7 @@
 // Background Service Worker for Tyquill Extension
 import { scrapService } from '../services/scrapService';
+import { folderService } from '../services/folderService';
+import { tagService } from '../services/tagService';
 import { browser } from 'wxt/browser';
 import type { Browser } from 'wxt/browser';
 import { logger } from '../utils/logger';
@@ -122,6 +124,87 @@ browser.runtime.onMessage.addListener((request: any, sender: Browser.runtime.Mes
       });
     
     // Return true to indicate we will respond asynchronously
+    return true;
+  }
+
+  if (request.action === 'scrapToast:getFolders') {
+    (async () => {
+      try {
+        const folders = await folderService.getFolders();
+        sendResponse({ success: true, data: folders });
+      } catch (error) {
+        console.error('❌ Background getFolders error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to load folders' });
+      }
+    })();
+    return true;
+  }
+
+  if (request.action === 'scrapToast:getTagNames') {
+    (async () => {
+      try {
+        const tags = await tagService.getTagNames();
+        sendResponse({ success: true, data: tags });
+      } catch (error) {
+        console.error('❌ Background getTagNames error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to load tag names' });
+      }
+    })();
+    return true;
+  }
+
+  if (request.action === 'scrapToast:createFolder') {
+    (async () => {
+      try {
+        const created = await folderService.createFolder({ name: request.name });
+        sendResponse({ success: true, data: created });
+      } catch (error) {
+        console.error('❌ Background createFolder error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to create folder' });
+      }
+    })();
+    return true;
+  }
+
+  if (request.action === 'scrapToast:addToFolder') {
+    (async () => {
+      try {
+        const { folderId, scrapId } = request;
+        await folderService.addItemsToFolder(folderId, { scrapIds: [scrapId] });
+        sendResponse({ success: true });
+      } catch (error) {
+        console.error('❌ Background addToFolder error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to add to folder' });
+      }
+    })();
+    return true;
+  }
+
+  if (request.action === 'scrapToast:addTagToScrap') {
+    (async () => {
+      try {
+        const { scrapId, tagName } = request;
+        const added = await scrapService.addTagToScrap(scrapId, tagName);
+        sendResponse({ success: true, data: added });
+      } catch (error) {
+        console.error('❌ Background addTagToScrap error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to add tag' });
+      }
+    })();
+    return true;
+  }
+
+  if (request.action === 'scrapToast:removeTagFromScrap') {
+    (async () => {
+      try {
+        const { scrapId, tagId } = request;
+        await scrapService.removeTagFromScrap(scrapId, tagId);
+        sendResponse({ success: true });
+      } catch (error) {
+        console.error('❌ Background removeTagFromScrap error:', error);
+        sendResponse({ success: false, error: (error as Error)?.message || 'Failed to remove tag' });
+      }
+    })();
     return true;
   }
   

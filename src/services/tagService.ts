@@ -121,12 +121,17 @@ export class TagService {
 
     /**
      * 현재 사용자의 고유 태그명 목록
-     * GET /api/v1/tags/names
+     * 기존 names endpoint가 지원되지 않을 수 있어 /v1/tags 결과에서 이름만 추출
      */
     async getTagNames(): Promise<string[]> {
-        return this.apiRequest('/v1/tags/names', {
-            method: 'GET',
+        const tags = await this.getTags();
+        const namesSet = new Set<string>();
+        tags.forEach((tag) => {
+            if (tag.name) {
+                namesSet.add(tag.name);
+            }
         });
+        return Array.from(namesSet);
     }
 
     /**

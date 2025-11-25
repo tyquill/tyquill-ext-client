@@ -13,7 +13,7 @@ export interface Environment {
 
 const development: Environment = {
   serverUrl: 'https://tyquill-server-production.up.railway.app',
-  apiUrl: 'http://localhost:3001/api',
+  apiUrl: 'https://tyquill-server-production.up.railway.app/api',
   oauthCallbackPath: '/api/auth/callback',
   webClientUrl: 'http://localhost:5173',
 };

@@ -11,10 +11,13 @@ import { initThreadsInjector } from '../utils/threadsInjector';
 import { initYouTubeInjector } from '../utils/youtubeInjector';
 import { initXInjector } from '../utils/xInjector';
 import { initRedditInjector } from '../utils/redditInjector';
+import type { TagResponse } from '../services/scrapService';
 
 interface ScrapData {
+  scrapId: string;
   title: string;
   url?: string;
+  tags?: TagResponse[];
 }
 
 const App: React.FC = () => {
@@ -173,8 +176,10 @@ const App: React.FC = () => {
           const { data } = request;
           if (data) {
             setScrapData({
+              scrapId: data.scrapId || data.id || '',
               title: data.title || data.url || t('page'),
               url: data.url,
+              tags: data.tags,
             });
             setShowScrapToast(true);
           }
@@ -383,8 +388,10 @@ const App: React.FC = () => {
       {/* 스크랩 완료 토스트 알림 */}
       {showScrapToast && scrapData && (
         <ScrapToast
+          scrapId={scrapData.scrapId}
           title={scrapData.title}
           url={scrapData.url}
+          tags={scrapData.tags}
           onClose={() => {
             setShowScrapToast(false);
             setScrapData(null);
